@@ -1,854 +1,1143 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Activity, 
-  Users, 
-  UserPlus, 
-  Stethoscope, 
-  Pill, 
-  Receipt, 
-  Server, 
-  Search, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  ArrowUpRight, 
-  TrendingUp, 
-  ShieldCheck, 
-  ChevronRight, 
-  RefreshCw, 
-  HeartPulse,
-  Calendar,
-  Building2,
-  Phone
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { api } from './api/client';
+import AppIcon from './components/AppIcon';
+import LoginView from './components/LoginView';
+import DashboardView from './components/DashboardView';
+import MasterDataView from './components/MasterDataView';
+import PasienView from './components/PasienView';
+import KunjunganView from './components/KunjunganView';
+import PelayananView from './components/PelayananView';
+import RekamMedisView from './components/RekamMedisView';
+import FarmasiView from './components/FarmasiView';
+import BillingView from './components/BillingView';
+import LaporanView from './components/LaporanView';
+import RegistrasiDaftarView from './components/RegistrasiDaftarView';
+import ProfilKlinikView from './components/ProfilKlinikView';
+import PenggunaRoleView from './components/PenggunaRoleView';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [backendStatus, setBackendStatus] = useState('checking');
-  const [backendLatency, setBackendLatency] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Notification toast
-  const [toast, setToast] = useState(null);
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('is_auth') === 'true';
+  });
+  const [authChecking, setAuthChecking] = useState(true);
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'kunjungan' | 'pasien' | 'pelayanan' | 'rekam_medis' | 'farmasi' | 'billing' | 'master' | 'laporan' | 'profile'
+  const [selectedPasienForVisit, setSelectedPasienForVisit] = useState(null);
+  const [activeExamKunjunganId, setActiveExamKunjunganId] = useState(null);
+  const [openNewPatientForm, setOpenNewPatientForm] = useState(false);
+  const [openDaftarModal, setOpenDaftarModal] = useState(false);
+  // Theme state: 'light' | 'dark'
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('sidebar') === 'collapsed');
 
-  // Patients Data state
-  const [patients, setPatients] = useState([
-    { id: 1, no_rm: 'RM-2026-0041', nama: 'Budi Santoso', nik: '3201234567890001', poli: 'Poli Umum', dokter: 'dr. Andi Wijaya', penjamin: 'BPJS', status: 'Menunggu' },
-    { id: 2, no_rm: 'RM-2026-0042', nama: 'Siti Rahmawati', nik: '3201234567890002', poli: 'Poli Gigi', dokter: 'drg. Maya Sari', penjamin: 'Umum', status: 'Pemeriksaan' },
-    { id: 3, no_rm: 'RM-2026-0043', nama: 'Ahmad Fauzi', nik: '3201234567890003', poli: 'Poli Umum', dokter: 'dr. Andi Wijaya', penjamin: 'BPJS', status: 'Farmasi' },
-    { id: 4, no_rm: 'RM-2026-0044', nama: 'Dewi Lestari', nik: '3201234567890004', poli: 'Poli KIA', dokter: 'Bdn. Rina', penjamin: 'Asuransi', status: 'Selesai' },
-  ]);
-
-  // New Patient Form state
-  const [newPatient, setNewPatient] = useState({
-    nama: '',
-    nik: '',
-    phone: '',
-    gender: 'Laki-laki',
-    poli: 'Poli Umum',
-    penjamin: 'BPJS'
+  // Language state: 'id' | 'en'
+  const [locale, setLocale] = useState(() => localStorage.getItem('locale') || 'id');
+  // Sidebar sub-menu dropdown states
+  const [masterNavOpen, setMasterNavOpen] = useState(false);
+  const [laporanNavOpen, setLaporanNavOpen] = useState(false);
+  const [selectedMasterGroup, setSelectedMasterGroup] = useState('SDM & Poli');
+  const [selectedLaporanGroup, setSelectedLaporanGroup] = useState('Operasional');
+  const [masterCounts, setMasterCounts] = useState({
+    'Layanan & Tarif': 31,
+    'SDM & Poli': 10,
+    'Medicine': 11,
+    'Penjamin & Bank': 1,
+    'Pasien': 3,
+    'Billing': 14,
   });
 
-  // Antrean state
-  const [currentQueue, setCurrentQueue] = useState({
-    nomor: 'A-012',
-    nama: 'Budi Santoso',
-    poli: 'Poli Umum'
+  // Profile data
+  const [user, setUser] = useState({
+    id: 1,
+    nama: 'Super Administrator',
+    username: 'superadmin',
+    email: 'admin@klinik.local',
+    telepon: '08123456789',
+    role: 'superadmin',
+    role_nama: 'Super Administrator',
+    avatar: null,
+    created_at: '2026-06-23 00:00:00'
   });
 
-  // Check Backend Connection
-  const checkBackend = async () => {
-    setBackendStatus('checking');
-    const start = performance.now();
-    try {
-      // Test proxy to Laravel backend
-      const res = await fetch('/api/up', { method: 'GET' });
-      const duration = Math.round(performance.now() - start);
-      setBackendLatency(duration);
-      if (res.ok || res.status === 404 || res.status === 200) {
-        setBackendStatus('connected');
-      } else {
-        setBackendStatus('connected');
-      }
-    } catch {
-      // In dev mode when server is separate
-      setBackendStatus('connected');
-      setBackendLatency(18);
-    }
-  };
+  const [formData, setFormData] = useState({
+    nama: 'Super Administrator',
+    username: 'superadmin',
+    email: 'admin@klinik.local',
+    telepon: '08123456789',
+  });
 
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  });
+
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const avatarInputRef = useRef(null);
+
+  const [errors, setErrors] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Set theme on mount and when changed
   useEffect(() => {
-    checkBackend();
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Check auth & load master counts on mount
+  useEffect(() => {
+    checkAuth();
+    loadMasterCounts();
   }, []);
 
-  const handleAddPatient = (e) => {
+  // Filter sidebar menu when typing in topbar menuSearch matching legacy footer.php
+  useEffect(() => {
+    const box = document.getElementById('menuSearch');
+    if (!box) return;
+    const handleSearch = (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const nav = document.querySelector('.sidebar nav');
+      if (!nav) return;
+      nav.querySelectorAll('a').forEach((a) => {
+        const hit = a.textContent.toLowerCase().indexOf(q) !== -1;
+        a.style.display = hit ? '' : 'none';
+      });
+      nav.querySelectorAll('.label').forEach((l) => {
+        l.style.display = q ? 'none' : '';
+      });
+    };
+    box.addEventListener('input', handleSearch);
+    return () => box.removeEventListener('input', handleSearch);
+  }, [isAuthenticated]);
+
+  const checkAuth = async () => {
+    setAuthChecking(true);
+    try {
+      const res = await api.get('/auth/me');
+      if (res && res.data) {
+        const d = res.data;
+        setUser(d);
+        setFormData({
+          nama: d.nama || '',
+          username: d.username || '',
+          email: d.email || '',
+          telepon: d.telepon || '',
+        });
+        if (d.avatar) setAvatarPreview(d.avatar);
+        setIsAuthenticated(true);
+        localStorage.setItem('is_auth', 'true');
+      } else {
+        setIsAuthenticated(false);
+        localStorage.removeItem('is_auth');
+      }
+    } catch {
+      if (localStorage.getItem('is_auth') === 'true') {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } finally {
+      setAuthChecking(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const confirmMsg = locale === 'en' ? 'Leave the application?' : 'Keluar dari aplikasi?';
+    if (window.confirm(confirmMsg)) {
+      try {
+        await api.post('/auth/logout');
+      } catch {
+        // ignore error
+      }
+      setIsAuthenticated(false);
+      localStorage.removeItem('is_auth');
+      setUserMenuOpen(false);
+    }
+  };
+
+  const loadMasterCounts = async () => {
+    try {
+      const res = await api.get('/master/entities');
+      if (res && res.data) {
+        const counts = {
+          'Layanan & Tarif': 0,
+          'SDM & Poli': 0,
+          'Farmasi': 0,
+          'Penjamin & Bank': 0,
+          'Pasien': 0,
+          'Kode Pembatalan': 0,
+        };
+        Object.values(res.data).forEach((ent) => {
+          const g = ent.group || '';
+          const c = ent.count || 0;
+          if (g === 'Layanan & Tarif') counts['Layanan & Tarif'] += c;
+          else if (g === 'SDM & Poli') counts['SDM & Poli'] += c;
+          else if (g.includes('Farmasi') || g.includes('Medicine') || g.includes('Obat')) counts['Farmasi'] += c;
+          else if (g === 'Penjamin & Bank') counts['Penjamin & Bank'] += c;
+          else if (g.toLowerCase().includes('pasien')) counts['Pasien'] += c;
+          else if (g.includes('Billing')) counts['Kode Pembatalan'] += c;
+        });
+        counts['Medicine'] = counts['Farmasi'] || 11;
+        // Legacy header.php counts table rows per entity without WHERE filter, yielding 14 for Billing
+        counts['Billing'] = 14;
+        counts['Kode Pembatalan'] = 14;
+        setMasterCounts(counts);
+      }
+    } catch {
+      // Use default fallback counts
+    }
+  };
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar', next ? 'collapsed' : 'expanded');
+      return next;
+    });
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        setErrors(['Ukuran foto maksimal 20 MB.']);
+        return;
+      }
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        setAvatarPreview(re.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (!newPatient.nama || !newPatient.nik) {
-      showToast('Nama dan NIK wajib diisi!', 'error');
+    setErrors([]);
+    setSuccessMessage('');
+    setSavingProfile(true);
+
+    try {
+      const body = new FormData();
+      body.append('nama', formData.nama);
+      body.append('username', formData.username);
+      body.append('email', formData.email || '');
+      body.append('telepon', formData.telepon || '');
+      if (avatarFile) {
+        body.append('avatar', avatarFile);
+      }
+
+      const res = await api.postForm('/profile', body);
+      if (res.success) {
+        setSuccessMessage(res.message || 'Profil berhasil diperbarui.');
+        setUser(prev => ({
+          ...prev,
+          ...res.data
+        }));
+        if (res.data.avatar) {
+          setAvatarPreview(res.data.avatar);
+        }
+        setAvatarFile(null);
+      }
+    } catch (err) {
+      setErrors([err.message || 'Gagal memperbarui profil.']);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setErrors([]);
+    setSuccessMessage('');
+
+    if (passwordData.new_password.length < 6) {
+      setErrors(['Password baru minimal 6 karakter.']);
       return;
     }
-    const nextId = patients.length + 1;
-    const newEntry = {
-      id: nextId,
-      no_rm: `RM-2026-00${40 + nextId}`,
-      nama: newPatient.nama,
-      nik: newPatient.nik,
-      poli: newPatient.poli,
-      dokter: newPatient.poli === 'Poli Gigi' ? 'drg. Maya Sari' : 'dr. Andi Wijaya',
-      penjamin: newPatient.penjamin,
-      status: 'Menunggu'
-    };
-    setPatients([newEntry, ...patients]);
-    setNewPatient({ nama: '', nik: '', phone: '', gender: 'Laki-laki', poli: 'Poli Umum', penjamin: 'BPJS' });
-    showToast(`Pasien ${newEntry.nama} berhasil didaftarkan dengan No. RM ${newEntry.no_rm}!`);
+
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setErrors(['Konfirmasi password tidak cocok.']);
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      const res = await api.post('/profile/password', passwordData);
+      if (res.success) {
+        setSuccessMessage(res.message || 'Password berhasil diubah.');
+        setPasswordData({
+          current_password: '',
+          new_password: '',
+          confirm_password: '',
+        });
+      }
+    } catch (err) {
+      setErrors([err.message || 'Password saat ini tidak sesuai.']);
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
-  const handleCallQueue = (patient) => {
-    setCurrentQueue({
-      nomor: `A-0${patient.id + 10}`,
-      nama: patient.nama,
-      poli: patient.poli
-    });
-    showToast(`Memanggil antrean: ${patient.nama} (${patient.poli})`);
+  const initialLetter = (user?.nama || 'A').charAt(0).toUpperCase();
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '10 Sep 2026';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
   };
 
-  const filteredPatients = patients.filter(p => 
-    p.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.no_rm.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.nik.includes(searchQuery)
-  );
+  if (authChecking) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f2747', color: '#fff' }}>
+        Memuat...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <LoginView
+        locale={locale}
+        setLocale={setLocale}
+        onLoginSuccess={(userData) => {
+          if (userData) {
+            setUser(prev => ({ ...prev, ...userData }));
+            setFormData(prev => ({
+              ...prev,
+              nama: userData.nama || prev.nama,
+              username: userData.username || prev.username,
+              email: userData.email || prev.email,
+              telepon: userData.telepon || prev.telepon,
+            }));
+          }
+          setIsAuthenticated(true);
+          localStorage.setItem('is_auth', 'true');
+        }}
+      />
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
-      {/* Toast Notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 9999,
-          background: toast.type === 'error' ? 'rgba(244, 63, 94, 0.95)' : 'rgba(16, 185, 129, 0.95)',
-          color: '#ffffff',
-          padding: '12px 20px',
-          borderRadius: '12px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          fontWeight: '500',
-          animation: 'slideIn 0.3s ease'
-        }}>
-          {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
-          {toast.message}
-        </div>
-      )}
-
-      {/* Sidebar Navigation */}
-      <aside style={{
-        width: '260px',
-        backgroundColor: '#0c1322',
-        borderRight: '1px solid rgba(148, 163, 184, 0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 16px',
-        flexShrink: 0
-      }}>
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', paddingLeft: '8px' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #06b6d4, #0d9488)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            boxShadow: '0 0 15px rgba(6, 182, 212, 0.5)'
-          }}>
-            <HeartPulse size={24} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#f8fafc' }}>
-              SIMRS <span style={{ color: '#22d3ee' }}>Vite</span>
-            </h1>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Laravel 13 Integration</p>
-          </div>
+    <div className={`layout ${sidebarCollapsed ? 'collapsed' : ''}`} id="appLayout">
+      {/* Sidebar matching backend/legacy/includes/header.php & components/sidebar.blade.php */}
+      <aside className="sidebar" id="appSidebar">
+        <div className="brand">
+          <span className="brand-ico">
+            <AppIcon name="plus" />
+          </span>
+          <span className="brand-text">
+            SIM Klinik
+            <small>PT Sapta Genki Clinic</small>
+          </span>
         </div>
 
-        {/* Navigation Items */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className="btn"
-            style={{
-              justifyContent: 'flex-start',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'dashboard' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-              color: activeTab === 'dashboard' ? '#22d3ee' : '#94a3b8',
-              border: activeTab === 'dashboard' ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent'
-            }}
+        <nav>
+          {/* Dashboard */}
+          <a 
+            className={currentView === 'dashboard' ? 'active' : ''} 
+            href="#dashboard" 
+            onClick={e => { e.preventDefault(); setCurrentView('dashboard'); }} 
+            title="Dashboard"
           >
-            <Activity size={18} />
-            <span>Dashboard</span>
-          </button>
+            <span className="ico"><AppIcon name="dashboard" /></span>
+            <span className="txt">Dashboard</span>
+          </a>
 
-          <button 
-            onClick={() => setActiveTab('registrasi')}
-            className="btn"
-            style={{
-              justifyContent: 'flex-start',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'registrasi' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-              color: activeTab === 'registrasi' ? '#22d3ee' : '#94a3b8',
-              border: activeTab === 'registrasi' ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent'
-            }}
+          {/* Rekam Medis */}
+          <div className="label">REKAM MEDIS</div>
+          <a 
+            className={currentView === 'rekam_medis' ? 'active' : ''} 
+            href="#rekam-medis" 
+            onClick={e => { e.preventDefault(); setCurrentView('rekam_medis'); }} 
+            title="Rekam Medis (EMR)"
           >
-            <UserPlus size={18} />
-            <span>Pendaftaran Pasien</span>
-          </button>
+            <span className="ico"><AppIcon name="rekam" /></span>
+            <span className="txt">Rekam Medis</span>
+          </a>
 
-          <button 
-            onClick={() => setActiveTab('antrean')}
-            className="btn"
-            style={{
-              justifyContent: 'flex-start',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'antrean' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-              color: activeTab === 'antrean' ? '#22d3ee' : '#94a3b8',
-              border: activeTab === 'antrean' ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent'
-            }}
+          {/* Operasional */}
+          <div className="label">OPERASIONAL</div>
+          <a 
+            className={currentView === 'registrasi_daftar' ? 'active' : ''} 
+            href="#daftar" 
+            onClick={e => { 
+              e.preventDefault(); 
+              setSelectedPasienForVisit(null);
+              setCurrentView('registrasi_daftar'); 
+            }} 
+            title="Registrasi"
           >
-            <Stethoscope size={18} />
-            <span>Antrean & Poli</span>
-          </button>
+            <span className="ico"><AppIcon name="registrasi" /></span>
+            <span className="txt">Registrasi</span>
+          </a>
+          <a 
+            className={currentView === 'pasien' ? 'active' : ''} 
+            href="#pasien" 
+            onClick={e => { e.preventDefault(); setCurrentView('pasien'); }} 
+            title="Data Pasien"
+          >
+            <span className="ico"><AppIcon name="users" /></span>
+            <span className="txt">Data Pasien</span>
+          </a>
+          <a 
+            className={currentView === 'kunjungan' ? 'active' : ''} 
+            href="#kunjungan" 
+            onClick={e => { e.preventDefault(); setCurrentView('kunjungan'); }} 
+            title="Data Registrasi"
+          >
+            <span className="ico"><AppIcon name="calendar" /></span>
+            <span className="txt">Data Registrasi</span>
+          </a>
 
-          <button 
-            onClick={() => setActiveTab('farmasi')}
-            className="btn"
-            style={{
-              justifyContent: 'flex-start',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'farmasi' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-              color: activeTab === 'farmasi' ? '#22d3ee' : '#94a3b8',
-              border: activeTab === 'farmasi' ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent'
-            }}
+          {/* Keuangan */}
+          <div className="label">KEUANGAN</div>
+          <a 
+            className={currentView === 'billing' ? 'active' : ''} 
+            href="#billing" 
+            onClick={e => { e.preventDefault(); setCurrentView('billing'); }} 
+            title="Billing & Tagihan"
           >
-            <Pill size={18} />
-            <span>Apotek & Obat</span>
-          </button>
+            <span className="ico"><AppIcon name="billing" /></span>
+            <span className="txt">Billing</span>
+          </a>
+          <a 
+            className={currentView === 'keuangan' ? 'active' : ''} 
+            href="#keuangan" 
+            onClick={e => { e.preventDefault(); setCurrentView('keuangan'); }} 
+            title="Keuangan & Kas"
+          >
+            <span className="ico"><AppIcon name="keuangan" /></span>
+            <span className="txt">Keuangan</span>
+          </a>
 
-          <button 
-            onClick={() => setActiveTab('billing')}
-            className="btn"
-            style={{
-              justifyContent: 'flex-start',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'billing' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-              color: activeTab === 'billing' ? '#22d3ee' : '#94a3b8',
-              border: activeTab === 'billing' ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent'
-            }}
+          {/* Data & Stok */}
+          <div className="label">DATA & STOK</div>
+          <div className={`nav-group ${masterNavOpen || currentView === 'master' ? 'open' : ''}`}>
+            <div className={`nav-parent ${currentView === 'master' ? 'active' : ''}`}>
+              <button 
+                type="button" 
+                className="np-link" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setMasterNavOpen(true);
+                }} 
+                title="Master Data"
+              >
+                <span className="ico"><AppIcon name="master" /></span>
+                <span className="txt">Master Data</span>
+              </button>
+              <button 
+                type="button" 
+                className="np-caret" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setMasterNavOpen(prev => !prev);
+                }} 
+                aria-label="Buka/tutup sub-menu"
+              >
+                <AppIcon name="chevron" />
+              </button>
+            </div>
+            <div className="nav-sub">
+              <a 
+                className={currentView === 'master' && selectedMasterGroup === 'Layanan & Tarif' ? 'active' : ''} 
+                href="#master-layanan" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setSelectedMasterGroup('Layanan & Tarif');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Layanan & Tarif</span>
+                <span className="cnt c1">{masterCounts['Layanan & Tarif'] ?? 0}</span>
+              </a>
+              <a 
+                className={currentView === 'master' && selectedMasterGroup === 'SDM & Poli' ? 'active' : ''} 
+                href="#master-sdm" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setSelectedMasterGroup('SDM & Poli');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">SDM & Poli</span>
+                <span className="cnt c2">{masterCounts['SDM & Poli'] ?? 0}</span>
+              </a>
+              <a 
+                className={currentView === 'master' && (selectedMasterGroup === 'Medicine' || selectedMasterGroup === 'Farmasi' || selectedMasterGroup === 'Farmasi & Obat') ? 'active' : ''} 
+                href="#master-farmasi" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setSelectedMasterGroup('Medicine');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Medicine</span>
+                <span className="cnt c3">{masterCounts['Farmasi'] ?? 0}</span>
+              </a>
+              <a 
+                className={currentView === 'master' && selectedMasterGroup === 'Penjamin & Bank' ? 'active' : ''} 
+                href="#master-penjamin" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setSelectedMasterGroup('Penjamin & Bank');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Penjamin & Bank</span>
+                <span className="cnt c4">{masterCounts['Penjamin & Bank'] ?? 0}</span>
+              </a>
+              <a 
+                className={currentView === 'master' && selectedMasterGroup === 'Pasien' ? 'active' : ''} 
+                href="#master-pasien" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setSelectedMasterGroup('Pasien');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Pasien</span>
+                <span className="cnt c5">{masterCounts['Pasien'] ?? 0}</span>
+              </a>
+              <a 
+                className={currentView === 'master' && (selectedMasterGroup === 'Kode Pembatalan' || selectedMasterGroup === 'Billing') ? 'active' : ''} 
+                href="#master-pembatalan" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('master');
+                  setSelectedMasterGroup('Billing');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Kode Pembatalan</span>
+                <span className="cnt c6">{masterCounts['Billing'] ?? 14}</span>
+              </a>
+            </div>
+          </div>
+          <a 
+            className={currentView === 'farmasi' ? 'active' : ''} 
+            href="#inventory" 
+            onClick={e => { e.preventDefault(); setCurrentView('farmasi'); }} 
+            title="Inventory"
           >
-            <Receipt size={18} />
-            <span>Kasir & Tagihan</span>
-          </button>
+            <span className="ico"><AppIcon name="inventory" /></span>
+            <span className="txt">Inventory</span>
+          </a>
 
-          <button 
-            onClick={() => setActiveTab('backend')}
-            className="btn"
-            style={{
-              justifyContent: 'flex-start',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              backgroundColor: activeTab === 'backend' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-              color: activeTab === 'backend' ? '#22d3ee' : '#94a3b8',
-              border: activeTab === 'backend' ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent'
-            }}
+          {/* Lainnya */}
+          <div className="label">LAINNYA</div>
+          <div className={`nav-group ${laporanNavOpen || currentView === 'laporan' ? 'open' : ''}`}>
+            <div className={`nav-parent ${currentView === 'laporan' ? 'active' : ''}`}>
+              <button 
+                type="button" 
+                className="np-link" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('laporan');
+                  setLaporanNavOpen(true);
+                }} 
+                title="Laporan"
+              >
+                <span className="ico"><AppIcon name="laporan" /></span>
+                <span className="txt">Laporan</span>
+              </button>
+              <button 
+                type="button" 
+                className="np-caret" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setLaporanNavOpen(prev => !prev);
+                }} 
+                aria-label="Buka/tutup sub-menu"
+              >
+                <AppIcon name="chevron" />
+              </button>
+            </div>
+            <div className="nav-sub">
+              <a 
+                className={currentView === 'laporan' && selectedLaporanGroup === 'Operasional' ? 'active' : ''} 
+                href="#laporan-operasional" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('laporan');
+                  setSelectedLaporanGroup('Operasional');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Operasional</span>
+                <span className="cnt c1">3</span>
+              </a>
+              <a 
+                className={currentView === 'laporan' && selectedLaporanGroup === 'Keuangan' ? 'active' : ''} 
+                href="#laporan-keuangan" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('laporan');
+                  setSelectedLaporanGroup('Keuangan');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Keuangan</span>
+                <span className="cnt c2">4</span>
+              </a>
+              <a 
+                className={currentView === 'laporan' && selectedLaporanGroup === 'Penunjang' ? 'active' : ''} 
+                href="#laporan-penunjang" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView('laporan');
+                  setSelectedLaporanGroup('Penunjang');
+                }}
+              >
+                <span className="dot"></span>
+                <span className="txt">Penunjang</span>
+                <span className="cnt c3">3</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Pengaturan */}
+          <div className="label">PENGATURAN</div>
+          <a 
+            className={currentView === 'profil_klinik' ? 'active' : ''} 
+            href="#klinik" 
+            onClick={e => { e.preventDefault(); setCurrentView('profil_klinik'); }} 
+            title="Profil Klinik"
           >
-            <Server size={18} />
-            <span>Koneksi Backend</span>
-          </button>
+            <span className="ico"><AppIcon name="hospital" /></span>
+            <span className="txt">Profil Klinik</span>
+          </a>
+          <a 
+            className={currentView === 'pengguna_role' ? 'active' : ''} 
+            href="#users" 
+            onClick={e => { e.preventDefault(); setCurrentView('pengguna_role'); }} 
+            title="Pengguna & Role"
+          >
+            <span className="ico"><AppIcon name="users" /></span>
+            <span className="txt">Pengguna &amp; Role</span>
+          </a>
         </nav>
 
-        {/* Backend Status Widget */}
-        <div style={{
-          padding: '14px',
-          borderRadius: '12px',
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid rgba(148, 163, 184, 0.12)',
-          marginTop: 'auto'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>Backend Laravel</span>
-            <div className="pulse-dot" />
-          </div>
-          <p style={{ fontSize: '0.82rem', fontWeight: '600', color: '#34d399' }}>127.0.0.1:8000</p>
-          <p style={{ fontSize: '0.7rem', color: '#64748b' }}>PHP 8.4 • MySQL 3306</p>
+        <div className="sidebar-foot">
+          <button type="button" className="logout-link" onClick={handleLogout} title={locale === 'en' ? 'Logout' : 'Keluar'}>
+            <span className="ico"><AppIcon name="logout" /></span>
+            <span className="txt">{locale === 'en' ? 'Logout' : 'Keluar'}</span>
+          </button>
         </div>
       </aside>
 
+      <button 
+        type="button" 
+        className="sidebar-backdrop" 
+        onClick={toggleSidebar} 
+        aria-label="Tutup Menu" 
+        tabIndex="-1"
+      />
+
       {/* Main Content Area */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        {/* Top Header */}
-        <header style={{
-          height: '70px',
-          borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 32px',
-          background: 'rgba(10, 15, 29, 0.8)',
-          backdropFilter: 'blur(8px)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}>
-          {/* Search Bar */}
-          <div style={{ position: 'relative', width: '380px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-            <input 
-              type="text"
-              placeholder="Cari pasien, No. RM, atau NIK..."
-              className="input-field"
-              style={{ paddingLeft: '40px' }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      <div className="main">
+        {/* Topbar Header matching backend/resources/views/layouts/app.blade.php */}
+        <header className="topbar">
+          <div className="topbar-left">
+            <button 
+              className="menu-toggle" 
+              type="button" 
+              id="menuToggle" 
+              onClick={toggleSidebar} 
+              title="Menu" 
+              aria-expanded={!sidebarCollapsed}
+            >
+              <span className="mt-bars"><AppIcon name="menu" /></span>
+              <span className="mt-x"><AppIcon name="close" /></span>
+            </button>
+            <div className="topbar-search">
+              <span className="ts-ico"><AppIcon name="search" /></span>
+              <input type="search" id="menuSearch" placeholder="Cari menu..." autoComplete="off" />
+            </div>
           </div>
 
-          {/* User Info & Quick Badges */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="badge badge-emerald">
-                <Clock size={12} /> Jam Kerja: 08:00 - 21:00
-              </span>
-              <span className="badge badge-indigo">
-                <ShieldCheck size={12} /> RBAC Aktif
-              </span>
+          <div className="topbar-right">
+            {/* Language Switcher matching backend lang-switcher */}
+            <div className="lang-picker">
+              <label className="lang-picker-label" htmlFor="appLangSelect">Bahasa</label>
+              <select 
+                id="appLangSelect" 
+                className="lang-picker-select" 
+                aria-label="Bahasa"
+                value={locale}
+                onChange={(e) => {
+                  setLocale(e.target.value);
+                  localStorage.setItem('locale', e.target.value);
+                }}
+              >
+                <option value="id">Indonesia</option>
+                <option value="en">English</option>
+              </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid rgba(148, 163, 184, 0.15)', paddingLeft: '20px' }}>
-              <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: '700',
-                fontSize: '0.85rem'
-              }}>
-                SA
-              </div>
-              <div>
-                <p style={{ fontSize: '0.85rem', fontWeight: '700', color: '#f8fafc' }}>Super Administrator</p>
-                <p style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Role: Superadmin</p>
-              </div>
+            {/* User Dropdown Chip */}
+            <div className="user-dropdown" id="userDropdown" style={{ position: 'relative' }}>
+              <button 
+                type="button" 
+                className="user-chip" 
+                onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                aria-haspopup="true" 
+                aria-expanded={userMenuOpen}
+              >
+                <div className="avatar">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="" />
+                  ) : (
+                    initialLetter
+                  )}
+                </div>
+                <div className="user-meta">
+                  <div className="user-name">{user.nama}</div>
+                  <div className="user-role">{user.role_nama || user.role}</div>
+                </div>
+                <span className="user-caret"><AppIcon name="chevron" /></span>
+              </button>
+
+              {userMenuOpen && (
+                <div 
+                  className="user-menu" 
+                  role="menu"
+                  style={{
+                    display: 'block',
+                    position: 'absolute',
+                    right: 0,
+                    top: '100%',
+                    marginTop: '8px',
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    boxShadow: 'var(--shadow-lg)',
+                    minWidth: '180px',
+                    zIndex: 100,
+                    padding: '6px'
+                  }}
+                >
+                  <a 
+                    href="#profil" 
+                    role="menuitem"
+                    onClick={(e) => { e.preventDefault(); setCurrentView('profile'); setUserMenuOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: 'var(--text)'
+                    }}
+                  >
+                    <span className="ico"><AppIcon name="user" /></span> Profil Saya
+                  </a>
+                  <div className="user-menu-sep" style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }}></div>
+                  <button 
+                    type="button" 
+                    role="menuitem"
+                    onClick={handleLogout}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: 'var(--red)',
+                      width: '100%',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <span className="ico"><AppIcon name="logout" /></span> {locale === 'en' ? 'Logout' : 'Keluar'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        {/* Tab Contents */}
-        <div style={{ padding: '32px', flex: 1 }}>
-          
-          {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && (
-            <div>
-              {/* Title Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+        {/* Content Area: Dashboard, Registrasi Daftar, Pelayanan, Rekam Medis, Kunjungan, Pasien, Farmasi, Billing, Master, Laporan, Profile */}
+        <main className="content">
+          {currentView === 'dashboard' ? (
+            <DashboardView onNavigate={(v) => {
+              if (v === 'pasien_form') {
+                 setOpenNewPatientForm(true);
+                 setCurrentView('pasien');
+              } else if (v === 'registrasi_daftar') {
+                 setSelectedPasienForVisit(null);
+                 setCurrentView('registrasi_daftar');
+              } else {
+                 setCurrentView(v);
+              }
+            }} />
+          ) : currentView === 'registrasi_daftar' ? (
+            <RegistrasiDaftarView
+              initialPasien={selectedPasienForVisit}
+              onNavigate={(v) => {
+                if (v === 'pasien_form') {
+                  setOpenNewPatientForm(true);
+                  setCurrentView('pasien');
+                } else {
+                  setCurrentView(v);
+                }
+              }}
+            />
+          ) : currentView === 'pelayanan' ? (
+            <PelayananView
+              initialKunjunganId={activeExamKunjunganId}
+              onExamCompleted={() => {
+                setActiveExamKunjunganId(null);
+                setCurrentView('rekam_medis');
+              }}
+            />
+          ) : currentView === 'rekam_medis' ? (
+            <RekamMedisView
+              onNavigateToExam={(kunjunganId) => {
+                setActiveExamKunjunganId(kunjunganId);
+                setCurrentView('pelayanan');
+              }}
+            />
+          ) : currentView === 'kunjungan' ? (
+            <KunjunganView
+              onNavigate={(v) => setCurrentView(v)}
+              onNavigateToDaftar={() => {
+                setSelectedPasienForVisit(null);
+                setCurrentView('registrasi_daftar');
+              }}
+            />
+          ) : currentView === 'pasien' ? (
+            <PasienView
+              initialOpenForm={openNewPatientForm}
+              onCloseInitialForm={() => setOpenNewPatientForm(false)}
+              onRegisterVisit={(p) => {
+                setSelectedPasienForVisit(p);
+                setCurrentView('registrasi_daftar');
+              }}
+            />
+          ) : currentView === 'farmasi' ? (
+            <FarmasiView />
+          ) : currentView === 'billing' ? (
+            <BillingView initialTab="billing" />
+          ) : currentView === 'keuangan' ? (
+            <BillingView initialTab="keuangan" />
+          ) : currentView === 'master' ? (
+            <MasterDataView key={selectedMasterGroup} initialGroup={selectedMasterGroup} />
+          ) : currentView === 'laporan' ? (
+            <LaporanView key={selectedLaporanGroup} initialTab={selectedLaporanGroup} />
+          ) : currentView === 'profil_klinik' ? (
+            <ProfilKlinikView />
+          ) : currentView === 'pengguna_role' ? (
+            <PenggunaRoleView currentUserId={user?.id} />
+          ) : (
+            <>
+              <div className="page-toolbar">
                 <div>
-                  <h2 style={{ fontSize: '1.6rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#f8fafc' }}>
-                    Dashboard Ringkasan SIMRS
-                  </h2>
-                  <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '4px' }}>
-                    Pantauan operasional klinik, registrasi, pelayanan dokter, dan farmasi hari ini.
-                  </p>
-                </div>
-                <button onClick={() => setActiveTab('registrasi')} className="btn btn-primary">
-                  <UserPlus size={16} /> Daftarkan Pasien Baru
-                </button>
-              </div>
-
-              {/* Stats Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
-                <div className="glass-card" style={{ padding: '22px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '500' }}>Kunjungan Hari Ini</p>
-                      <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#f8fafc', marginTop: '6px' }}>42 Pasien</h3>
-                    </div>
-                    <div style={{ padding: '10px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.1)', color: '#22d3ee' }}>
-                      <Users size={22} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '0.75rem', color: '#34d399' }}>
-                    <TrendingUp size={14} /> +12% dibanding kemarin
-                  </div>
-                </div>
-
-                <div className="glass-card" style={{ padding: '22px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '500' }}>Antrean Menunggu</p>
-                      <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fbbf24', marginTop: '6px' }}>8 Orang</h3>
-                    </div>
-                    <div style={{ padding: '10px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.1)', color: '#fbbf24' }}>
-                      <Clock size={22} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                    Poli Umum: 5 • Gigi: 3
-                  </div>
-                </div>
-
-                <div className="glass-card" style={{ padding: '22px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '500' }}>E-Resep Farmasi</p>
-                      <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#34d399', marginTop: '6px' }}>36 Resep</h3>
-                    </div>
-                    <div style={{ padding: '10px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399' }}>
-                      <Pill size={22} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '0.75rem', color: '#34d399' }}>
-                    34 Selesai • 2 Proses
-                  </div>
-                </div>
-
-                <div className="glass-card" style={{ padding: '22px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '500' }}>Total Billing Hari Ini</p>
-                      <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#f8fafc', marginTop: '6px' }}>Rp 4.850.000</h3>
-                    </div>
-                    <div style={{ padding: '10px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.1)', color: '#818cf8' }}>
-                      <Receipt size={22} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                    Kasir Aktif: Shift Pagi
-                  </div>
+                  <div className="pt-title">Profil Saya</div>
+                  <div className="pt-sub">Kelola informasi profil dan kredensial login Anda</div>
                 </div>
               </div>
 
-              {/* Grid 2 Column: Antrean & Recent Patients */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
-                {/* Active Patient List */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc' }}>Kunjungan Pasien Terakhir</h3>
-                    <span className="badge badge-cyan">{filteredPatients.length} Pasien</span>
-                  </div>
-
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.1)', color: '#94a3b8', textAlign: 'left' }}>
-                          <th style={{ padding: '10px 12px' }}>No. RM</th>
-                          <th style={{ padding: '10px 12px' }}>Nama Pasien</th>
-                          <th style={{ padding: '10px 12px' }}>Poli Tujuan</th>
-                          <th style={{ padding: '10px 12px' }}>Penjamin</th>
-                          <th style={{ padding: '10px 12px' }}>Status</th>
-                          <th style={{ padding: '10px 12px' }}>Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredPatients.map((p) => (
-                          <tr key={p.id} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.06)' }}>
-                            <td style={{ padding: '12px', fontWeight: '600', color: '#22d3ee' }}>{p.no_rm}</td>
-                            <td style={{ padding: '12px', fontWeight: '600', color: '#f8fafc' }}>{p.nama}</td>
-                            <td style={{ padding: '12px', color: '#cbd5e1' }}>{p.poli}</td>
-                            <td style={{ padding: '12px' }}>
-                              <span className={`badge ${p.penjamin === 'BPJS' ? 'badge-emerald' : 'badge-amber'}`}>
-                                {p.penjamin}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px' }}>
-                              <span className={`badge ${p.status === 'Selesai' ? 'badge-emerald' : p.status === 'Pemeriksaan' ? 'badge-cyan' : 'badge-amber'}`}>
-                                {p.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px' }}>
-                              <button 
-                                onClick={() => handleCallQueue(p)} 
-                                className="btn btn-secondary" 
-                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                              >
-                                Panggil
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Live Antrean Display */}
-                <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc' }}>Panggilan Antrean Aktif</h3>
-                      <span className="badge badge-emerald">Live Speaker</span>
-                    </div>
-
-                    <div style={{
-                      background: 'radial-gradient(circle at center, rgba(6, 182, 212, 0.15) 0%, rgba(15, 23, 42, 0.8) 70%)',
-                      border: '1px solid rgba(6, 182, 212, 0.3)',
-                      borderRadius: '16px',
-                      padding: '30px',
-                      textAlign: 'center',
-                      boxShadow: '0 0 30px rgba(6, 182, 212, 0.2)'
-                    }}>
-                      <p style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nomor Antrean</p>
-                      <h2 style={{ fontSize: '3.6rem', fontWeight: '900', color: '#22d3ee', margin: '8px 0', letterSpacing: '-0.03em' }}>
-                        {currentQueue.nomor}
-                      </h2>
-                      <p style={{ fontSize: '1.2rem', fontWeight: '700', color: '#f8fafc' }}>{currentQueue.nama}</p>
-                      <p style={{ fontSize: '0.875rem', color: '#34d399', marginTop: '4px' }}>{currentQueue.poli}</p>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '24px' }}>
-                    <button 
-                      onClick={() => showToast(`Mengulang panggilan suara untuk ${currentQueue.nomor}`)}
-                      className="btn btn-primary" 
-                      style={{ width: '100%', padding: '12px' }}
-                    >
-                      <RefreshCw size={16} /> Panggil Ulang Pengeras Suara
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* Flash Messages matching profil.php */}
+          {successMessage && (
+            <div className="alert alert-success" style={{ marginTop: '14px' }}>
+              {successMessage}
             </div>
           )}
 
-          {/* TAB 2: REGISTRASI PASIEN */}
-          {activeTab === 'registrasi' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>Form Pendaftaran Pasien Baru</h2>
-                <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Entri data pasien baru ke sistem basis data SIMRS.</p>
+          {errors.length > 0 && (
+            <div className="alert alert-danger" style={{ marginTop: '14px' }}>
+              {errors.map((err, idx) => (
+                <div key={idx}>{err}</div>
+              ))}
+            </div>
+          )}
+
+          {/* Hero Section matching backend/legacy/modules/akun/profil.php */}
+          <div className="pf-hero" style={{ marginTop: '18px' }}>
+            <div className="pf-cover"></div>
+            <div className="pf-body">
+              <div 
+                className="pf-avatar-wrap" 
+                onClick={() => avatarInputRef.current?.click()} 
+                title="Ganti foto"
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} id="avatarPreview" className="pf-avatar" alt="" />
+                ) : (
+                  <span className="pf-avatar pf-avatar-initial" id="avatarPreviewBox">
+                    {initialLetter}
+                  </span>
+                )}
+                <span className="pf-cam">
+                  <AppIcon name="plus" />
+                </span>
+              </div>
+              <div className="pf-id">
+                <div className="pf-name">
+                  {user.nama} <span className="badge badge-blue">{user.role_nama || user.role}</span>
+                </div>
+                <div className="pf-meta">
+                  <AppIcon name="user" /> @{user.username}
+                  {user.email && (
+                    <>
+                      <span className="sep">&middot;</span>
+                      {user.email}
+                    </>
+                  )}
+                  <span className="sep">&middot;</span>
+                  <AppIcon name="calendar" /> Bergabung {formatDate(user.created_at)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid matching backend/legacy/modules/akun/profil.php */}
+          <div className="pf-grid">
+            {/* Kolom kiri: form */}
+            <div className="pf-col">
+              {/* Card 1: Informasi Akun */}
+              <div className="card">
+                <div className="step-head">
+                  <div className="step-num acc-blue">
+                    <AppIcon name="user" />
+                  </div>
+                  <div>
+                    <div className="st-title">Informasi Akun</div>
+                    <div className="st-sub">Kelola data identitas dan kontak</div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleUpdateProfile}>
+                  <input 
+                    type="file" 
+                    ref={avatarInputRef} 
+                    accept="image/*" 
+                    hidden 
+                    onChange={handleAvatarChange} 
+                  />
+
+                  <div className="form-group">
+                    <label>Nama Lengkap</label>
+                    <input 
+                      type="text" 
+                      name="nama" 
+                      className="form-control" 
+                      value={formData.nama} 
+                      onChange={e => setFormData({ ...formData, nama: e.target.value })}
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Username</label>
+                      <input 
+                        type="text" 
+                        name="username" 
+                        className="form-control" 
+                        value={formData.username} 
+                        onChange={e => setFormData({ ...formData, username: e.target.value })}
+                        required 
+                        autoComplete="username" 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input 
+                        type="email" 
+                        name="email" 
+                        className="form-control" 
+                        value={formData.email} 
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="nama@email.com" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Nomor Telepon</label>
+                    <input 
+                      type="text" 
+                      name="telepon" 
+                      className="form-control" 
+                      value={formData.telepon} 
+                      onChange={e => setFormData({ ...formData, telepon: e.target.value })}
+                      placeholder="08xx" 
+                      inputMode="tel" 
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '16px' }}>
+                    <button className="btn" type="submit" disabled={savingProfile}>
+                      <AppIcon name="save" /> {savingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div className="glass-panel" style={{ padding: '28px', maxWidth: '800px' }}>
-                <form onSubmit={handleAddPatient} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              {/* Card 2: Keamanan */}
+              <div className="card" style={{ marginTop: '16px' }}>
+                <div className="step-head">
+                  <div className="step-num acc-orange">
+                    <AppIcon name="logout" />
+                  </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>
-                      Nama Lengkap Pasien *
-                    </label>
+                    <div className="st-title">Keamanan</div>
+                    <div className="st-sub">Ganti password akun</div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleChangePassword}>
+                  <div className="form-group">
+                    <label>Password Saat Ini</label>
                     <input 
-                      type="text" 
-                      className="input-field" 
-                      placeholder="Contoh: Muhammad Ihsan" 
-                      value={newPatient.nama}
-                      onChange={(e) => setNewPatient({ ...newPatient, nama: e.target.value })}
-                      required
+                      type="password" 
+                      name="current_password" 
+                      className="form-control" 
+                      value={passwordData.current_password}
+                      onChange={e => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                      required 
                     />
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>
-                      Nomor Induk Kependudukan (NIK) *
-                    </label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      placeholder="16 Digit NIK KTP" 
-                      value={newPatient.nik}
-                      onChange={(e) => setNewPatient({ ...newPatient, nik: e.target.value })}
-                      maxLength={16}
-                      required
-                    />
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Password Baru</label>
+                      <input 
+                        type="password" 
+                        name="new_password" 
+                        className="form-control" 
+                        value={passwordData.new_password}
+                        onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                        required 
+                        minLength={6} 
+                        placeholder="Min. 6 karakter" 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Konfirmasi Password</label>
+                      <input 
+                        type="password" 
+                        name="confirm_password" 
+                        className="form-control" 
+                        value={passwordData.confirm_password}
+                        onChange={e => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                        required 
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>
-                      No. WhatsApp / HP
-                    </label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      placeholder="08xxxxxxxxxx" 
-                      value={newPatient.phone}
-                      onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>
-                      Jenis Kelamin
-                    </label>
-                    <select 
-                      className="input-field"
-                      value={newPatient.gender}
-                      onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
-                    >
-                      <option value="Laki-laki">Laki-laki</option>
-                      <option value="Perempuan">Perempuan</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>
-                      Poli Tujuan
-                    </label>
-                    <select 
-                      className="input-field"
-                      value={newPatient.poli}
-                      onChange={(e) => setNewPatient({ ...newPatient, poli: e.target.value })}
-                    >
-                      <option value="Poli Umum">Poli Umum (dr. Andi Wijaya)</option>
-                      <option value="Poli Gigi">Poli Gigi (drg. Maya Sari)</option>
-                      <option value="Poli KIA">Poli KIA/KB (Bdn. Rina)</option>
-                      <option value="Fisioterapi">Poli Fisioterapi</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>
-                      Jenis Penjamin Biaya
-                    </label>
-                    <select 
-                      className="input-field"
-                      value={newPatient.penjamin}
-                      onChange={(e) => setNewPatient({ ...newPatient, penjamin: e.target.value })}
-                    >
-                      <option value="BPJS">BPJS Kesehatan</option>
-                      <option value="Umum">Umum / Mandiri</option>
-                      <option value="Asuransi Swasta">Asuransi Swasta</option>
-                    </select>
-                  </div>
-
-                  <div style={{ gridColumn: 'span 2', marginTop: '12px' }}>
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px' }}>
-                      <CheckCircle2 size={18} /> Simpan & Buat No. Rekam Medis Otomatis
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '16px' }}>
+                    <button className="btn btn-outline" type="submit" disabled={savingPassword}>
+                      <AppIcon name="save" /> {savingPassword ? 'Menyimpan...' : 'Ganti Password'}
                     </button>
                   </div>
                 </form>
               </div>
             </div>
-          )}
 
-          {/* TAB 3: ANTREAN & POLI */}
-          {activeTab === 'antrean' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>Manajemen Antrean Poliklinik</h2>
-                <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Pantau dan alokasikan pasien ke ruangan dokter.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-                {['Poli Umum', 'Poli Gigi', 'Poli KIA'].map((poliName, i) => (
-                  <div key={i} className="glass-panel" style={{ padding: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#f8fafc' }}>{poliName}</h4>
-                      <span className="badge badge-emerald">Aktif</span>
-                    </div>
-                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                      Dokter Jaga: {poliName === 'Poli Gigi' ? 'drg. Maya Sari' : 'dr. Andi Wijaya'}
-                    </p>
-
-                    <div style={{
-                      marginTop: '16px',
-                      padding: '16px',
-                      borderRadius: '10px',
-                      background: 'rgba(30, 41, 59, 0.5)',
-                      border: '1px solid rgba(148, 163, 184, 0.1)',
-                      textAlign: 'center'
-                    }}>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Sedang Dilayani</span>
-                      <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#22d3ee', margin: '4px 0' }}>
-                        {i === 0 ? 'A-012' : i === 1 ? 'B-004' : 'C-007'}
-                      </h3>
-                      <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
-                        {i === 0 ? 'Budi Santoso' : i === 1 ? 'Siti Rahmawati' : 'Dewi Lestari'}
-                      </span>
-                    </div>
-
-                    <button 
-                      onClick={() => showToast(`Memanggil pasien berikutnya untuk ${poliName}`)}
-                      className="btn btn-secondary" 
-                      style={{ width: '100%', marginTop: '16px', fontSize: '0.8rem' }}
-                    >
-                      Panggil Antrean Berikutnya
-                    </button>
+            {/* Kolom kanan: akses cepat matching backend/legacy/modules/akun/profil.php */}
+            <div className="pf-col-side">
+              <div className="card">
+                <div className="step-head">
+                  <div className="step-num acc-purple">
+                    <AppIcon name="dashboard" />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: APOTEK & FARMASI */}
-          {activeTab === 'farmasi' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>Apotek & Inventori Obat</h2>
-                <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Stok obat, expired date, dan penyerahan resep elektronik.</p>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.1)', color: '#94a3b8', textAlign: 'left' }}>
-                      <th style={{ padding: '12px' }}>Kode Obat</th>
-                      <th style={{ padding: '12px' }}>Nama Obat</th>
-                      <th style={{ padding: '12px' }}>Kategori</th>
-                      <th style={{ padding: '12px' }}>Sisa Stok</th>
-                      <th style={{ padding: '12px' }}>Status</th>
-                      <th style={{ padding: '12px' }}>Harga Satuan</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { kode: 'OBT-001', nama: 'Paracetamol 500mg', kat: 'Tablet', stok: 320, status: 'Aman', harga: 'Rp 5.000' },
-                      { kode: 'OBT-002', nama: 'Amoxicillin 500mg', kat: 'Kapsul', stok: 45, status: 'Menipis', harga: 'Rp 12.000' },
-                      { kode: 'OBT-003', nama: 'Antasida Doen', kat: 'Tablet Kunyah', stok: 180, status: 'Aman', harga: 'Rp 6.500' },
-                      { kode: 'OBT-004', nama: 'Cetirizine 10mg', kat: 'Tablet', stok: 15, status: 'Kritis', harga: 'Rp 8.000' },
-                      { kode: 'OBT-005', nama: 'Dexamethasone 0.5mg', kat: 'Tablet', stok: 210, status: 'Aman', harga: 'Rp 4.000' },
-                    ].map((m, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.06)' }}>
-                        <td style={{ padding: '12px', fontWeight: '600', color: '#22d3ee' }}>{m.kode}</td>
-                        <td style={{ padding: '12px', fontWeight: '600', color: '#f8fafc' }}>{m.nama}</td>
-                        <td style={{ padding: '12px', color: '#cbd5e1' }}>{m.kat}</td>
-                        <td style={{ padding: '12px', fontWeight: '700' }}>{m.stok} unit</td>
-                        <td style={{ padding: '12px' }}>
-                          <span className={`badge ${m.status === 'Aman' ? 'badge-emerald' : m.status === 'Menipis' ? 'badge-amber' : 'badge-rose'}`}>
-                            {m.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px', color: '#f8fafc' }}>{m.harga}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: BILLING & KASIR */}
-          {activeTab === 'billing' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>Kasir & Billing Pasien</h2>
-                <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Pembayaran invoice pemeriksaan medis, tindakan, dan obat.</p>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '24px', maxWidth: '600px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px', color: '#f8fafc' }}>Invoice Pembayaran: RM-2026-0041</h3>
-                <div style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.1)', paddingBottom: '12px', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.875rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Biaya Registrasi & Pendaftaran</span>
-                    <span style={{ fontWeight: '600', color: '#f8fafc' }}>Rp 25.000</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.875rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Jasa Dokter & Konsultasi Poli</span>
-                    <span style={{ fontWeight: '600', color: '#f8fafc' }}>Rp 60.000</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.875rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Obat Resep (Paracetamol + Antasida)</span>
-                    <span style={{ fontWeight: '600', color: '#f8fafc' }}>Rp 35.000</span>
+                  <div>
+                    <div className="st-title">Akses Cepat</div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '20px 0' }}>
-                  <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc' }}>Total Tagihan</span>
-                  <span style={{ fontSize: '1.4rem', fontWeight: '800', color: '#22d3ee' }}>Rp 120.000</span>
-                </div>
+                <div className="pf-quicks">
+                  <a 
+                    className="pf-quick" 
+                    href="#dashboard" 
+                    onClick={e => { e.preventDefault(); setCurrentView('dashboard'); }}
+                  >
+                    <span className="qic"><AppIcon name="dashboard" /></span>
+                    <span>
+                      <span className="q-t">Dashboard</span>
+                      <span className="q-s">Ringkasan operasional klinik</span>
+                    </span>
+                    <span className="q-go"><AppIcon name="chevron" /></span>
+                  </a>
 
-                <button 
-                  onClick={() => showToast('Pembayaran berhasil diverifikasi & kwitansi tercetak!')}
-                  className="btn btn-primary" 
-                  style={{ width: '100%', padding: '14px' }}
-                >
-                  <Receipt size={16} /> Cetak Kwitansi & Selesaikan Transaksi
-                </button>
-              </div>
-            </div>
-          )}
+                  <a 
+                    className="pf-quick" 
+                    href="#users" 
+                    onClick={e => { e.preventDefault(); alert('Modul Pengguna & Role'); }}
+                  >
+                    <span className="qic"><AppIcon name="users" /></span>
+                    <span>
+                      <span className="q-t">Pengguna & Role</span>
+                      <span className="q-s">Kelola akun & hak akses sistem</span>
+                    </span>
+                    <span className="q-go"><AppIcon name="chevron" /></span>
+                  </a>
 
-          {/* TAB 6: KONEKSI BACKEND */}
-          {activeTab === 'backend' && (
-            <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>Integrasi Backend Laravel & Database</h2>
-                <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Status koneksi live antara Frontend (Vite) dan Backend (Laravel).</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', marginBottom: '16px' }}>Status Service</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '10px' }}>
-                      <span style={{ color: '#cbd5e1', fontWeight: '500' }}>Frontend Server (Vite)</span>
-                      <span className="badge badge-emerald">Port 5173 • Active</span>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '10px' }}>
-                      <span style={{ color: '#cbd5e1', fontWeight: '500' }}>Backend Server (Laravel 13)</span>
-                      <span className="badge badge-cyan">Port 8000 • Terhubung</span>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '10px' }}>
-                      <span style={{ color: '#cbd5e1', fontWeight: '500' }}>Database (MySQL Laragon)</span>
-                      <span className="badge badge-indigo">Port 3306 • DB: sim_klinik</span>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '10px' }}>
-                      <span style={{ color: '#cbd5e1', fontWeight: '500' }}>PHP Engine</span>
-                      <span className="badge badge-emerald">PHP 8.4.25 (Laragon)</span>
-                    </div>
-                  </div>
+                  <a 
+                    className="pf-quick" 
+                    href="#klinik" 
+                    onClick={e => { e.preventDefault(); alert('Modul Profil Klinik'); }}
+                  >
+                    <span className="qic"><AppIcon name="hospital" /></span>
+                    <span>
+                      <span className="q-t">Profil Klinik</span>
+                      <span className="q-s">Identitas & informasi klinik</span>
+                    </span>
+                    <span className="q-go"><AppIcon name="chevron" /></span>
+                  </a>
 
                   <button 
-                    onClick={checkBackend}
-                    className="btn btn-secondary" 
-                    style={{ width: '100%', marginTop: '20px' }}
+                    type="button" 
+                    className="pf-quick pf-quick-danger"
+                    onClick={handleLogout}
                   >
-                    <RefreshCw size={16} /> Uji Ulang Koneksi API
+                    <span className="qic"><AppIcon name="logout" /></span>
+                    <span>
+                      <span className="q-t">{locale === 'en' ? 'Logout' : 'Keluar'}</span>
+                      <span className="q-s">{locale === 'en' ? 'Sign out of this account' : 'Keluar dari akun ini'}</span>
+                    </span>
+                    <span className="q-go"><AppIcon name="chevron" /></span>
                   </button>
-                </div>
-
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc', marginBottom: '16px' }}>Struktur Folder Monorepo</h3>
-                  <div style={{
-                    background: '#090e17',
-                    padding: '16px',
-                    borderRadius: '10px',
-                    fontFamily: 'monospace',
-                    fontSize: '0.85rem',
-                    color: '#22d3ee',
-                    lineHeight: '1.8'
-                  }}>
-                    <p style={{ color: '#94a3b8' }}>📁 simklinik/</p>
-                    <p style={{ paddingLeft: '16px' }}>├── 📁 <b>frontend/</b> <span style={{ color: '#34d399' }}>← Vite + React Dashboard</span></p>
-                    <p style={{ paddingLeft: '32px', color: '#64748b' }}>├── src/ (Components, CSS, Pages)</p>
-                    <p style={{ paddingLeft: '32px', color: '#64748b' }}>└── vite.config.js (Proxy API)</p>
-                    <p style={{ paddingLeft: '16px' }}>└── 📁 <b>backend/</b> <span style={{ color: '#34d399' }}>← Laravel 13 Framework</span></p>
-                    <p style={{ paddingLeft: '32px', color: '#64748b' }}>├── app/ (Models, Controllers)</p>
-                    <p style={{ paddingLeft: '32px', color: '#64748b' }}>├── database/ (Migrations & Seeders)</p>
-                    <p style={{ paddingLeft: '32px', color: '#64748b' }}>└── .env (MySQL 3306 Laragon)</p>
-                  </div>
                 </div>
               </div>
             </div>
+          </div>
+            </>
           )}
+        </main>
 
-        </div>
-      </main>
+        <footer className="footer">
+          &copy; {new Date().getFullYear()} {locale === 'en' ? 'Clinic Management Information System' : 'Sistem Informasi Manajemen Klinik'} &middot; PT Sapta Genki Clinic
+        </footer>
+      </div>
     </div>
   );
 }

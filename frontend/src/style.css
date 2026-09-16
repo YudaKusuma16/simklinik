@@ -645,13 +645,8 @@ select.form-control{-webkit-appearance:none;-moz-appearance:none;appearance:none
 .alert-warning{background:#fef9c3;color:#854d0e}
 .alert-info{background:#dbeafe;color:#1e40af}
 
-/* ---------- Login ---------- */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#1e40af,#0f2c4d)}
-.login-card{background:#fff;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.2);
-  width:380px;padding:36px}
-.login-card h1{font-size:24px;text-align:center;margin-bottom:4px}
-.login-card .sub{text-align:center;color:var(--muted);font-size:15px;margin-bottom:24px}
+/* ---------- Login (ditangani secara terpisah oleh login.css) ---------- */
+
 
 /* ---------- DataTables 1.x & 2.x (diserasikan, rapi) ---------- */
 .dt-container, .dataTables_wrapper{padding:18px 18px 14px;overflow-x:auto}

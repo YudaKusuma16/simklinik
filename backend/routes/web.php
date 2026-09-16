@@ -22,7 +22,9 @@ Route::post('/logout', [LoginController::class, 'logout'])
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Legacy fallback proxy (Backward Compatibility)
     Route::match(['get', 'post'], '/legacy/{path}', LegacyController::class)
         ->where('path', '.*')
         ->name('legacy');
 });
+

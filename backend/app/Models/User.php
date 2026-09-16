@@ -49,4 +49,18 @@ class User extends Authenticatable
     {
         return $this->role?->kode;
     }
+
+    public function getRememberToken(): ?string
+    {
+        return null;
+    }
+
+    public function setRememberToken($value): void
+    {
+    }
+
+    public function getRememberTokenName(): ?string
+    {
+        return null;
+    }
 }
