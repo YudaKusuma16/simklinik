@@ -1,30 +1,38 @@
 <?php
 
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LegacyController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+/*
+|--------------------------------------------------------------------------
+| Web Routes — SIM Klinik
+|--------------------------------------------------------------------------
+|
+| Backend hanya mengelola:
+|   - /locale    : pengalihan bahasa (digunakan oleh frontend jika diperlukan)
+|   - /legacy    : backward compatibility untuk modul lama PHP
+|
+| Semua tampilan (login, dashboard, dll) kini dikelola oleh
+| React SPA di folder frontend/ (http://localhost:5173).
+|
+| Autentikasi dilakukan melalui API:
+|   POST /api/auth/login
+|   POST /api/auth/logout
+|   GET  /api/auth/me
+|
+*/
 
+// Root: tampilkan halaman default Laravel (API-only indicator)
+// Semua tampilan aplikasi ada di frontend/ (http://localhost:5173)
+Route::get('/', fn () => view('welcome'));
+
+// Pengalihan bahasa/locale (dipertahankan untuk kompatibilitas)
 Route::get('/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch'])
     ->name('locale.switch');
 
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'show'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-});
-
-Route::post('/logout', [LoginController::class, 'logout'])
-    ->middleware('auth')
-    ->name('logout');
-
+// Legacy fallback proxy (Backward Compatibility dengan modul PHP lama)
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Legacy fallback proxy (Backward Compatibility)
     Route::match(['get', 'post'], '/legacy/{path}', LegacyController::class)
         ->where('path', '.*')
         ->name('legacy');
 });
-

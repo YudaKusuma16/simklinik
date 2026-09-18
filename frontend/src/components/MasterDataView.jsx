@@ -203,7 +203,8 @@ export default function MasterDataView({ initialGroup }) {
   const formatCurrency = (val) => {
     if (val === null || val === undefined || val === '') return '-';
     const num = Number(val);
-    return isNaN(num) ? val : 'Rp ' + num.toLocaleString('id-ID');
+    if (isNaN(num)) return val;
+    return 'Rp ' + num.toLocaleString('id-ID');
   };
 
   const getEntityIcon = (slug) => {

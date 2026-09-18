@@ -122,20 +122,30 @@ class MasterController extends Controller
             }
         }
 
-        // Augment rows with foreign key label
-        $formattedRows = $rows->map(function ($row) use ($fkLookups) {
+        // Augment rows with foreign key label dan kalkulasi harga
+        $formattedRows = $rows->map(function ($row) use ($fkLookups, $config) {
             $r = (array) $row;
             foreach ($fkLookups as $col => $map) {
                 $fkId = $r[$col] ?? null;
                 $r[$col . '_nama'] = $fkId ? ($map[$fkId] ?? "-") : "-";
             }
-            // Selling price fallback calculation matching legacy index.php
-            if (isset($r['harga_jual']) && (float)$r['harga_jual'] <= 0) {
+
+            // Pastikan field money dari entity config selalu ada di response
+            foreach ($config['fields'] as $col => $f) {
+                if ($f['type'] === 'money' && !array_key_exists($col, $r)) {
+                    $r[$col] = 0;
+                }
+            }
+
+            // Harga Jual: kalkulasi otomatis dari tarif/harga_beli jika belum diset
+            // Matching legacy index.php behavior
+            if (array_key_exists('harga_jual', $r) && (float)($r['harga_jual'] ?? 0) <= 0) {
                 $basePrice = (float)($r['tarif'] ?? $r['harga_beli'] ?? 0);
                 if ($basePrice > 0) {
                     $r['harga_jual'] = round($basePrice * 1.40, 2);
                 }
             }
+
             return $r;
         });
 
