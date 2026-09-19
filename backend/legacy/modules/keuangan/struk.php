@@ -160,7 +160,7 @@ $penjaminLabel = (function () use ($inv) {
       <div class="unit"><?= defined('CLINIC_UNIT') ? CLINIC_UNIT : '' ?></div>
       <div class="address"><?= e(CLINIC_ADDRESS) ?></div>
     </div>
-    <div class="document-title">RECEIPT</div>
+    <div class="document-title">RECEIPT<?= !empty($_GET['copy']) ? ' - COPY' : '' ?></div>
 
     <div class="meta">
       <table>
@@ -264,7 +264,7 @@ foreach ($detail as $d) { if ($d['kategori'] === 'administrasi') $admFee += (flo
 
     <div class="actions">
       <button class="btn-print" onclick="window.print()"><?= app_icon('print') ?> <?= e(t('common.print')) ?></button>
-      <a class="btn-back" href="<?= legacy_url('modules/keuangan/index.php') ?>"><?= e(t('common.done')) ?></a>
+      <a class="btn-back" href="<?= legacy_url('modules/keuangan/index.php') ?>" onclick="if(window.opener){window.close();return false;}"><?= e(t('common.done')) ?></a>
     </div>
 
   </div>

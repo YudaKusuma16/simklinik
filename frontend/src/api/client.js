@@ -41,13 +41,14 @@ async function handleResponse(response) {
 }
 
 export const api = {
-  async get(endpoint) {
+  async get(endpoint, options = {}) {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'GET',
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
       },
+      signal: options.signal,
     });
     return handleResponse(response);
   },
@@ -102,3 +103,29 @@ export const api = {
     return handleResponse(response);
   },
 };
+
+// In-Memory SWR Cache untuk data yang jarang berubah
+const memoryCache = new Map();
+
+export async function getCached(endpoint, ttlSeconds = 60) {
+  const cached = memoryCache.get(endpoint);
+  const now = Date.now();
+  if (cached && (now - cached.time) < ttlSeconds * 1000) {
+    return cached.data;
+  }
+  const data = await api.get(endpoint);
+  memoryCache.set(endpoint, { time: now, data });
+  return data;
+}
+
+export function clearCached(prefix = '') {
+  if (!prefix) {
+    memoryCache.clear();
+  } else {
+    for (const key of memoryCache.keys()) {
+      if (key.startsWith(prefix)) {
+        memoryCache.delete(key);
+      }
+    }
+  }
+}

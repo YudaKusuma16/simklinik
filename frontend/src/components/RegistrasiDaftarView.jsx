@@ -162,6 +162,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
         corporate_id: formData.jenis_penjamin === 'corporate' && formData.corporate_id ? Number(formData.corporate_id) : null,
         no_jaminan: formData.no_jaminan || null,
         keluhan_awal: formData.keluhan_awal || null,
+        status: 'billing',
         tindakan: tindakanRows.filter(r => r.tindakan_id),
         konsultasi: konsultasiRows.filter(r => r.konsultasi_id),
         lab: labRows.filter(r => r.lab_id),
@@ -175,7 +176,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
       if (res && res.success) {
         setSuccessMsg(res.message || 'Pendaftaran kunjungan berhasil disimpan.');
         setTimeout(() => {
-          onNavigate('kunjungan');
+          onNavigate('billing');
         }, 1200);
       }
     } catch (err) {

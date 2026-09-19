@@ -22,13 +22,14 @@ const REPORT_GROUPS = {
   ],
 };
 
-export default function LaporanView({ initialTab }) {
+export default function LaporanView({ initialTab, initialSlug = null, onNavigateSlug = null }) {
   const [activeGroup, setActiveGroup] = useState(() => {
     if (initialTab && REPORT_GROUPS[initialTab]) return initialTab;
     return 'Operasional';
   });
 
   const [activeSlug, setActiveSlug] = useState(() => {
+    if (initialSlug) return initialSlug;
     const list = REPORT_GROUPS[initialTab] || REPORT_GROUPS['Operasional'];
     return list[0].key;
   });
@@ -36,9 +37,13 @@ export default function LaporanView({ initialTab }) {
   useEffect(() => {
     if (initialTab && REPORT_GROUPS[initialTab]) {
       setActiveGroup(initialTab);
-      setActiveSlug(REPORT_GROUPS[initialTab][0].key);
+      if (initialSlug) {
+        setActiveSlug(initialSlug);
+      } else {
+        setActiveSlug(REPORT_GROUPS[initialTab][0].key);
+      }
     }
-  }, [initialTab]);
+  }, [initialTab, initialSlug]);
 
   // Date filters matching legacy (default awal bulan s/d hari ini)
   const [dari, setDari] = useState(() => {
@@ -146,6 +151,25 @@ export default function LaporanView({ initialTab }) {
     URL.revokeObjectURL(url);
   };
 
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedDetailKunjungan, setSelectedDetailKunjungan] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const handleOpenDetail = async (kunjunganId) => {
+    setDetailModalOpen(true);
+    setLoadingDetail(true);
+    try {
+      const res = await api.get(`/kunjungan/${kunjunganId}`);
+      if (res && res.data) {
+        setSelectedDetailKunjungan(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load kunjungan detail:', err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   // Build DataTable columns dynamically from API definitions
   const rawCols = reportData?.report?.cols || [];
   const dynamicColumns = [];
@@ -183,9 +207,12 @@ export default function LaporanView({ initialTab }) {
         if (c.type === 'datetime') return formatDateTime(val);
         if (c.type === 'upper') return String(val || '').toUpperCase();
         if (c.type === 'status') {
+          const text = String(val || '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase());
           return (
             <span className="badge badge-gray">
-              {String(val || '').replace(/_/g, ' ').toUpperCase()}
+              {text}
             </span>
           );
         }
@@ -194,8 +221,8 @@ export default function LaporanView({ initialTab }) {
             <div className="cell-actions-inner">
               <button
                 type="button"
-                className="btn btn-sm btn-light"
-                onClick={() => alert(`Detail pemeriksaan kunjungan #${val}`)}
+                className="btn btn-sm"
+                onClick={() => handleOpenDetail(val)}
               >
                 Detail
               </button>
@@ -250,16 +277,8 @@ export default function LaporanView({ initialTab }) {
 
   return (
     <div>
-      {/* Page Toolbar matching legacy modules/laporan/index.php */}
-      <div className="page-toolbar">
-        <div>
-          <div className="pt-title">Laporan &mdash; {activeGroup}</div>
-          <div className="pt-sub">Pilih jenis laporan, lalu tentukan rentang tanggalnya.</div>
-        </div>
-      </div>
-
       {/* Panel laporan: tab vertikal (jenis) di kiri + konten di kanan */}
-      <div className="master-split" style={{ marginTop: 18 }}>
+      <div className="master-split">
         <nav className="vtabs">
           {currentReports.map((r) => {
             const isTabActive = r.key === activeSlug;
@@ -272,6 +291,7 @@ export default function LaporanView({ initialTab }) {
                 onClick={(e) => {
                   e.preventDefault();
                   setActiveSlug(r.key);
+                  if (onNavigateSlug) onNavigateSlug(activeGroup, r.key);
                 }}
               >
                 <span className="vt-main">
@@ -335,6 +355,86 @@ export default function LaporanView({ initialTab }) {
           )}
         </div>
       </div>
+
+      {/* Modal Detail Kunjungan */}
+      {detailModalOpen && (
+        <div className="modal-overlay open" onClick={() => setDetailModalOpen(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
+            <div className="modal-head">
+              <div className="modal-title">
+                Detail Kunjungan {selectedDetailKunjungan?.no_kunjungan ? `— ${selectedDetailKunjungan.no_kunjungan}` : ''}
+              </div>
+              <button type="button" className="modal-close" onClick={() => setDetailModalOpen(false)}>
+                &times;
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: 20 }}>
+              {loadingDetail || !selectedDetailKunjungan ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
+                  Memuat detail kunjungan...
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '10px 16px', fontSize: 14 }}>
+                  <span style={{ color: 'var(--muted)' }}>No. Kunjungan:</span>
+                  <b>{selectedDetailKunjungan.no_kunjungan}</b>
+
+                  <span style={{ color: 'var(--muted)' }}>Tanggal:</span>
+                  <span>{formatDate(selectedDetailKunjungan.tgl_kunjungan)}</span>
+
+                  <span style={{ color: 'var(--muted)' }}>Pasien:</span>
+                  <b>
+                    {selectedDetailKunjungan.pasien_nama} ({selectedDetailKunjungan.no_mr})
+                  </b>
+
+                  <span style={{ color: 'var(--muted)' }}>Poli / Unit:</span>
+                  <span>{selectedDetailKunjungan.poli_nama}</span>
+
+                  <span style={{ color: 'var(--muted)' }}>Dokter:</span>
+                  <span>{selectedDetailKunjungan.dokter_nama || '-'}</span>
+
+                  <span style={{ color: 'var(--muted)' }}>Penjamin:</span>
+                  <span>
+                    <span className="badge badge-gray">
+                      {selectedDetailKunjungan.jenis_penjamin?.toUpperCase() || 'UMUM'}
+                    </span>
+                    {selectedDetailKunjungan.asuransi_nama ? ` - ${selectedDetailKunjungan.asuransi_nama}` : ''}
+                    {selectedDetailKunjungan.corporate_nama ? ` - ${selectedDetailKunjungan.corporate_nama}` : ''}
+                  </span>
+
+                  <span style={{ color: 'var(--muted)' }}>Status:</span>
+                  <span>
+                    <span className="badge badge-gray">
+                      {String(selectedDetailKunjungan.status || '')
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    </span>
+                  </span>
+
+                  <span style={{ color: 'var(--muted)' }}>Keluhan Awal:</span>
+                  <span>{selectedDetailKunjungan.keluhan_awal || '-'}</span>
+                </div>
+              )}
+            </div>
+            <div className="modal-foot" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: 16 }}>
+              <button
+                type="button"
+                className="btn btn-light"
+                onClick={() => window.print()}
+              >
+                <AppIcon name="print" /> Cetak
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setDetailModalOpen(false)}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

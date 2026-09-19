@@ -45,11 +45,11 @@ class SimKlinikMasterSeeder extends Seeder
         ]);
 
         DB::table('tindakan')->insert([
-            ['kode' => 'GCMS0001', 'nama' => 'Perawatan Luka', 'kode_icd9' => '86.59', 'tarif' => 50000, 'status' => 'aktif'],
-            ['kode' => 'GCMS0002', 'nama' => 'Nebulizer', 'kode_icd9' => '93.94', 'tarif' => 75000, 'status' => 'aktif'],
-            ['kode' => 'GCMS0003', 'nama' => 'Injeksi', 'kode_icd9' => '99.29', 'tarif' => 30000, 'status' => 'aktif'],
-            ['kode' => 'GCAD0001', 'nama' => 'Administrasi Registrasi', 'kode_icd9' => null, 'tarif' => 10000, 'status' => 'aktif'],
-            ['kode' => 'GCAD0002', 'nama' => 'Administrasi Pelayanan', 'kode_icd9' => null, 'tarif' => 15000, 'status' => 'aktif'],
+            ['kode' => 'GCMS0001', 'nama' => 'Perawatan Luka', 'kode_icd9' => '86.59', 'tarif' => 50000, 'harga_jual' => 70000, 'status' => 'aktif'],
+            ['kode' => 'GCMS0002', 'nama' => 'Nebulizer', 'kode_icd9' => '93.94', 'tarif' => 75000, 'harga_jual' => 105000, 'status' => 'aktif'],
+            ['kode' => 'GCMS0003', 'nama' => 'Injeksi', 'kode_icd9' => '99.29', 'tarif' => 30000, 'harga_jual' => 42000, 'status' => 'aktif'],
+            ['kode' => 'GCAD0001', 'nama' => 'Administrasi Registrasi', 'kode_icd9' => null, 'tarif' => 10000, 'harga_jual' => 14000, 'status' => 'aktif'],
+            ['kode' => 'GCAD0002', 'nama' => 'Administrasi Pelayanan', 'kode_icd9' => null, 'tarif' => 15000, 'harga_jual' => 21000, 'status' => 'aktif'],
         ]);
 
         DB::table('konsultasi')->insert([
@@ -64,11 +64,11 @@ class SimKlinikMasterSeeder extends Seeder
         ]);
 
         DB::table('lab_pemeriksaan')->insert([
-            ['kategori_id' => 1, 'kode' => 'GCLA0001', 'nama' => 'Hemoglobin (Hb)', 'satuan' => 'g/dL', 'nilai_rujukan' => '12-16', 'tarif' => 25000, 'status' => 'aktif'],
-            ['kategori_id' => 1, 'kode' => 'GCLA0002', 'nama' => 'Leukosit', 'satuan' => '/uL', 'nilai_rujukan' => '4000-10000', 'tarif' => 25000, 'status' => 'aktif'],
-            ['kategori_id' => 2, 'kode' => 'GCLA0003', 'nama' => 'Gula Darah Sewaktu', 'satuan' => 'mg/dL', 'nilai_rujukan' => '<200', 'tarif' => 30000, 'status' => 'aktif'],
-            ['kategori_id' => 2, 'kode' => 'GCLA0004', 'nama' => 'Kolesterol Total', 'satuan' => 'mg/dL', 'nilai_rujukan' => '<200', 'tarif' => 40000, 'status' => 'aktif'],
-            ['kategori_id' => 3, 'kode' => 'GCLA0005', 'nama' => 'Urin Lengkap', 'satuan' => null, 'nilai_rujukan' => 'Normal', 'tarif' => 35000, 'status' => 'aktif'],
+            ['kategori_id' => 1, 'kode' => 'GCLA0001', 'nama' => 'Hemoglobin (Hb)', 'satuan' => 'g/dL', 'nilai_rujukan' => '12-16', 'tarif' => 25000, 'harga_jual' => 35000, 'status' => 'aktif'],
+            ['kategori_id' => 1, 'kode' => 'GCLA0002', 'nama' => 'Leukosit', 'satuan' => '/uL', 'nilai_rujukan' => '4000-10000', 'tarif' => 25000, 'harga_jual' => 35000, 'status' => 'aktif'],
+            ['kategori_id' => 2, 'kode' => 'GCLA0003', 'nama' => 'Gula Darah Sewaktu', 'satuan' => 'mg/dL', 'nilai_rujukan' => '<200', 'tarif' => 30000, 'harga_jual' => 42000, 'status' => 'aktif'],
+            ['kategori_id' => 2, 'kode' => 'GCLA0004', 'nama' => 'Kolesterol Total', 'satuan' => 'mg/dL', 'nilai_rujukan' => '<200', 'tarif' => 40000, 'harga_jual' => 56000, 'status' => 'aktif'],
+            ['kategori_id' => 3, 'kode' => 'GCLA0005', 'nama' => 'Urin Lengkap', 'satuan' => null, 'nilai_rujukan' => 'Normal', 'tarif' => 35000, 'harga_jual' => 49000, 'status' => 'aktif'],
         ]);
 
         DB::table('rad_kategori')->insert([
@@ -77,9 +77,9 @@ class SimKlinikMasterSeeder extends Seeder
         ]);
 
         DB::table('rad_pemeriksaan')->insert([
-            ['kategori_id' => 1, 'kode' => 'GCRA0001', 'nama' => 'Thorax PA', 'tarif' => 100000, 'status' => 'aktif'],
-            ['kategori_id' => 1, 'kode' => 'GCRA0002', 'nama' => 'Foto Ekstremitas', 'tarif' => 120000, 'status' => 'aktif'],
-            ['kategori_id' => 2, 'kode' => 'GCRA0003', 'nama' => 'USG Abdomen', 'tarif' => 150000, 'status' => 'aktif'],
+            ['kategori_id' => 1, 'kode' => 'GCRA0001', 'nama' => 'Thorax PA', 'tarif' => 100000, 'harga_jual' => 140000, 'status' => 'aktif'],
+            ['kategori_id' => 1, 'kode' => 'GCRA0002', 'nama' => 'Foto Ekstremitas', 'tarif' => 120000, 'harga_jual' => 168000, 'status' => 'aktif'],
+            ['kategori_id' => 2, 'kode' => 'GCRA0003', 'nama' => 'USG Abdomen', 'tarif' => 150000, 'harga_jual' => 210000, 'status' => 'aktif'],
         ]);
 
         DB::table('obat_kategori')->insert([
@@ -96,10 +96,10 @@ class SimKlinikMasterSeeder extends Seeder
         ]);
 
         DB::table('obat')->insert([
-            ['kode' => 'FA0001', 'nama' => 'Paracetamol 500mg', 'kategori_id' => 1, 'satuan_id' => 1, 'harga_beli' => 300, 'markup_persen' => 50, 'stok' => 500, 'stok_minimal' => 50, 'status' => 'aktif'],
-            ['kode' => 'FA0002', 'nama' => 'Amoxicillin 500mg', 'kategori_id' => 2, 'satuan_id' => 2, 'harga_beli' => 800, 'markup_persen' => 50, 'stok' => 300, 'stok_minimal' => 40, 'status' => 'aktif'],
-            ['kode' => 'FA0003', 'nama' => 'Vitamin C 50mg', 'kategori_id' => 3, 'satuan_id' => 1, 'harga_beli' => 200, 'markup_persen' => 100, 'stok' => 400, 'stok_minimal' => 50, 'status' => 'aktif'],
-            ['kode' => 'FA0004', 'nama' => 'Antasida Syrup', 'kategori_id' => 1, 'satuan_id' => 3, 'harga_beli' => 5000, 'markup_persen' => 60, 'stok' => 60, 'stok_minimal' => 10, 'status' => 'aktif'],
+            ['kode' => 'FA0001', 'nama' => 'Paracetamol 500mg', 'kategori_id' => 1, 'satuan_id' => 1, 'harga_beli' => 300, 'markup_persen' => 50, 'harga_jual' => 450, 'stok' => 500, 'stok_minimal' => 50, 'status' => 'aktif'],
+            ['kode' => 'FA0002', 'nama' => 'Amoxicillin 500mg', 'kategori_id' => 2, 'satuan_id' => 2, 'harga_beli' => 800, 'markup_persen' => 50, 'harga_jual' => 1200, 'stok' => 300, 'stok_minimal' => 40, 'status' => 'aktif'],
+            ['kode' => 'FA0003', 'nama' => 'Vitamin C 50mg', 'kategori_id' => 3, 'satuan_id' => 1, 'harga_beli' => 200, 'markup_persen' => 100, 'harga_jual' => 400, 'stok' => 400, 'stok_minimal' => 50, 'status' => 'aktif'],
+            ['kode' => 'FA0004', 'nama' => 'Antasida Syrup', 'kategori_id' => 1, 'satuan_id' => 3, 'harga_beli' => 5000, 'markup_persen' => 60, 'harga_jual' => 8000, 'stok' => 60, 'stok_minimal' => 10, 'status' => 'aktif'],
         ]);
 
         DB::table('setting')->insert([

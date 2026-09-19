@@ -84,6 +84,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/resep/{resep_id}', [\App\Http\Controllers\Api\FarmasiController::class, 'showResep'])->whereNumber('resep_id');
         Route::post('/serah/{resep_id}', [\App\Http\Controllers\Api\FarmasiController::class, 'serahkanObat'])->whereNumber('resep_id');
         Route::get('/stok', [\App\Http\Controllers\Api\FarmasiController::class, 'stok']);
+        Route::get('/pembelian', [\App\Http\Controllers\Api\FarmasiController::class, 'pembelianIndex']);
+        Route::get('/pembelian/lookups', [\App\Http\Controllers\Api\FarmasiController::class, 'pembelianLookups']);
+        Route::post('/pembelian', [\App\Http\Controllers\Api\FarmasiController::class, 'pembelianStore']);
+        Route::get('/penyesuaian', [\App\Http\Controllers\Api\FarmasiController::class, 'penyesuaianIndex']);
+        Route::post('/penyesuaian', [\App\Http\Controllers\Api\FarmasiController::class, 'penyesuaianStore']);
     });
 
     // Kasir, Billing & Pembayaran (Fase 5 Refactoring)

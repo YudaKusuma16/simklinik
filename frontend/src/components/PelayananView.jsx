@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 
-export default function PelayananView({ initialKunjunganId, onExamCompleted }) {
+export default function PelayananView({ initialKunjunganId, onExamCompleted, onExamStateChange }) {
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -19,6 +19,10 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted }) {
   const [savingExam, setSavingExam] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    setActiveKunjunganId(initialKunjunganId || null);
+  }, [initialKunjunganId]);
 
   // Lookups (Tindakan, Obat, ICD10)
   const [lookups, setLookups] = useState({
@@ -279,6 +283,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted }) {
 
       if (aksi === 'selesai') {
         setActiveKunjunganId(null);
+        if (onExamStateChange) onExamStateChange(null);
         fetchAntrean();
         if (onExamCompleted) onExamCompleted();
       } else {
@@ -318,21 +323,32 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted }) {
             <div className="pt-sub">
               {(() => {
                 const d = new Date(selectedDate);
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-                return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-              })()} &middot; {antreanList.length} antrian pemeriksaan
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+              })()} &middot; {antreanList.length} antrean
             </div>
           </div>
           <div className="pt-actions">
-            <div className="toolbar-filter">
+            <form className="toolbar-filter" onSubmit={(e) => e.preventDefault()}>
               <span className="ico"><AppIcon name="calendar" /></span>
               <input
                 type="date"
-                className="form-control"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
+                className="form-control"
               />
-            </div>
+              <select
+                value={filterPoli}
+                onChange={(e) => setFilterPoli(e.target.value)}
+                className="form-control"
+              >
+                <option value="">Semua Poli</option>
+                {lookups.poli && lookups.poli.map(p => (
+                  <option key={p.id} value={p.id}>{p.nama}</option>
+                ))}
+              </select>
+            </form>
           </div>
         </div>
 
@@ -412,7 +428,10 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted }) {
                     <button
                       type="button"
                       className={`btn btn-sm ${a.status === 'periksa' ? '' : 'btn-light'}`}
-                      onClick={() => setActiveKunjunganId(a.id)}
+                      onClick={() => {
+                        setActiveKunjunganId(a.id);
+                        if (onExamStateChange) onExamStateChange(a.id);
+                      }}
                     >
                       {a.status === 'periksa' ? 'Lanjutkan Periksa' : 'Periksa'}
                     </button>
@@ -451,7 +470,13 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted }) {
 
       {/* Header Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-        <button className="btn btn-light btn-sm" onClick={() => setActiveKunjunganId(null)}>
+        <button
+          className="btn btn-light btn-sm"
+          onClick={() => {
+            setActiveKunjunganId(null);
+            if (onExamStateChange) onExamStateChange(null);
+          }}
+        >
           &larr; Kembali ke Antrean
         </button>
         <div style={{ display: 'flex', gap: 10 }}>

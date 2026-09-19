@@ -3,14 +3,21 @@ import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 
-export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseInitialForm }) {
+export default function PasienView({
+  onRegisterVisit,
+  initialViewMode = 'list',
+  initialEditId = null,
+  initialOpenForm,
+  onCloseInitialForm,
+  onNavigateMode = null,
+}) {
   const [pasienList, setPasienList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
   // View state: 'list' | 'form'
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState(initialViewMode === 'form' || initialOpenForm ? 'form' : 'list');
 
   // Modal detail state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -33,9 +40,9 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
     tgl_lahir: '',
     jenis_kelamin: 'L',
     gol_darah: '-',
-    agama: 'Islam',
-    status_kawin: 'Belum Kawin',
-    pendidikan: 'SMA/SMK',
+    agama: '',
+    status_kawin: '',
+    pendidikan: '',
     kewarganegaraan: 'WNI',
     pekerjaan: '',
     alamat: '',
@@ -57,15 +64,34 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
 
   const [formData, setFormData] = useState(initialFormData);
 
-  // Fetch lookups & patient list on load
+  // Fetch lookups & initial setup
   useEffect(() => {
     fetchKelompok();
-    fetchPasien();
-    if (initialOpenForm) {
-      openCreateModal();
+  }, []);
+
+  useEffect(() => {
+    if (initialViewMode === 'form' || initialOpenForm) {
+      if (initialEditId) {
+        openEditModalById(initialEditId);
+      } else {
+        setIsEditing(false);
+        setFormData(initialFormData);
+        setFormErrors([]);
+        setViewMode('form');
+      }
       if (onCloseInitialForm) onCloseInitialForm();
+    } else {
+      setViewMode('list');
     }
-  }, [initialOpenForm]);
+  }, [initialViewMode, initialOpenForm, initialEditId]);
+
+  // Debounce search query 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPasien(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchKelompok = async () => {
     try {
@@ -95,9 +121,7 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
   };
 
   const handleSearchChange = (e) => {
-    const val = e.target.value;
-    setSearchQuery(val);
-    fetchPasien(val);
+    setSearchQuery(e.target.value);
   };
 
   const openCreateModal = () => {
@@ -105,13 +129,14 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
     setFormData(initialFormData);
     setFormErrors([]);
     setViewMode('form');
+    if (onNavigateMode) onNavigateMode('form');
   };
 
-  const openEditModal = async (p) => {
+  const openEditModalById = async (id) => {
     setIsEditing(true);
     setFormErrors([]);
     try {
-      const res = await api.get(`/pasien/${p.id}`);
+      const res = await api.get(`/pasien/${id}`);
       const data = res.data;
       setFormData({
         id: data.id,
@@ -123,9 +148,9 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
         tgl_lahir: data.tgl_lahir || '',
         jenis_kelamin: data.jenis_kelamin || 'L',
         gol_darah: data.gol_darah || '-',
-        agama: data.agama || 'Islam',
-        status_kawin: data.status_kawin || 'Belum Kawin',
-        pendidikan: data.pendidikan || 'SMA/SMK',
+        agama: data.agama || '',
+        status_kawin: data.status_kawin || '',
+        pendidikan: data.pendidikan || '',
         kewarganegaraan: data.kewarganegaraan || 'WNI',
         pekerjaan: data.pekerjaan || '',
         alamat: data.alamat || '',
@@ -150,18 +175,25 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
     }
   };
 
+  const openEditModal = (p) => {
+    openEditModalById(p.id);
+    if (onNavigateMode) onNavigateMode('form', p.id);
+  };
+
   const openDetailModal = async (p) => {
     try {
       const res = await api.get(`/pasien/${p.id}`);
-      setSelectedPasien(res.data);
-      setRiwayatKunjungan(res.riwayat_kunjungan || []);
-      setDetailModalOpen(true);
+      if (res && res.data) {
+        setSelectedPasien(res.data);
+        setRiwayatKunjungan(res.riwayat_kunjungan || []);
+        setDetailModalOpen(true);
+      }
     } catch (err) {
-      console.error('Error fetching detail:', err);
+      console.error('Error fetching patient detail modal:', err);
     }
   };
 
-  const handleFormSubmit = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setFormErrors([]);
     setFormSubmitting(true);
@@ -175,6 +207,7 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
         showToast(`Pasien berhasil didaftarkan dengan No. MR: ${res.no_mr}`);
       }
       setViewMode('list');
+      if (onNavigateMode) onNavigateMode('list');
       fetchPasien();
     } catch (err) {
       if (err.errors) {
@@ -234,7 +267,7 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 {isEditing ? (
                   <>No. MR: <b>{formData.no_mr}</b></>
                 ) : (
-                  'No. MR akan di-generate otomatis oleh sistem'
+                  'No. MR dibuat otomatis saat disimpan'
                 )}
               </div>
             </div>
@@ -242,7 +275,11 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
               <button
                 type="button"
                 className="btn-back"
-                onClick={() => { setViewMode('list'); setFormErrors([]); }}
+                onClick={() => {
+                  setViewMode('list');
+                  setFormErrors([]);
+                  if (onNavigateMode) onNavigateMode('list');
+                }}
               >
                 <AppIcon name="chevron" /> Kembali
               </button>
@@ -259,49 +296,46 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
             </div>
           )}
 
-          <form onSubmit={handleFormSubmit}>
+          <form onSubmit={handleSave}>
             {/* Seksi 1: Identitas Pasien (acc-blue, icon user) */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="step-head">
                 <div className="step-num acc-blue"><AppIcon name="user" /></div>
                 <div><div className="st-title">Identitas Pasien</div></div>
               </div>
-              <div className="field-grid">
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                 <div className="form-group fg-full">
-                  <label>Nama Lengkap Pasien <span className="req">*</span></label>
+                  <label>Nama Lengkap <span className="req">*</span></label>
                   <input
                     type="text"
                     name="nama"
                     className="form-control"
                     required
                     autoFocus
-                    placeholder="Contoh: Budi Santoso"
                     value={formData.nama}
                     onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Nomor Induk Kependudukan (NIK)</label>
+                  <label>NIK</label>
                   <input
                     type="text"
                     name="nik"
                     className="form-control"
                     maxLength="16"
                     inputMode="numeric"
-                    placeholder="16 digit NIK KTP"
                     value={formData.nik}
                     onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>No. Paspor / KITAS (WNA)</label>
+                  <label>No. Passport/Kitas</label>
                   <input
                     type="text"
                     name="no_passport"
                     className="form-control"
-                    placeholder="Opsional jika ada"
                     value={formData.no_passport}
                     onChange={(e) => setFormData({ ...formData, no_passport: e.target.value })}
                   />
@@ -313,14 +347,13 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     type="text"
                     name="tempat_lahir"
                     className="form-control"
-                    placeholder="Kota kelahiran"
                     value={formData.tempat_lahir}
                     onChange={(e) => setFormData({ ...formData, tempat_lahir: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Tanggal Lahir</label>
+                  <label>Tgl Lahir</label>
                   <input
                     type="date"
                     name="tgl_lahir"
@@ -345,7 +378,7 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 </div>
 
                 <div className="form-group">
-                  <label>Golongan Darah</label>
+                  <label>Gol. Darah</label>
                   <select
                     name="gol_darah"
                     className="form-control"
@@ -366,6 +399,7 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     value={formData.agama}
                     onChange={(e) => setFormData({ ...formData, agama: e.target.value })}
                   >
+                    <option value="">— Pilih —</option>
                     {['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'].map((ag) => (
                       <option key={ag} value={ag}>{ag}</option>
                     ))}
@@ -380,6 +414,7 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     value={formData.status_kawin}
                     onChange={(e) => setFormData({ ...formData, status_kawin: e.target.value })}
                   >
+                    <option value="">— Pilih —</option>
                     {['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'].map((st) => (
                       <option key={st} value={st}>{st}</option>
                     ))}
@@ -387,13 +422,14 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 </div>
 
                 <div className="form-group">
-                  <label>Pendidikan Terakhir</label>
+                  <label>Pendidikan</label>
                   <select
                     name="pendidikan"
                     className="form-control"
                     value={formData.pendidikan}
                     onChange={(e) => setFormData({ ...formData, pendidikan: e.target.value })}
                   >
+                    <option value="">— Pilih —</option>
                     {['Tidak Sekolah', 'SD', 'SMP', 'SMA/SMK', 'D1/D2/D3', 'S1', 'S2', 'S3'].map((pd) => (
                       <option key={pd} value={pd}>{pd}</option>
                     ))}
@@ -408,8 +444,8 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     value={formData.kewarganegaraan}
                     onChange={(e) => setFormData({ ...formData, kewarganegaraan: e.target.value })}
                   >
-                    <option value="WNI">WNI (Warga Negara Indonesia)</option>
-                    <option value="WNA">WNA (Warga Negara Asing)</option>
+                    <option value="WNI">WNI</option>
+                    <option value="WNA">WNA</option>
                   </select>
                 </div>
               </div>
@@ -421,26 +457,24 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 <div className="step-num acc-green"><AppIcon name="mapPin" /></div>
                 <div><div className="st-title">Alamat & Kontak</div></div>
               </div>
-              <div className="field-grid">
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                 <div className="form-group fg-full">
                   <label>Alamat Lengkap</label>
                   <textarea
                     name="alamat"
                     className="form-control"
                     rows="2"
-                    placeholder="Nama jalan, nomor rumah, RT/RW"
                     value={formData.alamat}
                     onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Kelurahan / Desa</label>
+                  <label>Kelurahan/Desa</label>
                   <input
                     type="text"
                     name="kelurahan"
                     className="form-control"
-                    placeholder="Kelurahan / Desa"
                     value={formData.kelurahan}
                     onChange={(e) => setFormData({ ...formData, kelurahan: e.target.value })}
                   />
@@ -452,19 +486,17 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     type="text"
                     name="kecamatan"
                     className="form-control"
-                    placeholder="Kecamatan"
                     value={formData.kecamatan}
                     onChange={(e) => setFormData({ ...formData, kecamatan: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Kabupaten / Kota</label>
+                  <label>Kota/Kabupaten</label>
                   <input
                     type="text"
                     name="kota"
                     className="form-control"
-                    placeholder="Kabupaten / Kota"
                     value={formData.kota}
                     onChange={(e) => setFormData({ ...formData, kota: e.target.value })}
                   />
@@ -476,31 +508,30 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     type="text"
                     name="provinsi"
                     className="form-control"
-                    placeholder="Provinsi"
                     value={formData.provinsi}
                     onChange={(e) => setFormData({ ...formData, provinsi: e.target.value })}
                   />
                 </div>
+              </div>
 
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 10 }}>
                 <div className="form-group">
                   <label>Kode Pos</label>
                   <input
                     type="text"
                     name="kode_pos"
                     className="form-control"
-                    placeholder="Kode Pos"
                     value={formData.kode_pos}
                     onChange={(e) => setFormData({ ...formData, kode_pos: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>No. Telepon / HP</label>
+                  <label>Telepon</label>
                   <input
                     type="tel"
                     name="telepon"
                     className="form-control"
-                    placeholder="Contoh: 08123456789"
                     value={formData.telepon}
                     onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
                   />
@@ -512,7 +543,6 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     type="email"
                     name="email"
                     className="form-control"
-                    placeholder="email@domain.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -526,16 +556,16 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 <div className="step-num acc-orange"><AppIcon name="shield" /></div>
                 <div><div className="st-title">Penjamin & Pekerjaan</div></div>
               </div>
-              <div className="field-grid">
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div className="form-group">
-                  <label>Penjamin / Kelompok Pasien</label>
+                  <label>Jaminan</label>
                   <select
                     name="kelompok_id"
                     className="form-control"
                     value={formData.kelompok_id}
                     onChange={(e) => setFormData({ ...formData, kelompok_id: e.target.value })}
                   >
-                    <option value="">Umum (Biaya Sendiri)</option>
+                    <option value="">— Pilih —</option>
                     {kelompokList.map((k) => (
                       <option key={k.id} value={k.id}>{k.nama}</option>
                     ))}
@@ -543,12 +573,11 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 </div>
 
                 <div className="form-group">
-                  <label>No. Kartu Asuransi / BPJS</label>
+                  <label>No. Asuransi</label>
                   <input
                     type="text"
                     name="no_asuransi"
                     className="form-control"
-                    placeholder="Nomor kartu penjamin"
                     value={formData.no_asuransi}
                     onChange={(e) => setFormData({ ...formData, no_asuransi: e.target.value })}
                   />
@@ -560,7 +589,6 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     type="text"
                     name="pekerjaan"
                     className="form-control"
-                    placeholder="Pekerjaan saat ini"
                     value={formData.pekerjaan}
                     onChange={(e) => setFormData({ ...formData, pekerjaan: e.target.value })}
                   />
@@ -574,14 +602,13 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 <div className="step-num acc-purple"><AppIcon name="users" /></div>
                 <div><div className="st-title">Kontak Darurat</div></div>
               </div>
-              <div className="field-grid">
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div className="form-group">
                   <label>Nama Kontak Darurat</label>
                   <input
                     type="text"
                     name="kontak_nama"
                     className="form-control"
-                    placeholder="Nama kerabat / keluarga"
                     value={formData.kontak_nama}
                     onChange={(e) => setFormData({ ...formData, kontak_nama: e.target.value })}
                   />
@@ -593,19 +620,18 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                     type="text"
                     name="kontak_hubungan"
                     className="form-control"
-                    placeholder="misal: Suami/Istri/Orang Tua/Anak"
+                    placeholder="cth: Suami/Istri/Anak"
                     value={formData.kontak_hubungan}
                     onChange={(e) => setFormData({ ...formData, kontak_hubungan: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>No. Telepon Kontak Darurat</label>
+                  <label>Telepon Kontak</label>
                   <input
                     type="tel"
                     name="kontak_telepon"
                     className="form-control"
-                    placeholder="Nomor kontak darurat"
                     value={formData.kontak_telepon}
                     onChange={(e) => setFormData({ ...formData, kontak_telepon: e.target.value })}
                   />
@@ -619,26 +645,26 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
                 <div className="step-num acc-red"><AppIcon name="pills" /></div>
                 <div><div className="st-title">Informasi Medis</div></div>
               </div>
-              <div className="field-grid">
+              <div className="field-grid" style={{ gridTemplateColumns: '1fr' }}>
                 <div className="form-group fg-full">
                   <label>Riwayat Alergi</label>
                   <input
                     type="text"
                     name="alergi"
                     className="form-control"
-                    placeholder="misal: Alergi Penisilin, Parasetamol, Seafood..."
+                    placeholder="cth: Penisilin, Seafood"
                     value={formData.alergi}
                     onChange={(e) => setFormData({ ...formData, alergi: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group fg-full">
-                  <label>Riwayat Penyakit Terdahulu</label>
+                  <label>Riwayat Penyakit</label>
                   <textarea
                     name="riwayat_penyakit"
                     className="form-control"
                     rows="2"
-                    placeholder="misal: Hipertensi, Asma, Diabetes Melitus..."
+                    placeholder="cth: Hipertensi, Diabetes"
                     value={formData.riwayat_penyakit}
                     onChange={(e) => setFormData({ ...formData, riwayat_penyakit: e.target.value })}
                   />
@@ -664,13 +690,17 @@ export default function PasienView({ onRegisterVisit, initialOpenForm, onCloseIn
               <button
                 type="button"
                 className="btn btn-light"
-                onClick={() => { setViewMode('list'); setFormErrors([]); }}
+                onClick={() => {
+                  setViewMode('list');
+                  setFormErrors([]);
+                  if (onNavigateMode) onNavigateMode('list');
+                }}
                 disabled={formSubmitting}
               >
                 Batal
               </button>
               <button type="submit" className="btn" disabled={formSubmitting}>
-                <AppIcon name="save" /> {formSubmitting ? 'Menyimpan...' : 'Simpan Data Pasien'}
+                <AppIcon name="save" /> {formSubmitting ? 'Menyimpan...' : 'Simpan Pasien'}
               </button>
             </div>
           </form>

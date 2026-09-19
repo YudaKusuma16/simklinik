@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/app/',
+  base: '/',
   plugins: [react()],
   server: {
     port: 5173,
@@ -14,8 +14,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // Proxy untuk legacy PHP modules
-      '/legacy': {
+      // Proxy untuk asset publik (gambar, logo, dll)
+      '/assets': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,

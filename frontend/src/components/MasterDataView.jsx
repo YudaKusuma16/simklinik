@@ -3,14 +3,36 @@ import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 
-export default function MasterDataView({ initialGroup }) {
+export default function MasterDataView({ initialGroup, onNavigateSlug = null }) {
   const [entities, setEntities] = useState({});
   const [loadingEntities, setLoadingEntities] = useState(true);
 
+  const getDefaultSlug = (grp) => {
+    switch (grp) {
+      case 'Layanan & Tarif':
+        return 'tindakan';
+      case 'Medicine':
+      case 'Farmasi':
+        return 'obat';
+      case 'Penjamin & Bank':
+        return 'asuransi';
+      case 'Billing':
+      case 'Kode Pembatalan':
+        return 'kode_pembatalan';
+      case 'Pasien':
+        return 'kelompok_pasien';
+      default:
+        return 'poli';
+    }
+  };
+
   const [activeGroup, setActiveGroup] = useState(initialGroup || 'SDM & Poli');
-  const [activeSlug, setActiveSlug] = useState('poli');
+  const [activeSlug, setActiveSlug] = useState(() => getDefaultSlug(initialGroup || 'SDM & Poli'));
 
   const findMatchedSlug = (allEntities, targetGroup) => {
+    const pref = getDefaultSlug(targetGroup);
+    if (allEntities[pref]) return pref;
+
     const slugs = Object.keys(allEntities);
     if (!slugs.length) return null;
     return slugs.find((s) => {
@@ -321,6 +343,7 @@ export default function MasterDataView({ initialGroup }) {
                   e.preventDefault();
                   setActiveSlug(ent.slug);
                   setSearchQuery('');
+                  if (onNavigateSlug) onNavigateSlug(activeGroup, ent.slug);
                 }}
               >
                 <span className="vt-main">

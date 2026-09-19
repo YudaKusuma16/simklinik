@@ -34,7 +34,7 @@ export default function ProfilKlinikView() {
       if (res && res.success && res.data) {
         setData(res.data);
         if (res.data.clinic_logo) {
-          setLogoPreview(`http://127.0.0.1:8000/${res.data.clinic_logo}`);
+          setLogoPreview(`/${res.data.clinic_logo}`);
         }
       }
     } catch {

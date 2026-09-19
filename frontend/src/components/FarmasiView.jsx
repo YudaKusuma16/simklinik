@@ -2,8 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import PembelianObatView from './PembelianObatView';
+import PembelianFormView from './PembelianFormView';
+import PenyesuaianStokView from './PenyesuaianStokView';
 
-export default function FarmasiView() {
+export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView }) {
+  const [subView, setSubView] = useState(initialSubView); // 'stok' | 'pembelian_list' | 'pembelian_form' | 'penyesuaian'
+
+  useEffect(() => {
+    if (initialSubView && initialSubView !== subView) {
+      setSubView(initialSubView);
+    }
+  }, [initialSubView]);
+
+  const changeSubView = (nextView) => {
+    setSubView(nextView);
+    if (onNavigateSubView) {
+      onNavigateSubView(nextView);
+    }
+  };
   const [activeTab, setActiveTab] = useState('stok'); // 'stok' | 'antrean'
   const [antreanList, setAntreanList] = useState([]);
   const [loadingAntrean, setLoadingAntrean] = useState(false);
@@ -103,6 +120,57 @@ export default function FarmasiView() {
   const nilaiStok = stokList.reduce((acc, o) => acc + (Number(o.stok || 0) * Number(o.harga_beli || 0)), 0);
   const expSoon = 0;
 
+  if (subView === 'pembelian_list') {
+    return (
+      <div className="farmasi-view">
+        {toastMessage && (
+          <div className="alert alert-success" style={{ marginBottom: 16 }}>
+            <AppIcon name="check" style={{ marginRight: 8 }} /> {toastMessage}
+          </div>
+        )}
+        <PembelianObatView
+          onBack={() => {
+            changeSubView('stok');
+            fetchStok();
+          }}
+          onNewPurchase={() => changeSubView('pembelian_form')}
+        />
+      </div>
+    );
+  }
+
+  if (subView === 'pembelian_form') {
+    return (
+      <div className="farmasi-view">
+        <PembelianFormView
+          onBack={() => changeSubView('pembelian_list')}
+          onSuccess={(msg) => {
+            showToast(msg);
+            changeSubView('pembelian_list');
+            fetchStok();
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (subView === 'penyesuaian') {
+    return (
+      <div className="farmasi-view">
+        <PenyesuaianStokView
+          onBack={() => {
+            changeSubView('stok');
+            fetchStok();
+          }}
+          onSuccessMessage={(msg) => {
+            showToast(msg);
+            fetchStok();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="farmasi-view">
       {toastMessage && (
@@ -123,14 +191,14 @@ export default function FarmasiView() {
           <button
             type="button"
             className="btn btn-light"
-            onClick={() => alert('Fitur Penyesuaian / Opname')}
+            onClick={() => changeSubView('penyesuaian')}
           >
             <AppIcon name="pengaturan" /> Penyesuaian / Opname
           </button>
           <button
             type="button"
             className="btn"
-            onClick={() => alert('Fitur Pembelian Obat')}
+            onClick={() => changeSubView('pembelian_list')}
           >
             <AppIcon name="inventory" /> Pembelian Obat
           </button>

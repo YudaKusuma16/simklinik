@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 
-export default function RekamMedisView({ onNavigateToExam }) {
+export default function RekamMedisView({ onNavigateToExam, initialPasienId = null, onNavigatePatient = null }) {
   // State for Tier 1: Patient List
   const [pasienList, setPasienList] = useState([]);
   const [loadingPasien, setLoadingPasien] = useState(true);
@@ -25,6 +25,14 @@ export default function RekamMedisView({ onNavigateToExam }) {
     fetchPasien();
   }, []);
 
+  useEffect(() => {
+    if (initialPasienId) {
+      handleSelectPatient(initialPasienId, false);
+    } else {
+      setSelectedPatient(null);
+    }
+  }, [initialPasienId]);
+
   const fetchPasien = async (query = searchQuery) => {
     setLoadingPasien(true);
     try {
@@ -41,8 +49,11 @@ export default function RekamMedisView({ onNavigateToExam }) {
     }
   };
 
-  const handleSelectPatient = async (pasienId) => {
+  const handleSelectPatient = async (pasienId, notify = true) => {
     setLoadingHistory(true);
+    if (notify && onNavigatePatient) {
+      onNavigatePatient(pasienId);
+    }
     try {
       const res = await api.get(`/pasien/${pasienId}`);
       if (res && res.success) {
@@ -121,7 +132,10 @@ export default function RekamMedisView({ onNavigateToExam }) {
           <button 
             type="button" 
             className="btn btn-light btn-sm"
-            onClick={() => setSelectedPatient(null)}
+            onClick={() => {
+              setSelectedPatient(null);
+              if (onNavigatePatient) onNavigatePatient(null);
+            }}
           >
             <AppIcon name="arrowleft" /> Daftar Pasien
           </button>

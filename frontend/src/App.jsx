@@ -14,15 +14,185 @@ import LaporanView from './components/LaporanView';
 import RegistrasiDaftarView from './components/RegistrasiDaftarView';
 import ProfilKlinikView from './components/ProfilKlinikView';
 import PenggunaRoleView from './components/PenggunaRoleView';
+import CetakStrukView from './components/CetakStrukView';
+
+export const ROUTES = [
+  { view: 'dashboard', path: '/legacy/modules/dashboard/index.php', altPaths: ['/dashboard', '/', ''] },
+  
+  // Rekam Medis
+  { view: 'rekam_medis', path: '/legacy/modules/rekam_medis/index.php', altPaths: ['/rekam-medis', '/rekam_medis'] },
+  { view: 'rekam_medis', subView: 'pasien', path: '/legacy/modules/rekam_medis/pasien.php', altPaths: ['/rekam-medis/pasien'] },
+  { view: 'rekam_medis', subView: 'detail', path: '/legacy/modules/rekam_medis/detail.php', altPaths: ['/rekam-medis/detail'] },
+
+  // Registrasi
+  { view: 'registrasi_daftar', path: '/legacy/modules/registrasi/daftar.php', altPaths: ['/registrasi/daftar', '/daftar', '/registrasi'] },
+  { view: 'pasien', subView: 'form', path: '/legacy/modules/registrasi/pasien_form.php', altPaths: ['/pasien/baru', '/pasien/form', '/registrasi/pasien_form.php'] },
+  { view: 'pasien', path: '/legacy/modules/registrasi/pasien.php', altPaths: ['/pasien', '/data-pasien'] },
+  { view: 'pasien_detail', path: '/legacy/modules/registrasi/pasien_detail.php', altPaths: ['/pasien/detail'] },
+  { view: 'kunjungan', path: '/legacy/modules/registrasi/index.php', altPaths: ['/kunjungan', '/data-registrasi'] },
+
+  // Pelayanan
+  { view: 'pelayanan', path: '/legacy/modules/pelayanan/index.php', altPaths: ['/pelayanan'] },
+  { view: 'pelayanan', subView: 'periksa', path: '/legacy/modules/pelayanan/periksa.php', altPaths: ['/pelayanan/periksa'] },
+  { view: 'pelayanan', subView: 'farmasi', path: '/legacy/modules/pelayanan/farmasi.php', altPaths: ['/pelayanan/farmasi'] },
+  { view: 'pelayanan', subView: 'farmasi_serah', path: '/legacy/modules/pelayanan/farmasi_serah.php', altPaths: ['/pelayanan/farmasi_serah'] },
+
+  // Billing & Keuangan
+  { view: 'billing', path: '/legacy/modules/billing/index.php', altPaths: ['/billing'] },
+  { view: 'billing', subView: 'proses', path: '/legacy/modules/billing/proses.php', altPaths: ['/billing/proses'] },
+  { view: 'billing', subView: 'detail', path: '/legacy/modules/billing/detail.php', altPaths: ['/billing/detail'] },
+  { view: 'billing', subView: 'cetak_invoice', path: '/legacy/modules/billing/cetak_invoice.php', altPaths: ['/billing/cetak_invoice'] },
+  { view: 'keuangan', path: '/legacy/modules/keuangan/index.php', altPaths: ['/keuangan'] },
+  { view: 'keuangan', subView: 'bayar', path: '/legacy/modules/keuangan/bayar.php', altPaths: ['/keuangan/bayar'] },
+  { view: 'keuangan', subView: 'struk', path: '/legacy/modules/keuangan/struk.php', altPaths: ['/keuangan/struk'] },
+
+  // Master Data
+  { view: 'master', path: '/legacy/modules/master/index.php', altPaths: ['/master', '/master-data'] },
+  { view: 'master', subView: 'crud', path: '/legacy/modules/master/crud.php', altPaths: ['/master/crud'] },
+
+  // Inventory / Farmasi
+  { view: 'farmasi', subView: 'stok', path: '/legacy/modules/inventory/index.php', altPaths: ['/inventory', '/farmasi'] },
+  { view: 'farmasi', subView: 'pembelian_list', path: '/legacy/modules/inventory/pembelian.php', altPaths: ['/inventory/pembelian'] },
+  { view: 'farmasi', subView: 'pembelian_form', path: '/legacy/modules/inventory/pembelian_form.php', altPaths: ['/inventory/pembelian/baru', '/inventory/pembelian_form'] },
+  { view: 'farmasi', subView: 'penyesuaian', path: '/legacy/modules/inventory/penyesuaian.php', altPaths: ['/inventory/penyesuaian', '/inventory/opname'] },
+  { view: 'farmasi', subView: 'kartu_stok', path: '/legacy/modules/inventory/kartu_stok.php', altPaths: ['/inventory/kartu_stok'] },
+
+  // Laporan
+  { view: 'laporan', path: '/legacy/modules/laporan/index.php', altPaths: ['/laporan'] },
+  { view: 'laporan', subView: 'lihat', path: '/legacy/modules/laporan/lihat.php', altPaths: ['/laporan/lihat'] },
+  { view: 'laporan', subView: 'kunjungan_detail', path: '/legacy/modules/laporan/kunjungan_detail.php', altPaths: ['/laporan/kunjungan_detail'] },
+
+  // Pengaturan & Profil
+  { view: 'profil_klinik', path: '/legacy/modules/pengaturan/klinik.php', altPaths: ['/pengaturan/klinik', '/klinik', '/legacy/modules/pengaturan/profil.php', '/legacy/modules/pengaturan/index.php'] },
+  { view: 'pengguna_role', path: '/legacy/modules/pengaturan/pengguna.php', altPaths: ['/pengaturan/pengguna', '/pengguna', '/users', '/legacy/modules/pengaturan/users.php'] },
+  { view: 'profile', path: '/legacy/modules/akun/profil.php', altPaths: ['/profile', '/akun/profil'] },
+];
+
+export function parseLocation() {
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+  const search = window.location.search;
+  const params = new URLSearchParams(search);
+  const group = params.get('g') || params.get('group');
+  const jenis = params.get('jenis');
+  const invoiceId = params.get('invoice_id');
+  const kunjunganId = params.get('kunjungan_id');
+  const id = params.get('id') || invoiceId || kunjunganId || params.get('pasien_id');
+  const slug = params.get('slug') || params.get('entity') || params.get('report');
+  const copy = params.get('copy') === '1' || params.get('copy') === 'true';
+
+  for (const r of ROUTES) {
+    if (r.path === pathname || (r.altPaths && r.altPaths.includes(pathname))) {
+      return {
+        view: r.view,
+        subView: r.subView || null,
+        group: group || null,
+        jenis: jenis || null,
+        id: id || null,
+        slug: slug || null,
+        copy: copy || false,
+      };
+    }
+  }
+
+  // Fallback pattern checks
+  if (pathname.includes('billing/cetak_invoice') || pathname.includes('cetak_invoice.php')) {
+    return { view: 'billing', subView: 'cetak_invoice', id: kunjunganId || id, copy };
+  }
+  if (pathname.includes('keuangan/struk') || pathname.includes('struk.php')) {
+    return { view: 'keuangan', subView: 'struk', id: invoiceId || id, copy };
+  }
+  if (pathname.includes('inventory/pembelian_form') || pathname.includes('pembelian_form.php')) {
+    return { view: 'farmasi', subView: 'pembelian_form', id };
+  }
+  if (pathname.includes('inventory/pembelian') || pathname.includes('pembelian.php')) {
+    return { view: 'farmasi', subView: 'pembelian_list', id };
+  }
+  if (pathname.includes('inventory/penyesuaian') || pathname.includes('penyesuaian.php')) {
+    return { view: 'farmasi', subView: 'penyesuaian', id };
+  }
+  if (pathname.includes('inventory/kartu_stok') || pathname.includes('kartu_stok.php')) {
+    return { view: 'farmasi', subView: 'kartu_stok', id };
+  }
+  if (pathname.includes('inventory')) {
+    return { view: 'farmasi', subView: 'stok' };
+  }
+  if (pathname.includes('laporan')) {
+    return { view: 'laporan', group: group || 'Operasional', slug, id };
+  }
+  if (pathname.includes('master')) {
+    return { view: 'master', group: group || 'SDM & Poli', slug, id };
+  }
+  if (pathname.includes('billing/proses') || (pathname.includes('billing') && id)) {
+    return { view: 'billing', subView: 'proses', id };
+  }
+  if (pathname.includes('billing')) {
+    return { view: 'billing', subView: 'billing' };
+  }
+  if (pathname.includes('keuangan/bayar') || (pathname.includes('keuangan') && id)) {
+    return { view: 'keuangan', subView: 'bayar', id };
+  }
+  if (pathname.includes('keuangan')) {
+    return { view: 'keuangan', subView: 'keuangan' };
+  }
+  if (pathname.includes('pelayanan/periksa') || (pathname.includes('pelayanan') && id)) {
+    return { view: 'pelayanan', subView: 'periksa', id };
+  }
+  if (pathname.includes('pelayanan')) {
+    return { view: 'pelayanan' };
+  }
+  if (pathname.includes('rekam_medis/pasien')) {
+    return { view: 'rekam_medis', subView: 'pasien', id };
+  }
+  if (pathname.includes('rekam_medis/detail')) {
+    return { view: 'rekam_medis', subView: 'detail', id };
+  }
+  if (pathname.includes('rekam_medis') || pathname.includes('rekam-medis')) {
+    return { view: 'rekam_medis' };
+  }
+  if (pathname.includes('pasien_form') || pathname.includes('pasien_form.php')) {
+    return { view: 'pasien', subView: 'form', id };
+  }
+  if (pathname.includes('registrasi/daftar') || pathname.includes('daftar.php')) {
+    return { view: 'registrasi_daftar', id };
+  }
+  if (pathname.includes('pasien_detail')) {
+    return { view: 'pasien', id };
+  }
+  if (pathname.includes('pasien')) {
+    return { view: 'pasien', subView: 'list' };
+  }
+  if (pathname.includes('registrasi')) {
+    return { view: 'kunjungan' };
+  }
+  if (pathname.includes('pengaturan/klinik') || pathname.includes('klinik') || pathname.includes('pengaturan/profil')) {
+    return { view: 'profil_klinik' };
+  }
+  if (pathname.includes('pengaturan/pengguna') || pathname.includes('pengguna') || pathname.includes('users')) {
+    return { view: 'pengguna_role' };
+  }
+  if (pathname.includes('akun/profil') || pathname.includes('profil')) {
+    return { view: 'profile' };
+  }
+
+  return { view: 'dashboard', subView: 'stok' };
+}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('is_auth') === 'true';
   });
   const [authChecking, setAuthChecking] = useState(true);
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'kunjungan' | 'pasien' | 'pelayanan' | 'rekam_medis' | 'farmasi' | 'billing' | 'master' | 'laporan' | 'profile'
+
+  const initialLoc = parseLocation();
+  const [currentView, setCurrentView] = useState(() => initialLoc.view || 'dashboard');
+  const [farmasiSubView, setFarmasiSubView] = useState(() => initialLoc.subView || 'stok');
+  const [pasienSubView, setPasienSubView] = useState(() => (initialLoc.view === 'pasien' && initialLoc.subView === 'form') ? 'form' : 'list');
+  const [pasienEditId, setPasienEditId] = useState(() => (initialLoc.view === 'pasien' && initialLoc.id) ? initialLoc.id : null);
   const [selectedPasienForVisit, setSelectedPasienForVisit] = useState(null);
-  const [activeExamKunjunganId, setActiveExamKunjunganId] = useState(null);
+  const [activeExamKunjunganId, setActiveExamKunjunganId] = useState(() => (initialLoc.view === 'pelayanan' && initialLoc.id) ? initialLoc.id : null);
+  const [billingProsesId, setBillingProsesId] = useState(() => (initialLoc.view === 'billing' && initialLoc.subView === 'proses') ? initialLoc.id : null);
+  const [keuanganBayarId, setKeuanganBayarId] = useState(() => (initialLoc.view === 'keuangan' && initialLoc.subView === 'bayar') ? initialLoc.id : null);
+  const [rekamMedisPatientId, setRekamMedisPatientId] = useState(() => (initialLoc.view === 'rekam_medis' && initialLoc.subView === 'pasien') ? initialLoc.id : null);
   const [openNewPatientForm, setOpenNewPatientForm] = useState(false);
   const [openDaftarModal, setOpenDaftarModal] = useState(false);
   // Theme state: 'light' | 'dark'
@@ -34,8 +204,75 @@ export default function App() {
   // Sidebar sub-menu dropdown states
   const [masterNavOpen, setMasterNavOpen] = useState(false);
   const [laporanNavOpen, setLaporanNavOpen] = useState(false);
-  const [selectedMasterGroup, setSelectedMasterGroup] = useState('SDM & Poli');
-  const [selectedLaporanGroup, setSelectedLaporanGroup] = useState('Operasional');
+  const [selectedMasterGroup, setSelectedMasterGroup] = useState(() => (initialLoc.view === 'master' && initialLoc.group) ? initialLoc.group : 'SDM & Poli');
+  const [selectedMasterSlug, setSelectedMasterSlug] = useState(() => (initialLoc.view === 'master' && initialLoc.slug) ? initialLoc.slug : null);
+  const [selectedLaporanGroup, setSelectedLaporanGroup] = useState(() => (initialLoc.view === 'laporan' && initialLoc.group) ? initialLoc.group : 'Operasional');
+  const [selectedLaporanSlug, setSelectedLaporanSlug] = useState(() => (initialLoc.view === 'laporan' && initialLoc.slug) ? initialLoc.slug : null);
+
+  const navigateTo = (view, subView = null, params = {}, replace = false) => {
+    let targetRoute = ROUTES.find(r => r.view === view && (subView ? r.subView === subView : !r.subView));
+    if (!targetRoute) {
+      targetRoute = ROUTES.find(r => r.view === view);
+    }
+    const basePath = targetRoute ? targetRoute.path : '/legacy/modules/dashboard/index.php';
+    
+    const searchParams = new URLSearchParams();
+    if (params.g) searchParams.set('g', params.g);
+    if (params.jenis) searchParams.set('jenis', params.jenis);
+    if (params.id) searchParams.set('id', params.id);
+    if (params.slug) searchParams.set('slug', params.slug);
+    if (params.report) searchParams.set('report', params.report);
+    
+    const queryString = searchParams.toString() ? '?' + searchParams.toString() : '';
+    const fullUrl = basePath + queryString;
+
+    if (window.location.pathname + window.location.search !== fullUrl) {
+      if (replace) {
+        window.history.replaceState({ view, subView, params }, '', fullUrl);
+      } else {
+        window.history.pushState({ view, subView, params }, '', fullUrl);
+      }
+    }
+
+    setCurrentView(view);
+    if (subView) setFarmasiSubView(subView);
+    if (view === 'pasien') {
+      setPasienSubView(subView === 'form' ? 'form' : 'list');
+      setPasienEditId(params.id || null);
+    }
+    if (view === 'pelayanan') setActiveExamKunjunganId(subView === 'periksa' && params.id ? params.id : null);
+    if (view === 'billing') setBillingProsesId(subView === 'proses' && params.id ? params.id : null);
+    if (view === 'keuangan') setKeuanganBayarId(subView === 'bayar' && params.id ? params.id : null);
+    if (view === 'rekam_medis') setRekamMedisPatientId(subView === 'pasien' && params.id ? params.id : null);
+    if (params.g && view === 'master') setSelectedMasterGroup(params.g);
+    if (params.slug && view === 'master') setSelectedMasterSlug(params.slug);
+    if (params.g && view === 'laporan') setSelectedLaporanGroup(params.g);
+    if (params.report && view === 'laporan') setSelectedLaporanSlug(params.report);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const loc = parseLocation();
+      setCurrentView(loc.view);
+      if (loc.subView) setFarmasiSubView(loc.subView);
+      if (loc.view === 'pasien') {
+        setPasienSubView(loc.subView === 'form' ? 'form' : 'list');
+        setPasienEditId(loc.id || null);
+      }
+      if (loc.view === 'pelayanan') setActiveExamKunjunganId(loc.subView === 'periksa' && loc.id ? loc.id : null);
+      if (loc.view === 'billing') setBillingProsesId(loc.subView === 'proses' && loc.id ? loc.id : null);
+      if (loc.view === 'keuangan') setKeuanganBayarId(loc.subView === 'bayar' && loc.id ? loc.id : null);
+      if (loc.view === 'rekam_medis') setRekamMedisPatientId(loc.subView === 'pasien' && loc.id ? loc.id : null);
+      if (loc.group && loc.view === 'master') setSelectedMasterGroup(loc.group);
+      if (loc.slug && loc.view === 'master') setSelectedMasterSlug(loc.slug);
+      if (loc.group && loc.view === 'laporan') setSelectedLaporanGroup(loc.group);
+      if (loc.slug && loc.view === 'laporan') setSelectedLaporanSlug(loc.slug);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [masterCounts, setMasterCounts] = useState({
     'Layanan & Tarif': 31,
     'SDM & Poli': 10,
@@ -133,16 +370,25 @@ export default function App() {
         setIsAuthenticated(false);
         localStorage.removeItem('is_auth');
       }
-    } catch {
-      if (localStorage.getItem('is_auth') === 'true') {
-        setIsAuthenticated(true);
-      } else {
+    } catch (err) {
+      // Jika 401 (session expired) atau network error → paksa logout
+      // Jangan andalkan localStorage karena session di backend sudah tidak valid
+      if (err.status === 401 || err.status === 419 || err.status === 403) {
         setIsAuthenticated(false);
+        localStorage.removeItem('is_auth');
+      } else {
+        // Error lain (network down, dll) — pertahankan state dari localStorage
+        if (localStorage.getItem('is_auth') === 'true') {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
       }
     } finally {
       setAuthChecking(false);
     }
   };
+
 
   const handleLogout = async () => {
     const confirmMsg = locale === 'en' ? 'Leave the application?' : 'Keluar dari aplikasi?';
@@ -330,6 +576,20 @@ export default function App() {
     );
   }
 
+  // Standalone print view for receipt and invoice
+  const isPrintView = (currentView === 'keuangan' && initialLoc.subView === 'struk') || 
+                      (currentView === 'billing' && initialLoc.subView === 'cetak_invoice');
+
+  if (isPrintView) {
+    return (
+      <CetakStrukView
+        invoiceId={initialLoc.id}
+        docType={initialLoc.subView === 'struk' ? 'RECEIPT' : 'INVOICE'}
+        isCopy={initialLoc.copy}
+      />
+    );
+  }
+
   return (
     <div className={`layout ${sidebarCollapsed ? 'collapsed' : ''}`} id="appLayout">
       {/* Sidebar matching backend/legacy/includes/header.php & components/sidebar.blade.php */}
@@ -348,8 +608,8 @@ export default function App() {
           {/* Dashboard */}
           <a 
             className={currentView === 'dashboard' ? 'active' : ''} 
-            href="#dashboard" 
-            onClick={e => { e.preventDefault(); setCurrentView('dashboard'); }} 
+            href="/legacy/modules/dashboard/index.php" 
+            onClick={e => { e.preventDefault(); navigateTo('dashboard'); }} 
             title="Dashboard"
           >
             <span className="ico"><AppIcon name="dashboard" /></span>
@@ -360,8 +620,8 @@ export default function App() {
           <div className="label">REKAM MEDIS</div>
           <a 
             className={currentView === 'rekam_medis' ? 'active' : ''} 
-            href="#rekam-medis" 
-            onClick={e => { e.preventDefault(); setCurrentView('rekam_medis'); }} 
+            href="/legacy/modules/rekam_medis/index.php" 
+            onClick={e => { e.preventDefault(); navigateTo('rekam_medis'); }} 
             title="Rekam Medis (EMR)"
           >
             <span className="ico"><AppIcon name="rekam" /></span>
@@ -372,11 +632,11 @@ export default function App() {
           <div className="label">OPERASIONAL</div>
           <a 
             className={currentView === 'registrasi_daftar' ? 'active' : ''} 
-            href="#daftar" 
+            href="/legacy/modules/registrasi/daftar.php" 
             onClick={e => { 
               e.preventDefault(); 
               setSelectedPasienForVisit(null);
-              setCurrentView('registrasi_daftar'); 
+              navigateTo('registrasi_daftar'); 
             }} 
             title="Registrasi"
           >
@@ -385,8 +645,12 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'pasien' ? 'active' : ''} 
-            href="#pasien" 
-            onClick={e => { e.preventDefault(); setCurrentView('pasien'); }} 
+            href="/legacy/modules/registrasi/pasien.php" 
+            onClick={e => { 
+              e.preventDefault(); 
+              setPasienSubView('list');
+              navigateTo('pasien'); 
+            }} 
             title="Data Pasien"
           >
             <span className="ico"><AppIcon name="users" /></span>
@@ -394,8 +658,8 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'kunjungan' ? 'active' : ''} 
-            href="#kunjungan" 
-            onClick={e => { e.preventDefault(); setCurrentView('kunjungan'); }} 
+            href="/legacy/modules/registrasi/index.php" 
+            onClick={e => { e.preventDefault(); navigateTo('kunjungan'); }} 
             title="Data Registrasi"
           >
             <span className="ico"><AppIcon name="calendar" /></span>
@@ -406,8 +670,8 @@ export default function App() {
           <div className="label">KEUANGAN</div>
           <a 
             className={currentView === 'billing' ? 'active' : ''} 
-            href="#billing" 
-            onClick={e => { e.preventDefault(); setCurrentView('billing'); }} 
+            href="/legacy/modules/billing/index.php" 
+            onClick={e => { e.preventDefault(); navigateTo('billing'); }} 
             title="Billing & Tagihan"
           >
             <span className="ico"><AppIcon name="billing" /></span>
@@ -415,8 +679,8 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'keuangan' ? 'active' : ''} 
-            href="#keuangan" 
-            onClick={e => { e.preventDefault(); setCurrentView('keuangan'); }} 
+            href="/legacy/modules/keuangan/index.php" 
+            onClick={e => { e.preventDefault(); navigateTo('keuangan'); }} 
             title="Keuangan & Kas"
           >
             <span className="ico"><AppIcon name="keuangan" /></span>
@@ -432,7 +696,7 @@ export default function App() {
                 className="np-link" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
+                  navigateTo('master', null, { g: selectedMasterGroup });
                   setMasterNavOpen(true);
                 }} 
                 title="Master Data"
@@ -456,11 +720,10 @@ export default function App() {
             <div className="nav-sub">
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'Layanan & Tarif' ? 'active' : ''} 
-                href="#master-layanan" 
+                href="/legacy/modules/master/index.php?g=Layanan%20%26%20Tarif" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
-                  setSelectedMasterGroup('Layanan & Tarif');
+                  navigateTo('master', null, { g: 'Layanan & Tarif' });
                 }}
               >
                 <span className="dot"></span>
@@ -469,11 +732,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'SDM & Poli' ? 'active' : ''} 
-                href="#master-sdm" 
+                href="/legacy/modules/master/index.php?g=SDM%20%26%20Poli" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
-                  setSelectedMasterGroup('SDM & Poli');
+                  navigateTo('master', null, { g: 'SDM & Poli' });
                 }}
               >
                 <span className="dot"></span>
@@ -482,11 +744,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && (selectedMasterGroup === 'Medicine' || selectedMasterGroup === 'Farmasi' || selectedMasterGroup === 'Farmasi & Obat') ? 'active' : ''} 
-                href="#master-farmasi" 
+                href="/legacy/modules/master/index.php?g=Medicine" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
-                  setSelectedMasterGroup('Medicine');
+                  navigateTo('master', null, { g: 'Medicine' });
                 }}
               >
                 <span className="dot"></span>
@@ -495,11 +756,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'Penjamin & Bank' ? 'active' : ''} 
-                href="#master-penjamin" 
+                href="/legacy/modules/master/index.php?g=Penjamin%20%26%20Bank" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
-                  setSelectedMasterGroup('Penjamin & Bank');
+                  navigateTo('master', null, { g: 'Penjamin & Bank' });
                 }}
               >
                 <span className="dot"></span>
@@ -508,11 +768,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'Pasien' ? 'active' : ''} 
-                href="#master-pasien" 
+                href="/legacy/modules/master/index.php?g=Pasien" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
-                  setSelectedMasterGroup('Pasien');
+                  navigateTo('master', null, { g: 'Pasien' });
                 }}
               >
                 <span className="dot"></span>
@@ -521,11 +780,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && (selectedMasterGroup === 'Kode Pembatalan' || selectedMasterGroup === 'Billing') ? 'active' : ''} 
-                href="#master-pembatalan" 
+                href="/legacy/modules/master/index.php?g=Billing" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('master');
-                  setSelectedMasterGroup('Billing');
+                  navigateTo('master', null, { g: 'Billing' });
                 }}
               >
                 <span className="dot"></span>
@@ -536,8 +794,8 @@ export default function App() {
           </div>
           <a 
             className={currentView === 'farmasi' ? 'active' : ''} 
-            href="#inventory" 
-            onClick={e => { e.preventDefault(); setCurrentView('farmasi'); }} 
+            href="/legacy/modules/inventory/index.php" 
+            onClick={e => { e.preventDefault(); navigateTo('farmasi', 'stok'); }} 
             title="Inventory"
           >
             <span className="ico"><AppIcon name="inventory" /></span>
@@ -553,7 +811,7 @@ export default function App() {
                 className="np-link" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('laporan');
+                  navigateTo('laporan', null, { g: selectedLaporanGroup });
                   setLaporanNavOpen(true);
                 }} 
                 title="Laporan"
@@ -577,11 +835,10 @@ export default function App() {
             <div className="nav-sub">
               <a 
                 className={currentView === 'laporan' && selectedLaporanGroup === 'Operasional' ? 'active' : ''} 
-                href="#laporan-operasional" 
+                href="/legacy/modules/laporan/index.php?g=Operasional" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('laporan');
-                  setSelectedLaporanGroup('Operasional');
+                  navigateTo('laporan', null, { g: 'Operasional' });
                 }}
               >
                 <span className="dot"></span>
@@ -590,11 +847,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'laporan' && selectedLaporanGroup === 'Keuangan' ? 'active' : ''} 
-                href="#laporan-keuangan" 
+                href="/legacy/modules/laporan/index.php?g=Keuangan" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('laporan');
-                  setSelectedLaporanGroup('Keuangan');
+                  navigateTo('laporan', null, { g: 'Keuangan' });
                 }}
               >
                 <span className="dot"></span>
@@ -603,11 +859,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'laporan' && selectedLaporanGroup === 'Penunjang' ? 'active' : ''} 
-                href="#laporan-penunjang" 
+                href="/legacy/modules/laporan/index.php?g=Penunjang" 
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentView('laporan');
-                  setSelectedLaporanGroup('Penunjang');
+                  navigateTo('laporan', null, { g: 'Penunjang' });
                 }}
               >
                 <span className="dot"></span>
@@ -621,8 +876,8 @@ export default function App() {
           <div className="label">PENGATURAN</div>
           <a 
             className={currentView === 'profil_klinik' ? 'active' : ''} 
-            href="#klinik" 
-            onClick={e => { e.preventDefault(); setCurrentView('profil_klinik'); }} 
+            href="/legacy/modules/pengaturan/klinik.php" 
+            onClick={e => { e.preventDefault(); navigateTo('profil_klinik'); }} 
             title="Profil Klinik"
           >
             <span className="ico"><AppIcon name="hospital" /></span>
@@ -630,8 +885,8 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'pengguna_role' ? 'active' : ''} 
-            href="#users" 
-            onClick={e => { e.preventDefault(); setCurrentView('pengguna_role'); }} 
+            href="/legacy/modules/pengaturan/pengguna.php" 
+            onClick={e => { e.preventDefault(); navigateTo('pengguna_role'); }} 
             title="Pengguna & Role"
           >
             <span className="ico"><AppIcon name="users" /></span>
@@ -739,9 +994,9 @@ export default function App() {
                   }}
                 >
                   <a 
-                    href="#profil" 
+                    href="/legacy/modules/akun/profil.php" 
                     role="menuitem"
-                    onClick={(e) => { e.preventDefault(); setCurrentView('profile'); setUserMenuOpen(false); }}
+                    onClick={(e) => { e.preventDefault(); navigateTo('profile'); setUserMenuOpen(false); }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -763,13 +1018,13 @@ export default function App() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
+                      width: '100%',
                       padding: '8px 12px',
                       borderRadius: '8px',
+                      border: 'none',
+                      background: 'none',
                       fontSize: '14px',
                       color: 'var(--red)',
-                      width: '100%',
-                      background: 'none',
-                      border: 'none',
                       cursor: 'pointer',
                       textAlign: 'left'
                     }}
@@ -782,18 +1037,22 @@ export default function App() {
           </div>
         </header>
 
-        {/* Content Area: Dashboard, Registrasi Daftar, Pelayanan, Rekam Medis, Kunjungan, Pasien, Farmasi, Billing, Master, Laporan, Profile */}
+        {/* Content View Switching */}
         <main className="content">
           {currentView === 'dashboard' ? (
             <DashboardView onNavigate={(v) => {
               if (v === 'pasien_form') {
+                 setPasienSubView('form');
                  setOpenNewPatientForm(true);
-                 setCurrentView('pasien');
+                 navigateTo('pasien', 'form');
+              } else if (v === 'pasien') {
+                 setPasienSubView('list');
+                 navigateTo('pasien');
               } else if (v === 'registrasi_daftar') {
                  setSelectedPasienForVisit(null);
-                 setCurrentView('registrasi_daftar');
+                 navigateTo('registrasi_daftar');
               } else {
-                 setCurrentView(v);
+                 navigateTo(v);
               }
             }} />
           ) : currentView === 'registrasi_daftar' ? (
@@ -801,10 +1060,11 @@ export default function App() {
               initialPasien={selectedPasienForVisit}
               onNavigate={(v) => {
                 if (v === 'pasien_form') {
+                  setPasienSubView('form');
                   setOpenNewPatientForm(true);
-                  setCurrentView('pasien');
+                  navigateTo('pasien', 'form');
                 } else {
-                  setCurrentView(v);
+                  navigateTo(v);
                 }
               }}
             />
@@ -813,43 +1073,94 @@ export default function App() {
               initialKunjunganId={activeExamKunjunganId}
               onExamCompleted={() => {
                 setActiveExamKunjunganId(null);
-                setCurrentView('rekam_medis');
+                navigateTo('rekam_medis');
+              }}
+              onExamStateChange={(id) => {
+                navigateTo('pelayanan', id ? 'periksa' : null, id ? { id } : {});
               }}
             />
           ) : currentView === 'rekam_medis' ? (
             <RekamMedisView
+              initialPasienId={rekamMedisPatientId}
+              onNavigatePatient={(id) => {
+                navigateTo('rekam_medis', id ? 'pasien' : null, id ? { id } : {});
+              }}
               onNavigateToExam={(kunjunganId) => {
                 setActiveExamKunjunganId(kunjunganId);
-                setCurrentView('pelayanan');
+                navigateTo('pelayanan', 'periksa', { id: kunjunganId });
               }}
             />
           ) : currentView === 'kunjungan' ? (
             <KunjunganView
-              onNavigate={(v) => setCurrentView(v)}
+              onNavigate={(v) => navigateTo(v)}
               onNavigateToDaftar={() => {
                 setSelectedPasienForVisit(null);
-                setCurrentView('registrasi_daftar');
+                navigateTo('registrasi_daftar');
               }}
             />
           ) : currentView === 'pasien' ? (
             <PasienView
+              key={'pasien-' + (pasienSubView || 'list') + '-' + (pasienEditId || 'new')}
+              initialViewMode={pasienSubView === 'form' || openNewPatientForm ? 'form' : 'list'}
+              initialEditId={pasienEditId}
               initialOpenForm={openNewPatientForm}
               onCloseInitialForm={() => setOpenNewPatientForm(false)}
+              onNavigateMode={(m, id) => {
+                setPasienSubView(m);
+                navigateTo('pasien', m === 'form' ? 'form' : null, id ? { id } : {});
+              }}
               onRegisterVisit={(p) => {
                 setSelectedPasienForVisit(p);
-                setCurrentView('registrasi_daftar');
+                navigateTo('registrasi_daftar', null, { pasien_id: p.id });
               }}
             />
           ) : currentView === 'farmasi' ? (
-            <FarmasiView />
+            <FarmasiView
+              initialSubView={farmasiSubView}
+              onNavigateSubView={(sub) => {
+                setFarmasiSubView(sub);
+                navigateTo('farmasi', sub);
+              }}
+            />
           ) : currentView === 'billing' ? (
-            <BillingView initialTab="billing" />
+            <BillingView
+              key={'billing-' + (billingProsesId || 'list')}
+              initialTab="billing"
+              initialProsesId={billingProsesId}
+              onNavigateSubView={(sub, id) => {
+                navigateTo(sub === 'bayar' ? 'keuangan' : 'billing', sub, id ? { id } : {});
+              }}
+            />
           ) : currentView === 'keuangan' ? (
-            <BillingView initialTab="keuangan" />
+            <BillingView
+              key={'keuangan-' + (keuanganBayarId || 'list')}
+              initialTab="keuangan"
+              initialBayarId={keuanganBayarId}
+              onNavigateSubView={(sub, id) => {
+                navigateTo(sub === 'proses' ? 'billing' : 'keuangan', sub, id ? { id } : {});
+              }}
+            />
           ) : currentView === 'master' ? (
-            <MasterDataView key={selectedMasterGroup} initialGroup={selectedMasterGroup} />
+            <MasterDataView
+              key={selectedMasterGroup + '-' + (selectedMasterSlug || '')}
+              initialGroup={selectedMasterGroup}
+              onNavigateSlug={(g, s) => {
+                setSelectedMasterGroup(g);
+                setSelectedMasterSlug(s);
+                navigateTo('master', null, { g, slug: s });
+              }}
+            />
           ) : currentView === 'laporan' ? (
-            <LaporanView key={selectedLaporanGroup} initialTab={selectedLaporanGroup} />
+            <LaporanView
+              key={selectedLaporanGroup + '-' + (selectedLaporanSlug || '')}
+              initialTab={selectedLaporanGroup}
+              initialSlug={selectedLaporanSlug}
+              onNavigateSlug={(g, s) => {
+                setSelectedLaporanGroup(g);
+                setSelectedLaporanSlug(s);
+                navigateTo('laporan', null, { g, report: s });
+              }}
+            />
           ) : currentView === 'profil_klinik' ? (
             <ProfilKlinikView />
           ) : currentView === 'pengguna_role' ? (

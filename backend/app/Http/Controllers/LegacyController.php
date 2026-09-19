@@ -13,14 +13,6 @@ class LegacyController extends Controller
         $path = str_replace(['..', '\\'], '', $path);
         $normalized = ltrim($path, '/');
 
-        if ($normalized === 'auth/logout.php') {
-            return app(LoginController::class)->logout($request);
-        }
-
-        if ($normalized === 'auth/login.php') {
-            return redirect()->route('login');
-        }
-
         $file = base_path('legacy/' . $normalized);
 
         if (! is_file($file) || ! str_ends_with($file, '.php')) {
