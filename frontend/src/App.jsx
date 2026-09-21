@@ -17,55 +17,53 @@ import PenggunaRoleView from './components/PenggunaRoleView';
 import CetakStrukView from './components/CetakStrukView';
 
 export const ROUTES = [
-  { view: 'dashboard', path: '/legacy/modules/dashboard/index.php', altPaths: ['/dashboard', '/', ''] },
+  { view: 'login', path: '/login', altPaths: ['/masuk', '/auth/login', '/legacy/auth/login.php'] },
+  { view: 'dashboard', path: '/dashboard', altPaths: ['/', '', '/legacy/modules/dashboard/index.php'] },
   
-  // Rekam Medis
-  { view: 'rekam_medis', path: '/legacy/modules/rekam_medis/index.php', altPaths: ['/rekam-medis', '/rekam_medis'] },
-  { view: 'rekam_medis', subView: 'pasien', path: '/legacy/modules/rekam_medis/pasien.php', altPaths: ['/rekam-medis/pasien'] },
-  { view: 'rekam_medis', subView: 'detail', path: '/legacy/modules/rekam_medis/detail.php', altPaths: ['/rekam-medis/detail'] },
-
-  // Registrasi
-  { view: 'registrasi_daftar', path: '/legacy/modules/registrasi/daftar.php', altPaths: ['/registrasi/daftar', '/daftar', '/registrasi'] },
-  { view: 'pasien', subView: 'form', path: '/legacy/modules/registrasi/pasien_form.php', altPaths: ['/pasien/baru', '/pasien/form', '/registrasi/pasien_form.php'] },
-  { view: 'pasien', path: '/legacy/modules/registrasi/pasien.php', altPaths: ['/pasien', '/data-pasien'] },
-  { view: 'pasien_detail', path: '/legacy/modules/registrasi/pasien_detail.php', altPaths: ['/pasien/detail'] },
-  { view: 'kunjungan', path: '/legacy/modules/registrasi/index.php', altPaths: ['/kunjungan', '/data-registrasi'] },
+  // Registrasi & Pasien & Kunjungan
+  { view: 'registrasi_daftar', path: '/pendaftaran', altPaths: ['/daftar', '/registrasi', '/registrasi/daftar', '/legacy/modules/registrasi/daftar.php'] },
+  { view: 'pasien', subView: 'form', path: '/pasien/baru', altPaths: ['/pasien/form', '/legacy/modules/registrasi/pasien_form.php', '/registrasi/pasien_form.php'] },
+  { view: 'pasien', path: '/pasien', altPaths: ['/data-pasien', '/legacy/modules/registrasi/pasien.php'] },
+  { view: 'kunjungan', path: '/kunjungan', altPaths: ['/antrean', '/data-registrasi', '/legacy/modules/registrasi/index.php'] },
 
   // Pelayanan
-  { view: 'pelayanan', path: '/legacy/modules/pelayanan/index.php', altPaths: ['/pelayanan'] },
-  { view: 'pelayanan', subView: 'periksa', path: '/legacy/modules/pelayanan/periksa.php', altPaths: ['/pelayanan/periksa'] },
-  { view: 'pelayanan', subView: 'farmasi', path: '/legacy/modules/pelayanan/farmasi.php', altPaths: ['/pelayanan/farmasi'] },
-  { view: 'pelayanan', subView: 'farmasi_serah', path: '/legacy/modules/pelayanan/farmasi_serah.php', altPaths: ['/pelayanan/farmasi_serah'] },
+  { view: 'pelayanan', path: '/pelayanan', altPaths: ['/legacy/modules/pelayanan/index.php'] },
+  { view: 'pelayanan', subView: 'periksa', path: '/pelayanan/periksa', altPaths: ['/legacy/modules/pelayanan/periksa.php'] },
+
+  // Rekam Medis
+  { view: 'rekam_medis', path: '/rekam-medis', altPaths: ['/rekam_medis', '/legacy/modules/rekam_medis/index.php'] },
+  { view: 'rekam_medis', subView: 'pasien', path: '/rekam-medis/pasien', altPaths: ['/rekam_medis/pasien', '/legacy/modules/rekam_medis/pasien.php'] },
+  { view: 'rekam_medis', subView: 'detail', path: '/rekam-medis/detail', altPaths: ['/rekam_medis/detail', '/legacy/modules/rekam_medis/detail.php'] },
+
+  // Farmasi / Inventory
+  { view: 'farmasi', path: '/farmasi', altPaths: ['/inventory', '/legacy/modules/inventory/index.php'] },
+  { view: 'farmasi', subView: 'stok', path: '/farmasi/stok', altPaths: ['/inventory/stok'] },
+  { view: 'farmasi', subView: 'pembelian_list', path: '/farmasi/pembelian', altPaths: ['/inventory/pembelian', '/legacy/modules/inventory/pembelian.php'] },
+  { view: 'farmasi', subView: 'pembelian_form', path: '/farmasi/pembelian/baru', altPaths: ['/inventory/pembelian/baru', '/inventory/pembelian_form', '/legacy/modules/inventory/pembelian_form.php'] },
+  { view: 'farmasi', subView: 'penyesuaian', path: '/farmasi/penyesuaian', altPaths: ['/inventory/penyesuaian', '/inventory/opname', '/legacy/modules/inventory/penyesuaian.php'] },
+  { view: 'farmasi', subView: 'kartu_stok', path: '/farmasi/kartu-stok', altPaths: ['/inventory/kartu_stok', '/legacy/modules/inventory/kartu_stok.php'] },
 
   // Billing & Keuangan
-  { view: 'billing', path: '/legacy/modules/billing/index.php', altPaths: ['/billing'] },
-  { view: 'billing', subView: 'proses', path: '/legacy/modules/billing/proses.php', altPaths: ['/billing/proses'] },
-  { view: 'billing', subView: 'detail', path: '/legacy/modules/billing/detail.php', altPaths: ['/billing/detail'] },
-  { view: 'billing', subView: 'cetak_invoice', path: '/legacy/modules/billing/cetak_invoice.php', altPaths: ['/billing/cetak_invoice'] },
-  { view: 'keuangan', path: '/legacy/modules/keuangan/index.php', altPaths: ['/keuangan'] },
-  { view: 'keuangan', subView: 'bayar', path: '/legacy/modules/keuangan/bayar.php', altPaths: ['/keuangan/bayar'] },
-  { view: 'keuangan', subView: 'struk', path: '/legacy/modules/keuangan/struk.php', altPaths: ['/keuangan/struk'] },
+  { view: 'billing', path: '/billing', altPaths: ['/legacy/modules/billing/index.php'] },
+  { view: 'billing', subView: 'proses', path: '/billing/proses', altPaths: ['/legacy/modules/billing/proses.php'] },
+  { view: 'billing', subView: 'cetak_invoice', path: '/billing/cetak_invoice', altPaths: ['/legacy/modules/billing/cetak_invoice.php', '/cetak_invoice.php'] },
+  { view: 'keuangan', path: '/keuangan', altPaths: ['/legacy/modules/keuangan/index.php'] },
+  { view: 'keuangan', subView: 'bayar', path: '/keuangan/bayar', altPaths: ['/legacy/modules/keuangan/bayar.php'] },
+  { view: 'keuangan', subView: 'struk', path: '/keuangan/struk', altPaths: ['/legacy/modules/keuangan/struk.php', '/struk.php'] },
 
   // Master Data
-  { view: 'master', path: '/legacy/modules/master/index.php', altPaths: ['/master', '/master-data'] },
-  { view: 'master', subView: 'crud', path: '/legacy/modules/master/crud.php', altPaths: ['/master/crud'] },
-
-  // Inventory / Farmasi
-  { view: 'farmasi', subView: 'stok', path: '/legacy/modules/inventory/index.php', altPaths: ['/inventory', '/farmasi'] },
-  { view: 'farmasi', subView: 'pembelian_list', path: '/legacy/modules/inventory/pembelian.php', altPaths: ['/inventory/pembelian'] },
-  { view: 'farmasi', subView: 'pembelian_form', path: '/legacy/modules/inventory/pembelian_form.php', altPaths: ['/inventory/pembelian/baru', '/inventory/pembelian_form'] },
-  { view: 'farmasi', subView: 'penyesuaian', path: '/legacy/modules/inventory/penyesuaian.php', altPaths: ['/inventory/penyesuaian', '/inventory/opname'] },
-  { view: 'farmasi', subView: 'kartu_stok', path: '/legacy/modules/inventory/kartu_stok.php', altPaths: ['/inventory/kartu_stok'] },
+  { view: 'master', path: '/master', altPaths: ['/master-data', '/legacy/modules/master/index.php'] },
+  { view: 'master', subView: 'crud', path: '/master/crud', altPaths: ['/legacy/modules/master/crud.php'] },
 
   // Laporan
-  { view: 'laporan', path: '/legacy/modules/laporan/index.php', altPaths: ['/laporan'] },
-  { view: 'laporan', subView: 'lihat', path: '/legacy/modules/laporan/lihat.php', altPaths: ['/laporan/lihat'] },
-  { view: 'laporan', subView: 'kunjungan_detail', path: '/legacy/modules/laporan/kunjungan_detail.php', altPaths: ['/laporan/kunjungan_detail'] },
+  { view: 'laporan', path: '/laporan', altPaths: ['/legacy/modules/laporan/index.php'] },
+  { view: 'laporan', subView: 'lihat', path: '/laporan/lihat', altPaths: ['/legacy/modules/laporan/lihat.php'] },
+  { view: 'laporan', subView: 'kunjungan_detail', path: '/laporan/kunjungan_detail', altPaths: ['/legacy/modules/laporan/kunjungan_detail.php'] },
 
   // Pengaturan & Profil
-  { view: 'profil_klinik', path: '/legacy/modules/pengaturan/klinik.php', altPaths: ['/pengaturan/klinik', '/klinik', '/legacy/modules/pengaturan/profil.php', '/legacy/modules/pengaturan/index.php'] },
-  { view: 'pengguna_role', path: '/legacy/modules/pengaturan/pengguna.php', altPaths: ['/pengaturan/pengguna', '/pengguna', '/users', '/legacy/modules/pengaturan/users.php'] },
-  { view: 'profile', path: '/legacy/modules/akun/profil.php', altPaths: ['/profile', '/akun/profil'] },
+  { view: 'profil_klinik', path: '/pengaturan/klinik', altPaths: ['/klinik', '/pengaturan/profil', '/legacy/modules/pengaturan/klinik.php', '/legacy/modules/pengaturan/profil.php', '/legacy/modules/pengaturan/index.php'] },
+  { view: 'pengguna_role', path: '/pengaturan/pengguna', altPaths: ['/pengguna', '/users', '/legacy/modules/pengaturan/pengguna.php', '/legacy/modules/pengaturan/users.php'] },
+  { view: 'profile', path: '/profil-saya', altPaths: ['/profile', '/akun/profil', '/legacy/modules/akun/profil.php'] },
 ];
 
 export function parseLocation() {
@@ -76,10 +74,75 @@ export function parseLocation() {
   const jenis = params.get('jenis');
   const invoiceId = params.get('invoice_id');
   const kunjunganId = params.get('kunjungan_id');
-  const id = params.get('id') || invoiceId || kunjunganId || params.get('pasien_id');
-  const slug = params.get('slug') || params.get('entity') || params.get('report');
+  let id = params.get('id') || invoiceId || kunjunganId || params.get('pasien_id');
+  let slug = params.get('slug') || params.get('entity') || params.get('report');
   const copy = params.get('copy') === '1' || params.get('copy') === 'true';
 
+  // Specific dynamic path regex matching
+  // 1. /pelayanan/:kunjunganId
+  const matchPelayanan = pathname.match(/^\/pelayanan\/(\d+)/);
+  if (matchPelayanan) {
+    return {
+      view: 'pelayanan',
+      subView: 'periksa',
+      id: matchPelayanan[1],
+      group,
+      jenis,
+      slug,
+      copy,
+    };
+  }
+
+  // 2. /rekam-medis/:id or /rekam_medis/:id
+  const matchRekamMedis = pathname.match(/^\/rekam[-_]medis\/(\d+)/);
+  if (matchRekamMedis) {
+    return {
+      view: 'rekam_medis',
+      subView: 'pasien',
+      id: matchRekamMedis[1],
+      group,
+      jenis,
+      slug,
+      copy,
+    };
+  }
+
+  // 3. /master/:slug (e.g. /master/obat, /master/poli)
+  const matchMaster = pathname.match(/^\/master(?:\-data)?\/([a-zA-Z0-9_\-]+)/);
+  if (matchMaster && matchMaster[1] !== 'index.php' && matchMaster[1] !== 'crud.php' && matchMaster[1] !== 'crud') {
+    return {
+      view: 'master',
+      slug: matchMaster[1],
+      group,
+      jenis,
+      id,
+      copy,
+    };
+  }
+
+  // 4. /laporan/:slug (e.g. /laporan/kunjungan, /laporan/pendapatan)
+  const matchLaporan = pathname.match(/^\/laporan\/([a-zA-Z0-9_\-]+)/);
+  if (matchLaporan && matchLaporan[1] !== 'index.php' && matchLaporan[1] !== 'lihat.php' && matchLaporan[1] !== 'kunjungan_detail.php') {
+    return {
+      view: 'laporan',
+      slug: matchLaporan[1],
+      group: group || 'Operasional',
+      jenis,
+      id,
+      copy,
+    };
+  }
+
+  // 5. /pasien/baru or /pasien/:id
+  if (pathname === '/pasien/baru' || pathname === '/pasien/form' || pathname.includes('pasien_form')) {
+    return { view: 'pasien', subView: 'form', id, group, jenis, slug, copy };
+  }
+  const matchPasien = pathname.match(/^\/pasien\/(\d+)/);
+  if (matchPasien) {
+    return { view: 'pasien', subView: 'list', id: matchPasien[1], group, jenis, slug, copy };
+  }
+
+  // Check exact ROUTES
   for (const r of ROUTES) {
     if (r.path === pathname || (r.altPaths && r.altPaths.includes(pathname))) {
       return {
@@ -94,26 +157,26 @@ export function parseLocation() {
     }
   }
 
-  // Fallback pattern checks
+  // Fallback checks
   if (pathname.includes('billing/cetak_invoice') || pathname.includes('cetak_invoice.php')) {
     return { view: 'billing', subView: 'cetak_invoice', id: kunjunganId || id, copy };
   }
   if (pathname.includes('keuangan/struk') || pathname.includes('struk.php')) {
     return { view: 'keuangan', subView: 'struk', id: invoiceId || id, copy };
   }
-  if (pathname.includes('inventory/pembelian_form') || pathname.includes('pembelian_form.php')) {
+  if (pathname.includes('inventory/pembelian_form') || pathname.includes('pembelian_form.php') || pathname.includes('farmasi/pembelian/baru')) {
     return { view: 'farmasi', subView: 'pembelian_form', id };
   }
-  if (pathname.includes('inventory/pembelian') || pathname.includes('pembelian.php')) {
+  if (pathname.includes('inventory/pembelian') || pathname.includes('pembelian.php') || pathname.includes('farmasi/pembelian')) {
     return { view: 'farmasi', subView: 'pembelian_list', id };
   }
-  if (pathname.includes('inventory/penyesuaian') || pathname.includes('penyesuaian.php')) {
+  if (pathname.includes('inventory/penyesuaian') || pathname.includes('penyesuaian.php') || pathname.includes('farmasi/penyesuaian') || pathname.includes('opname')) {
     return { view: 'farmasi', subView: 'penyesuaian', id };
   }
-  if (pathname.includes('inventory/kartu_stok') || pathname.includes('kartu_stok.php')) {
+  if (pathname.includes('inventory/kartu_stok') || pathname.includes('kartu_stok.php') || pathname.includes('farmasi/kartu-stok')) {
     return { view: 'farmasi', subView: 'kartu_stok', id };
   }
-  if (pathname.includes('inventory')) {
+  if (pathname.includes('inventory') || pathname.includes('farmasi')) {
     return { view: 'farmasi', subView: 'stok' };
   }
   if (pathname.includes('laporan')) {
@@ -140,29 +203,17 @@ export function parseLocation() {
   if (pathname.includes('pelayanan')) {
     return { view: 'pelayanan' };
   }
-  if (pathname.includes('rekam_medis/pasien')) {
-    return { view: 'rekam_medis', subView: 'pasien', id };
-  }
-  if (pathname.includes('rekam_medis/detail')) {
-    return { view: 'rekam_medis', subView: 'detail', id };
-  }
   if (pathname.includes('rekam_medis') || pathname.includes('rekam-medis')) {
-    return { view: 'rekam_medis' };
+    return { view: 'rekam_medis', subView: id ? 'pasien' : null, id };
   }
-  if (pathname.includes('pasien_form') || pathname.includes('pasien_form.php')) {
-    return { view: 'pasien', subView: 'form', id };
-  }
-  if (pathname.includes('registrasi/daftar') || pathname.includes('daftar.php')) {
+  if (pathname.includes('pendaftaran') || pathname.includes('registrasi/daftar') || pathname.includes('daftar.php')) {
     return { view: 'registrasi_daftar', id };
   }
-  if (pathname.includes('pasien_detail')) {
-    return { view: 'pasien', id };
+  if (pathname.includes('kunjungan') || pathname.includes('registrasi')) {
+    return { view: 'kunjungan' };
   }
   if (pathname.includes('pasien')) {
-    return { view: 'pasien', subView: 'list' };
-  }
-  if (pathname.includes('registrasi')) {
-    return { view: 'kunjungan' };
+    return { view: 'pasien', subView: 'list', id };
   }
   if (pathname.includes('pengaturan/klinik') || pathname.includes('klinik') || pathname.includes('pengaturan/profil')) {
     return { view: 'profil_klinik' };
@@ -170,11 +221,14 @@ export function parseLocation() {
   if (pathname.includes('pengaturan/pengguna') || pathname.includes('pengguna') || pathname.includes('users')) {
     return { view: 'pengguna_role' };
   }
-  if (pathname.includes('akun/profil') || pathname.includes('profil')) {
+  if (pathname.includes('profil-saya') || pathname.includes('akun/profil') || pathname.includes('profil') || pathname.includes('profile')) {
     return { view: 'profile' };
   }
+  if (pathname.includes('login') || pathname.includes('masuk')) {
+    return { view: 'login' };
+  }
 
-  return { view: 'dashboard', subView: 'stok' };
+  return { view: 'dashboard' };
 }
 
 export default function App() {
@@ -192,7 +246,7 @@ export default function App() {
   const [activeExamKunjunganId, setActiveExamKunjunganId] = useState(() => (initialLoc.view === 'pelayanan' && initialLoc.id) ? initialLoc.id : null);
   const [billingProsesId, setBillingProsesId] = useState(() => (initialLoc.view === 'billing' && initialLoc.subView === 'proses') ? initialLoc.id : null);
   const [keuanganBayarId, setKeuanganBayarId] = useState(() => (initialLoc.view === 'keuangan' && initialLoc.subView === 'bayar') ? initialLoc.id : null);
-  const [rekamMedisPatientId, setRekamMedisPatientId] = useState(() => (initialLoc.view === 'rekam_medis' && initialLoc.subView === 'pasien') ? initialLoc.id : null);
+  const [rekamMedisPatientId, setRekamMedisPatientId] = useState(() => (initialLoc.view === 'rekam_medis' && (initialLoc.subView === 'pasien' || initialLoc.id)) ? initialLoc.id : null);
   const [openNewPatientForm, setOpenNewPatientForm] = useState(false);
   const [openDaftarModal, setOpenDaftarModal] = useState(false);
   // Theme state: 'light' | 'dark'
@@ -210,21 +264,77 @@ export default function App() {
   const [selectedLaporanSlug, setSelectedLaporanSlug] = useState(() => (initialLoc.view === 'laporan' && initialLoc.slug) ? initialLoc.slug : null);
 
   const navigateTo = (view, subView = null, params = {}, replace = false) => {
-    let targetRoute = ROUTES.find(r => r.view === view && (subView ? r.subView === subView : !r.subView));
-    if (!targetRoute) {
-      targetRoute = ROUTES.find(r => r.view === view);
+    let fullUrl = '/dashboard';
+
+    if (view === 'login') {
+      fullUrl = '/login';
+    } else if (view === 'dashboard') {
+      fullUrl = '/dashboard';
+    } else if (view === 'registrasi_daftar') {
+      fullUrl = '/pendaftaran';
+      if (params.pasien_id) {
+        fullUrl += `?pasien_id=${params.pasien_id}`;
+      }
+    } else if (view === 'pasien') {
+      if (subView === 'form') {
+        fullUrl = '/pasien/baru';
+      } else {
+        fullUrl = '/pasien';
+      }
+      if (params.id && subView !== 'form') {
+        fullUrl = `/pasien/${params.id}`;
+      }
+    } else if (view === 'kunjungan') {
+      fullUrl = '/kunjungan';
+    } else if (view === 'pelayanan') {
+      if (params.id || (subView === 'periksa' && params.id)) {
+        fullUrl = `/pelayanan/${params.id}`;
+      } else {
+        fullUrl = '/pelayanan';
+      }
+    } else if (view === 'rekam_medis') {
+      if (params.id || (subView === 'pasien' && params.id)) {
+        fullUrl = `/rekam-medis/${params.id}`;
+      } else {
+        fullUrl = '/rekam-medis';
+      }
+    } else if (view === 'farmasi') {
+      fullUrl = '/farmasi';
+    } else if (view === 'billing') {
+      fullUrl = '/billing';
+      if (params.id) {
+        fullUrl += `?id=${params.id}`;
+      }
+    } else if (view === 'keuangan') {
+      fullUrl = '/keuangan';
+      if (params.id) {
+        fullUrl += `?id=${params.id}`;
+      }
+    } else if (view === 'master') {
+      if (params.slug) {
+        fullUrl = `/master/${params.slug}`;
+      } else {
+        fullUrl = '/master';
+        if (params.g) fullUrl += `?g=${encodeURIComponent(params.g)}`;
+      }
+    } else if (view === 'laporan') {
+      if (params.report || params.slug) {
+        fullUrl = `/laporan/${params.report || params.slug}`;
+      } else {
+        fullUrl = '/laporan';
+        if (params.g) fullUrl += `?g=${encodeURIComponent(params.g)}`;
+      }
+    } else if (view === 'profil_klinik') {
+      fullUrl = '/pengaturan/klinik';
+    } else if (view === 'pengguna_role') {
+      fullUrl = '/pengaturan/pengguna';
+    } else if (view === 'profile') {
+      fullUrl = '/profil-saya';
+    } else {
+      let targetRoute = ROUTES.find(r => r.view === view && (subView ? r.subView === subView : !r.subView));
+      if (!targetRoute) targetRoute = ROUTES.find(r => r.view === view);
+      fullUrl = targetRoute ? targetRoute.path : '/dashboard';
     }
-    const basePath = targetRoute ? targetRoute.path : '/legacy/modules/dashboard/index.php';
-    
-    const searchParams = new URLSearchParams();
-    if (params.g) searchParams.set('g', params.g);
-    if (params.jenis) searchParams.set('jenis', params.jenis);
-    if (params.id) searchParams.set('id', params.id);
-    if (params.slug) searchParams.set('slug', params.slug);
-    if (params.report) searchParams.set('report', params.report);
-    
-    const queryString = searchParams.toString() ? '?' + searchParams.toString() : '';
-    const fullUrl = basePath + queryString;
 
     if (window.location.pathname + window.location.search !== fullUrl) {
       if (replace) {
@@ -240,10 +350,10 @@ export default function App() {
       setPasienSubView(subView === 'form' ? 'form' : 'list');
       setPasienEditId(params.id || null);
     }
-    if (view === 'pelayanan') setActiveExamKunjunganId(subView === 'periksa' && params.id ? params.id : null);
+    if (view === 'pelayanan') setActiveExamKunjunganId(subView === 'periksa' && params.id ? params.id : (params.id || null));
     if (view === 'billing') setBillingProsesId(subView === 'proses' && params.id ? params.id : null);
     if (view === 'keuangan') setKeuanganBayarId(subView === 'bayar' && params.id ? params.id : null);
-    if (view === 'rekam_medis') setRekamMedisPatientId(subView === 'pasien' && params.id ? params.id : null);
+    if (view === 'rekam_medis') setRekamMedisPatientId(subView === 'pasien' && params.id ? params.id : (params.id || null));
     if (params.g && view === 'master') setSelectedMasterGroup(params.g);
     if (params.slug && view === 'master') setSelectedMasterSlug(params.slug);
     if (params.g && view === 'laporan') setSelectedLaporanGroup(params.g);
@@ -259,10 +369,10 @@ export default function App() {
         setPasienSubView(loc.subView === 'form' ? 'form' : 'list');
         setPasienEditId(loc.id || null);
       }
-      if (loc.view === 'pelayanan') setActiveExamKunjunganId(loc.subView === 'periksa' && loc.id ? loc.id : null);
+      if (loc.view === 'pelayanan') setActiveExamKunjunganId(loc.subView === 'periksa' && loc.id ? loc.id : (loc.id || null));
       if (loc.view === 'billing') setBillingProsesId(loc.subView === 'proses' && loc.id ? loc.id : null);
       if (loc.view === 'keuangan') setKeuanganBayarId(loc.subView === 'bayar' && loc.id ? loc.id : null);
-      if (loc.view === 'rekam_medis') setRekamMedisPatientId(loc.subView === 'pasien' && loc.id ? loc.id : null);
+      if (loc.view === 'rekam_medis') setRekamMedisPatientId(loc.subView === 'pasien' && loc.id ? loc.id : (loc.id || null));
       if (loc.group && loc.view === 'master') setSelectedMasterGroup(loc.group);
       if (loc.slug && loc.view === 'master') setSelectedMasterSlug(loc.slug);
       if (loc.group && loc.view === 'laporan') setSelectedLaporanGroup(loc.group);
@@ -608,7 +718,7 @@ export default function App() {
           {/* Dashboard */}
           <a 
             className={currentView === 'dashboard' ? 'active' : ''} 
-            href="/legacy/modules/dashboard/index.php" 
+            href="/dashboard" 
             onClick={e => { e.preventDefault(); navigateTo('dashboard'); }} 
             title="Dashboard"
           >
@@ -620,7 +730,7 @@ export default function App() {
           <div className="label">REKAM MEDIS</div>
           <a 
             className={currentView === 'rekam_medis' ? 'active' : ''} 
-            href="/legacy/modules/rekam_medis/index.php" 
+            href="/rekam-medis" 
             onClick={e => { e.preventDefault(); navigateTo('rekam_medis'); }} 
             title="Rekam Medis (EMR)"
           >
@@ -632,7 +742,7 @@ export default function App() {
           <div className="label">OPERASIONAL</div>
           <a 
             className={currentView === 'registrasi_daftar' ? 'active' : ''} 
-            href="/legacy/modules/registrasi/daftar.php" 
+            href="/pendaftaran" 
             onClick={e => { 
               e.preventDefault(); 
               setSelectedPasienForVisit(null);
@@ -645,7 +755,7 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'pasien' ? 'active' : ''} 
-            href="/legacy/modules/registrasi/pasien.php" 
+            href="/pasien" 
             onClick={e => { 
               e.preventDefault(); 
               setPasienSubView('list');
@@ -658,7 +768,7 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'kunjungan' ? 'active' : ''} 
-            href="/legacy/modules/registrasi/index.php" 
+            href="/kunjungan" 
             onClick={e => { e.preventDefault(); navigateTo('kunjungan'); }} 
             title="Data Registrasi"
           >
@@ -670,7 +780,7 @@ export default function App() {
           <div className="label">KEUANGAN</div>
           <a 
             className={currentView === 'billing' ? 'active' : ''} 
-            href="/legacy/modules/billing/index.php" 
+            href="/billing" 
             onClick={e => { e.preventDefault(); navigateTo('billing'); }} 
             title="Billing & Tagihan"
           >
@@ -679,7 +789,7 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'keuangan' ? 'active' : ''} 
-            href="/legacy/modules/keuangan/index.php" 
+            href="/keuangan" 
             onClick={e => { e.preventDefault(); navigateTo('keuangan'); }} 
             title="Keuangan & Kas"
           >
@@ -696,7 +806,7 @@ export default function App() {
                 className="np-link" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: selectedMasterGroup });
+                  navigateTo('master', null, { g: selectedMasterGroup, slug: selectedMasterSlug });
                   setMasterNavOpen(true);
                 }} 
                 title="Master Data"
@@ -720,10 +830,10 @@ export default function App() {
             <div className="nav-sub">
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'Layanan & Tarif' ? 'active' : ''} 
-                href="/legacy/modules/master/index.php?g=Layanan%20%26%20Tarif" 
+                href="/master/tindakan" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: 'Layanan & Tarif' });
+                  navigateTo('master', null, { g: 'Layanan & Tarif', slug: 'tindakan' });
                 }}
               >
                 <span className="dot"></span>
@@ -732,10 +842,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'SDM & Poli' ? 'active' : ''} 
-                href="/legacy/modules/master/index.php?g=SDM%20%26%20Poli" 
+                href="/master/poli" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: 'SDM & Poli' });
+                  navigateTo('master', null, { g: 'SDM & Poli', slug: 'poli' });
                 }}
               >
                 <span className="dot"></span>
@@ -744,10 +854,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && (selectedMasterGroup === 'Medicine' || selectedMasterGroup === 'Farmasi' || selectedMasterGroup === 'Farmasi & Obat') ? 'active' : ''} 
-                href="/legacy/modules/master/index.php?g=Medicine" 
+                href="/master/obat" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: 'Medicine' });
+                  navigateTo('master', null, { g: 'Medicine', slug: 'obat' });
                 }}
               >
                 <span className="dot"></span>
@@ -756,10 +866,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'Penjamin & Bank' ? 'active' : ''} 
-                href="/legacy/modules/master/index.php?g=Penjamin%20%26%20Bank" 
+                href="/master/asuransi" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: 'Penjamin & Bank' });
+                  navigateTo('master', null, { g: 'Penjamin & Bank', slug: 'asuransi' });
                 }}
               >
                 <span className="dot"></span>
@@ -768,10 +878,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && selectedMasterGroup === 'Pasien' ? 'active' : ''} 
-                href="/legacy/modules/master/index.php?g=Pasien" 
+                href="/master/kelompok_pasien" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: 'Pasien' });
+                  navigateTo('master', null, { g: 'Pasien', slug: 'kelompok_pasien' });
                 }}
               >
                 <span className="dot"></span>
@@ -780,10 +890,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'master' && (selectedMasterGroup === 'Kode Pembatalan' || selectedMasterGroup === 'Billing') ? 'active' : ''} 
-                href="/legacy/modules/master/index.php?g=Billing" 
+                href="/master/kode_pembatalan" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('master', null, { g: 'Billing' });
+                  navigateTo('master', null, { g: 'Billing', slug: 'kode_pembatalan' });
                 }}
               >
                 <span className="dot"></span>
@@ -794,7 +904,7 @@ export default function App() {
           </div>
           <a 
             className={currentView === 'farmasi' ? 'active' : ''} 
-            href="/legacy/modules/inventory/index.php" 
+            href="/farmasi" 
             onClick={e => { e.preventDefault(); navigateTo('farmasi', 'stok'); }} 
             title="Inventory"
           >
@@ -811,7 +921,7 @@ export default function App() {
                 className="np-link" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('laporan', null, { g: selectedLaporanGroup });
+                  navigateTo('laporan', null, { g: selectedLaporanGroup, report: selectedLaporanSlug });
                   setLaporanNavOpen(true);
                 }} 
                 title="Laporan"
@@ -835,10 +945,10 @@ export default function App() {
             <div className="nav-sub">
               <a 
                 className={currentView === 'laporan' && selectedLaporanGroup === 'Operasional' ? 'active' : ''} 
-                href="/legacy/modules/laporan/index.php?g=Operasional" 
+                href="/laporan/kunjungan" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('laporan', null, { g: 'Operasional' });
+                  navigateTo('laporan', null, { g: 'Operasional', report: 'kunjungan' });
                 }}
               >
                 <span className="dot"></span>
@@ -847,10 +957,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'laporan' && selectedLaporanGroup === 'Keuangan' ? 'active' : ''} 
-                href="/legacy/modules/laporan/index.php?g=Keuangan" 
+                href="/laporan/pendapatan" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('laporan', null, { g: 'Keuangan' });
+                  navigateTo('laporan', null, { g: 'Keuangan', report: 'pendapatan' });
                 }}
               >
                 <span className="dot"></span>
@@ -859,10 +969,10 @@ export default function App() {
               </a>
               <a 
                 className={currentView === 'laporan' && selectedLaporanGroup === 'Penunjang' ? 'active' : ''} 
-                href="/legacy/modules/laporan/index.php?g=Penunjang" 
+                href="/laporan/farmasi" 
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateTo('laporan', null, { g: 'Penunjang' });
+                  navigateTo('laporan', null, { g: 'Penunjang', report: 'farmasi' });
                 }}
               >
                 <span className="dot"></span>
@@ -876,7 +986,7 @@ export default function App() {
           <div className="label">PENGATURAN</div>
           <a 
             className={currentView === 'profil_klinik' ? 'active' : ''} 
-            href="/legacy/modules/pengaturan/klinik.php" 
+            href="/pengaturan/klinik" 
             onClick={e => { e.preventDefault(); navigateTo('profil_klinik'); }} 
             title="Profil Klinik"
           >
@@ -885,7 +995,7 @@ export default function App() {
           </a>
           <a 
             className={currentView === 'pengguna_role' ? 'active' : ''} 
-            href="/legacy/modules/pengaturan/pengguna.php" 
+            href="/pengaturan/pengguna" 
             onClick={e => { e.preventDefault(); navigateTo('pengguna_role'); }} 
             title="Pengguna & Role"
           >
@@ -994,7 +1104,7 @@ export default function App() {
                   }}
                 >
                   <a 
-                    href="/legacy/modules/akun/profil.php" 
+                    href="/profil-saya" 
                     role="menuitem"
                     onClick={(e) => { e.preventDefault(); navigateTo('profile'); setUserMenuOpen(false); }}
                     style={{
@@ -1142,8 +1252,8 @@ export default function App() {
             />
           ) : currentView === 'master' ? (
             <MasterDataView
-              key={selectedMasterGroup + '-' + (selectedMasterSlug || '')}
               initialGroup={selectedMasterGroup}
+              initialSlug={selectedMasterSlug}
               onNavigateSlug={(g, s) => {
                 setSelectedMasterGroup(g);
                 setSelectedMasterSlug(s);
@@ -1152,7 +1262,6 @@ export default function App() {
             />
           ) : currentView === 'laporan' ? (
             <LaporanView
-              key={selectedLaporanGroup + '-' + (selectedLaporanSlug || '')}
               initialTab={selectedLaporanGroup}
               initialSlug={selectedLaporanSlug}
               onNavigateSlug={(g, s) => {
@@ -1388,8 +1497,8 @@ export default function App() {
                 <div className="pf-quicks">
                   <a 
                     className="pf-quick" 
-                    href="#dashboard" 
-                    onClick={e => { e.preventDefault(); setCurrentView('dashboard'); }}
+                    href="/dashboard" 
+                    onClick={e => { e.preventDefault(); navigateTo('dashboard'); }}
                   >
                     <span className="qic"><AppIcon name="dashboard" /></span>
                     <span>
@@ -1401,8 +1510,8 @@ export default function App() {
 
                   <a 
                     className="pf-quick" 
-                    href="#users" 
-                    onClick={e => { e.preventDefault(); alert('Modul Pengguna & Role'); }}
+                    href="/pengaturan/pengguna" 
+                    onClick={e => { e.preventDefault(); navigateTo('pengguna_role'); }}
                   >
                     <span className="qic"><AppIcon name="users" /></span>
                     <span>
@@ -1414,8 +1523,8 @@ export default function App() {
 
                   <a 
                     className="pf-quick" 
-                    href="#klinik" 
-                    onClick={e => { e.preventDefault(); alert('Modul Profil Klinik'); }}
+                    href="/pengaturan/klinik" 
+                    onClick={e => { e.preventDefault(); navigateTo('profil_klinik'); }}
                   >
                     <span className="qic"><AppIcon name="hospital" /></span>
                     <span>

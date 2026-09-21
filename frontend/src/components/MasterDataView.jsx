@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 
-export default function MasterDataView({ initialGroup, onNavigateSlug = null }) {
+export default function MasterDataView({ initialGroup, initialSlug = null, onNavigateSlug = null }) {
   const [entities, setEntities] = useState({});
   const [loadingEntities, setLoadingEntities] = useState(true);
 
@@ -27,7 +27,7 @@ export default function MasterDataView({ initialGroup, onNavigateSlug = null }) 
   };
 
   const [activeGroup, setActiveGroup] = useState(initialGroup || 'SDM & Poli');
-  const [activeSlug, setActiveSlug] = useState(() => getDefaultSlug(initialGroup || 'SDM & Poli'));
+  const [activeSlug, setActiveSlug] = useState(() => initialSlug || getDefaultSlug(initialGroup || 'SDM & Poli'));
 
   const findMatchedSlug = (allEntities, targetGroup) => {
     const pref = getDefaultSlug(targetGroup);
@@ -46,16 +46,21 @@ export default function MasterDataView({ initialGroup, onNavigateSlug = null }) 
   };
 
   useEffect(() => {
-    if (initialGroup && Object.keys(entities).length > 0) {
-      const matchSlug = findMatchedSlug(entities, initialGroup);
-      if (matchSlug) {
-        setActiveSlug(matchSlug);
-        setActiveGroup(entities[matchSlug].group);
-      } else {
-        setActiveGroup(initialGroup);
+    if (initialSlug) {
+      setActiveSlug(initialSlug);
+      if (entities[initialSlug]) {
+        setActiveGroup(entities[initialSlug].group);
+      }
+    } else if (initialGroup) {
+      setActiveGroup(initialGroup);
+      if (Object.keys(entities).length > 0) {
+        const matchSlug = findMatchedSlug(entities, initialGroup);
+        if (matchSlug) {
+          setActiveSlug(matchSlug);
+        }
       }
     }
-  }, [initialGroup, entities]);
+  }, [initialGroup, initialSlug]);
 
   const [records, setRecords] = useState([]);
   const [lookups, setLookups] = useState({});
@@ -91,13 +96,21 @@ export default function MasterDataView({ initialGroup, onNavigateSlug = null }) 
         setEntities(res.data);
         const slugs = Object.keys(res.data);
         if (slugs.length > 0) {
-          const targetGroup = initialGroup || 'SDM & Poli';
-          const matchSlug = findMatchedSlug(res.data, targetGroup) ||
-            slugs.find((s) => res.data[s].group === 'SDM & Poli') ||
-            slugs[0];
+          const currentTarget = activeSlug || initialSlug;
+          let matchSlug = null;
+          if (currentTarget && res.data[currentTarget]) {
+            matchSlug = currentTarget;
+          } else {
+            const targetGroup = activeGroup || initialGroup || 'SDM & Poli';
+            matchSlug = findMatchedSlug(res.data, targetGroup) ||
+              slugs.find((s) => res.data[s].group === 'SDM & Poli') ||
+              slugs[0];
+          }
 
           setActiveSlug(matchSlug);
-          setActiveGroup(res.data[matchSlug].group);
+          if (res.data[matchSlug]) {
+            setActiveGroup(res.data[matchSlug].group);
+          }
         }
       }
     } catch (err) {
@@ -341,9 +354,11 @@ export default function MasterDataView({ initialGroup, onNavigateSlug = null }) 
                 className={`vtab ${isEntActive ? 'active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
+                  if (ent.slug === activeSlug) return;
                   setActiveSlug(ent.slug);
+                  setActiveGroup(ent.group || activeGroup);
                   setSearchQuery('');
-                  if (onNavigateSlug) onNavigateSlug(activeGroup, ent.slug);
+                  if (onNavigateSlug) onNavigateSlug(ent.group || activeGroup, ent.slug);
                 }}
               >
                 <span className="vt-main">
