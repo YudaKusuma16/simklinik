@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 
 export default function ProfilKlinikView() {
+  const { t, trans } = useI18n();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState({
@@ -75,14 +77,14 @@ export default function ProfilKlinikView() {
 
       const res = await api.postForm('/settings/clinic', formData);
       if (res && res.success) {
-        showAlert('Profil klinik berhasil disimpan.', 'success');
+        showAlert(trans('Profil klinik berhasil disimpan.', 'Clinic profile saved successfully.'), 'success');
         if (res.data) setData(res.data);
         setLogoFile(null);
       } else {
-        setErrors([res?.message || 'Gagal menyimpan.']);
+        setErrors([res?.message || trans('Gagal menyimpan.', 'Failed to save.')]);
       }
     } catch (err) {
-      setErrors([err.message || 'Terjadi kesalahan saat menyimpan.']);
+      setErrors([err.message || trans('Terjadi kesalahan saat menyimpan.', 'An error occurred while saving.')]);
     } finally {
       setSaving(false);
     }
@@ -97,13 +99,13 @@ export default function ProfilKlinikView() {
       {/* Page Toolbar matching legacy modules/pengaturan/profil.php */}
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">Profil Klinik</div>
-          <div className="pt-sub">Identitas ini tampil di struk pembayaran, kartu antrian, dan header aplikasi.</div>
+          <div className="pt-title">{trans('Profil Klinik', 'Clinic Profile')}</div>
+          <div className="pt-sub">{trans('Identitas ini tampil di struk pembayaran, kartu antrian, dan header aplikasi.', 'This identity appears on payment receipts, queue cards, and application headers.')}</div>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>Memuat data klinik...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>{trans('Memuat data klinik...', 'Loading clinic data...')}</div>
       ) : (
         <form onSubmit={handleSave} encType="multipart/form-data">
           <input
@@ -131,7 +133,7 @@ export default function ProfilKlinikView() {
               <div
                 className="pf-avatar-wrap"
                 onClick={() => fileInputRef.current?.click()}
-                title="Ganti logo"
+                title={trans('Ganti logo', 'Change logo')}
                 style={{ cursor: 'pointer' }}
               >
                 {logoPreview ? (
@@ -155,7 +157,7 @@ export default function ProfilKlinikView() {
                 </div>
                 <div className="pf-meta">
                   <AppIcon name="hospital" style={{ width: 14, height: 14, marginRight: 4 }} />
-                  {clinicAddress || <span style={{ color: 'var(--muted)' }}>Alamat belum diset</span>}
+                  {clinicAddress || <span style={{ color: 'var(--muted)' }}>{trans('Alamat belum diset', 'Address not set')}</span>}
                 </div>
               </div>
             </div>
@@ -168,14 +170,14 @@ export default function ProfilKlinikView() {
                 <AppIcon name="hospital" />
               </div>
               <div>
-                <div className="st-title">Identitas Klinik</div>
-                <div className="st-sub">Nama, unit, alamat &amp; logo</div>
+                <div className="st-title">{trans('Identitas Klinik', 'Clinic Identity')}</div>
+                <div className="st-sub">{trans('Nama, unit, alamat & logo', 'Name, unit, address & logo')}</div>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label>Nama Klinik</label>
+                <label>{trans('Nama Klinik', 'Clinic Name')}</label>
                 <input
                   type="text"
                   name="clinic_name"
@@ -186,7 +188,7 @@ export default function ProfilKlinikView() {
                 />
               </div>
               <div className="form-group">
-                <label>Unit / Cabang</label>
+                <label>{trans('Unit / Cabang', 'Unit / Branch')}</label>
                 <input
                   type="text"
                   name="clinic_unit"
@@ -198,12 +200,12 @@ export default function ProfilKlinikView() {
               </div>
             </div>
             <div className="form-group">
-              <label>Alamat</label>
+              <label>{trans('Alamat', 'Address')}</label>
               <textarea
                 name="clinic_address"
                 className="form-control"
                 rows={3}
-                placeholder="Alamat lengkap klinik"
+                placeholder={trans('Alamat lengkap klinik', 'Complete clinic address')}
                 value={data.clinic_address}
                 onChange={(e) => setData(prev => ({ ...prev, clinic_address: e.target.value }))}
               />
@@ -217,14 +219,14 @@ export default function ProfilKlinikView() {
                   onClick={handleRemoveLogo}
                   style={{ color: 'var(--red, #e53e3e)' }}
                 >
-                  Hapus Logo
+                  {trans('Hapus Logo', 'Remove Logo')}
                 </button>
               </div>
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 16 }}>
               <button className="btn" type="submit" disabled={saving}>
-                <AppIcon name="save" /> {saving ? 'Menyimpan...' : 'Simpan Profil'}
+                <AppIcon name="save" /> {saving ? trans('Menyimpan...', 'Saving...') : trans('Simpan Profil', 'Save Profile')}
               </button>
             </div>
           </div>

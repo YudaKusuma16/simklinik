@@ -144,7 +144,7 @@ export default function LoginView({ onLoginSuccess, locale, setLocale }) {
             <div className="lc-logo-name">
               SIM <span>Klinik</span>
             </div>
-            <div className="lc-logo-sub">Sistem Informasi Manajemen Klinik</div>
+            <div className="lc-logo-sub">{t.badge}</div>
           </div>
 
           <h2 className="lc-welcome">{t.welcome}</h2>

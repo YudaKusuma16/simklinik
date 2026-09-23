@@ -4,8 +4,10 @@ import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 import BillingProsesView from './BillingProsesView';
 import KeuanganBayarView from './KeuanganBayarView';
+import { useI18n } from '../i18n';
 
 export default function BillingView({ initialTab = 'billing', initialProsesId = null, initialBayarId = null, onNavigateSubView = null }) {
+  const { t, isEn, trans, formatTgl, formatStatus } = useI18n();
   const [activeTab, setActiveTab] = useState(initialTab); // 'billing' | 'keuangan'
   const [activeProsesKunjunganId, setActiveProsesKunjunganId] = useState(initialProsesId);
   const [activeBayarKunjunganId, setActiveBayarKunjunganId] = useState(initialBayarId);
@@ -183,20 +185,19 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
   };
 
   const getStatusLabel = (status) => {
-    if (status === 'billing') return 'Billing';
-    if (status === 'menunggu') return 'Billing';
-    if (status === 'pembayaran') return 'Pembayaran';
-    if (status === 'selesai') return 'Selesai';
-    if (status === 'lunas') return 'Lunas';
-    if (status === 'belum_bayar') return 'Belum Bayar';
-    if (status === 'sebagian') return 'Sebagian';
-    return status;
+    if (status === 'billing' || status === 'menunggu') return 'Billing';
+    if (status === 'pembayaran') return trans('Pembayaran', 'Payment');
+    if (status === 'selesai') return trans('Selesai', 'Completed');
+    if (status === 'lunas') return trans('Lunas', 'Paid in Full');
+    if (status === 'belum_bayar') return trans('Belum Bayar', 'Unpaid');
+    if (status === 'sebagian') return trans('Sebagian', 'Partially Paid');
+    return formatStatus ? formatStatus(status) : status;
   };
 
   const getPenjaminLabel = (penjamin) => {
     switch (penjamin) {
-      case 'umum': return 'Umum';
-      case 'asuransi': return 'Asuransi Swasta';
+      case 'umum': return trans('Umum', 'Self-pay');
+      case 'asuransi': return trans('Asuransi Swasta', 'Private Insurance');
       case 'corporate': return 'Corporate';
       case 'ar': return 'AR';
       default: return penjamin || 'Umum';
@@ -251,10 +252,10 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
       <div className="page-toolbar">
         <div>
           <div className="pt-title">
-            {activeTab === 'keuangan' ? 'Keuangan' : 'Billing'}
+            {activeTab === 'keuangan' ? trans('Keuangan', 'Finance') : 'Billing'}
           </div>
           <div className="pt-sub">
-            {formatTglId(selectedDate)} &middot; {billingList.length} tagihan
+            {formatTgl(selectedDate)} &middot; {billingList.length} {trans('tagihan', 'invoices')}
           </div>
         </div>
         <div className="pt-actions">
@@ -278,28 +279,28 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
             <div className="card stat">
               <div>
                 <div className="num">{formatRupiah(summary.total_tagihan)}</div>
-                <div className="lbl">Total Tagihan</div>
+                <div className="lbl">{trans('Total Tagihan', 'Total Invoiced')}</div>
               </div>
               <div className="ico bg-blue"><AppIcon name="billing" /></div>
             </div>
             <div className="card stat">
               <div>
                 <div className="num">{formatRupiah(summary.total_bayar)}</div>
-                <div className="lbl">Sudah Dibayar</div>
+                <div className="lbl">{trans('Sudah Dibayar', 'Amount Paid')}</div>
               </div>
               <div className="ico bg-green"><AppIcon name="money" /></div>
             </div>
             <div className="card stat">
               <div>
                 <div className="num">{formatRupiah(summary.piutang)}</div>
-                <div className="lbl">Sisa Piutang</div>
+                <div className="lbl">{trans('Sisa Piutang', 'Outstanding Balance')}</div>
               </div>
               <div className="ico bg-red"><AppIcon name="keuangan" /></div>
             </div>
           </div>
 
           <div className="section-title">
-            Daftar Tagihan &mdash; {formatTglId(selectedDate)}
+            {trans('Daftar Tagihan', 'Invoice List')} &mdash; {formatTgl(selectedDate)}
           </div>
         </>
       )}
@@ -310,26 +311,26 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
           columns={activeTab === 'keuangan' ? [
             {
               key: 'no_antrian',
-              label: 'ANTRIAN',
+              label: trans('ANTREAN', 'QUEUE'),
               render: (r) => <b>{r.poli_kode || 'POL'}-{String(r.no_antrian || 0).padStart(3, '0')}</b>,
             },
             {
               key: 'no_invoice',
-              label: 'NO. INVOICE',
+              label: trans('NO. INVOICE', 'INVOICE NO.'),
               render: (r) => r.no_invoice || '-',
             },
             {
               key: 'no_mr',
-              label: 'NO. MR',
+              label: trans('NO. MR', 'MR NO.'),
             },
             {
               key: 'pasien',
-              label: 'PASIEN',
+              label: trans('PASIEN', 'PATIENT'),
               render: (r) => r.pasien || r.pasien_nama,
             },
             {
               key: 'jenis_penjamin',
-              label: 'PENJAMIN',
+              label: trans('PENJAMIN', 'GUARANTOR'),
               render: (r) => (
                 <span className="badge badge-gray">
                   {getPenjaminLabel(r.jenis_penjamin)}
@@ -338,14 +339,14 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
             },
             {
               key: 'tagihan',
-              label: 'TAGIHAN',
+              label: trans('TAGIHAN', 'INVOICE'),
               style: { textAlign: 'right' },
               tdStyle: { textAlign: 'right' },
               render: (r) => formatRupiah(r.billing_total ?? r.invoice_total ?? 0),
             },
             {
               key: 'piutang',
-              label: 'PIUTANG',
+              label: trans('PIUTANG', 'RECEIVABLE'),
               style: { textAlign: 'right' },
               tdStyle: { textAlign: 'right' },
               render: (r) => {
@@ -357,7 +358,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
             },
             {
               key: 'status',
-              label: 'STATUS',
+              label: trans('STATUS', 'STATUS'),
               render: (r) => {
                 const invSt = r.invoice_status || (r.kunjungan_status === 'selesai' ? 'lunas' : 'belum_bayar');
                 const badgeClass = invSt === 'lunas' ? 'badge-green' : invSt === 'sebagian' ? 'badge-orange' : 'badge-red';
@@ -370,7 +371,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
             },
             {
               key: 'aksi',
-              label: 'AKSI',
+              label: trans('AKSI', 'ACTION'),
               sortable: false,
               thClassName: 'col-actions',
               className: 'cell-actions',
@@ -384,7 +385,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                           type="button"
                           className="btn btn-sm btn-light btn-icon"
                           onClick={() => handleCetakInvoice(r.id)}
-                          title="Cetak Invoice"
+                          title={trans('Cetak Invoice', 'Print Invoice')}
                         >
                           <AppIcon name="print" />
                         </button>
@@ -396,7 +397,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                             if (onNavigateSubView) onNavigateSubView('bayar', r.id);
                           }}
                         >
-                          Lihat
+                          {trans('Lihat', 'View')}
                         </button>
                       </>
                     ) : (
@@ -408,7 +409,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                           if (onNavigateSubView) onNavigateSubView('bayar', r.id);
                         }}
                       >
-                        <AppIcon name="money" /> Bayar
+                        <AppIcon name="money" /> {trans('Bayar', 'Pay')}
                       </button>
                     )}
                   </div>
@@ -418,30 +419,30 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
           ] : [
             {
               key: 'no_antrian',
-              label: 'ANTREAN',
+              label: trans('ANTREAN', 'QUEUE'),
               render: (r) => <b>{r.poli_kode || 'POL'}-{String(r.no_antrian || 0).padStart(3, '0')}</b>,
             },
             {
               key: 'no_kunjungan',
-              label: 'NO. KUNJUNGAN',
+              label: trans('NO. KUNJUNGAN', 'VISIT NO.'),
             },
             {
               key: 'no_mr',
-              label: 'NO. MR',
+              label: trans('NO. MR', 'MR NO.'),
             },
             {
               key: 'pasien',
-              label: 'PASIEN',
+              label: trans('PASIEN', 'PATIENT'),
               render: (r) => r.pasien || r.pasien_nama,
             },
             {
               key: 'poli',
-              label: 'POLI',
+              label: trans('POLI', 'CLINIC'),
               render: (r) => r.poli || r.poli_nama,
             },
             {
               key: 'status',
-              label: 'STATUS',
+              label: trans('STATUS', 'STATUS'),
               render: (r) => {
                 const st = r.status || r.kunjungan_status;
                 return <span className={`badge ${getStatusBadge(st)}`}>{getStatusLabel(st)}</span>;
@@ -449,19 +450,19 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
             },
             {
               key: 'billing_total',
-              label: 'TOTAL TAGIHAN',
+              label: trans('TOTAL TAGIHAN', 'TOTAL INVOICE'),
               style: { textAlign: 'right' },
               tdStyle: { textAlign: 'right' },
               render: (r) =>
                 r.billing_total !== null && r.billing_total !== undefined ? (
                   formatRupiah(r.billing_total)
                 ) : (
-                  <span style={{ color: 'var(--muted)' }}>Belum</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Belum', 'Pending')}</span>
                 ),
             },
             {
               key: 'aksi',
-              label: 'AKSI',
+              label: trans('AKSI', 'ACTION'),
               sortable: false,
               thClassName: 'col-actions',
               className: 'cell-actions',
@@ -479,14 +480,14 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                             if (onNavigateSubView) onNavigateSubView('proses', r.id);
                           }}
                         >
-                          <AppIcon name="billing" /> Buat Billing
+                          <AppIcon name="billing" /> {trans('Buat Billing', 'Create Billing')}
                         </button>
                         <button
                           type="button"
                           className="btn btn-sm btn-danger"
                           onClick={() => openBatalModal(r.id, `${r.pasien || r.pasien_nama} — ${r.no_kunjungan}`)}
                         >
-                          <AppIcon name="close" /> Batal
+                          <AppIcon name="close" /> {trans('Batal', 'Cancel')}
                         </button>
                       </>
                     ) : (
@@ -495,7 +496,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                           type="button"
                           className="btn btn-sm btn-light btn-icon"
                           onClick={() => handleCetakInvoice(r.id)}
-                          title="Cetak Invoice"
+                          title={trans('Cetak Invoice', 'Print Invoice')}
                         >
                           <AppIcon name="print" />
                         </button>
@@ -504,7 +505,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                           className="btn btn-sm btn-light"
                           onClick={() => openDetailModal(r.id)}
                         >
-                          <AppIcon name="eye" /> Rincian
+                          <AppIcon name="eye" /> {trans('Rincian', 'Details')}
                         </button>
                         {st === 'pembayaran' && (
                           <button
@@ -512,7 +513,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                             className="btn btn-sm btn-danger"
                             onClick={() => openBatalModal(r.id, `${r.pasien || r.pasien_nama} — ${r.no_kunjungan}`)}
                           >
-                            <AppIcon name="close" /> Batal
+                            <AppIcon name="close" /> {trans('Batal', 'Cancel')}
                           </button>
                         )}
                       </>
@@ -524,7 +525,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
           ]}
           data={billingList}
           defaultPageSize={25}
-          emptyText="Belum ada data tagihan"
+          emptyText={trans('Belum ada data tagihan', 'No billing data available')}
           rowKey="id"
         />
       </div>
@@ -534,21 +535,21 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
         <div className="modal-overlay open" style={{ display: 'flex' }} onClick={() => setDetailModalOpen(false)}>
           <div className="modal-box modal-lg" role="dialog" aria-modal="true" style={{ maxWidth: 840 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <div className="modal-title">Rincian Tagihan Layanan</div>
+              <div className="modal-title">{trans('Rincian Tagihan Layanan', 'Service Billing Details')}</div>
               <button
                 type="button"
                 className="modal-close"
                 onClick={() => setDetailModalOpen(false)}
-                aria-label="Tutup"
+                aria-label={trans('Tutup', 'Close')}
               >
                 &times;
               </button>
             </div>
             <div className="modal-body">
               {loadingDetail ? (
-                <div style={{ textAlign: 'center', padding: 30, color: 'var(--muted)' }}>Memuat rincian tagihan...</div>
+                <div style={{ textAlign: 'center', padding: 30, color: 'var(--muted)' }}>{trans('Memuat rincian tagihan...', 'Loading billing details...')}</div>
               ) : !detailData ? (
-                <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>Data tagihan tidak ditemukan.</div>
+                <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>{trans('Data tagihan tidak ditemukan.', 'Billing data not found.')}</div>
               ) : (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -557,7 +558,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                         {detailData.kunjungan?.pasien_nama || detailData.kunjungan?.pasien}
                       </div>
                       <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-                        No. MR: <b>{detailData.kunjungan?.no_mr}</b> &middot; Poli: {detailData.kunjungan?.poli_nama || detailData.kunjungan?.poli} &middot; Dokter: {detailData.kunjungan?.dokter_nama || '-'}
+                        {trans('No. MR', 'MR No.')}: <b>{detailData.kunjungan?.no_mr}</b> &middot; {trans('Poli', 'Clinic')}: {detailData.kunjungan?.poli_nama || detailData.kunjungan?.poli} &middot; {trans('Dokter', 'Doctor')}: {detailData.kunjungan?.dokter_nama || '-'}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -569,11 +570,11 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                     <table style={{ width: '100%' }}>
                       <thead>
                         <tr>
-                          <th>KATEGORI</th>
-                          <th>KODE</th>
-                          <th>DESKRIPSI</th>
+                          <th>{trans('KATEGORI', 'CATEGORY')}</th>
+                          <th>{trans('KODE', 'CODE')}</th>
+                          <th>{trans('DESKRIPSI', 'DESCRIPTION')}</th>
                           <th style={{ width: 60, textAlign: 'center' }}>QTY</th>
-                          <th style={{ textAlign: 'right' }}>TARIF</th>
+                          <th style={{ textAlign: 'right' }}>{trans('TARIF', 'RATE')}</th>
                           <th style={{ textAlign: 'right' }}>SUBTOTAL</th>
                         </tr>
                       </thead>
@@ -599,7 +600,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                     </div>
                     {detailData.diskon > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: 'var(--danger)' }}>
-                        <span>Diskon:</span>
+                        <span>{trans('Diskon', 'Discount')}:</span>
                         <span>-{formatRupiah(detailData.diskon)}</span>
                       </div>
                     )}
@@ -612,7 +613,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
                 <button type="button" className="btn btn-light" onClick={() => setDetailModalOpen(false)}>
-                  Tutup
+                  {trans('Tutup', 'Close')}
                 </button>
                 {detailData && detailData.kunjungan?.id && (
                   <button
@@ -620,7 +621,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                     className="btn btn-primary"
                     onClick={() => handleCetakInvoice(detailData.kunjungan.id)}
                   >
-                    <AppIcon name="print" /> Cetak Invoice
+                    <AppIcon name="print" /> {trans('Cetak Invoice', 'Print Invoice')}
                   </button>
                 )}
               </div>
@@ -634,12 +635,12 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
         <div className="modal-overlay open" style={{ display: 'flex' }} onClick={() => setBatalModalOpen(false)}>
           <div className="modal-box" role="dialog" aria-modal="true" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <div className="modal-title">Batalkan Billing</div>
+              <div className="modal-title">{trans('Batalkan Billing', 'Cancel Billing')}</div>
               <button
                 type="button"
                 className="modal-close"
                 onClick={() => setBatalModalOpen(false)}
-                aria-label="Tutup"
+                aria-label={trans('Tutup', 'Close')}
               >
                 &times;
               </button>
@@ -650,7 +651,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
               </p>
               <div className="form-group">
                 <label>
-                  Kode Pembatalan <span style={{ color: 'red' }}>*</span>
+                  {trans('Kode Pembatalan', 'Cancellation Code')} <span style={{ color: 'red' }}>*</span>
                 </label>
                 <select
                   className="form-control"
@@ -658,7 +659,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                   onChange={(e) => setBatalCodeId(e.target.value)}
                   required
                 >
-                  <option value="">Pilih Alasan Pembatalan...</option>
+                  <option value="">{trans('Pilih Alasan Pembatalan...', 'Select Cancellation Reason...')}</option>
                   {batalCodes.map((kb) => (
                     <option key={kb.id} value={kb.id}>
                       {kb.kode} &mdash; {kb.nama}
@@ -667,18 +668,18 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                 </select>
               </div>
               <div className="form-group">
-                <label>Catatan Tambahan</label>
+                <label>{trans('Catatan Tambahan', 'Additional Notes')}</label>
                 <textarea
                   className="form-control"
                   rows={2}
-                  placeholder="Catatan alasan pembatalan (opsional)..."
+                  placeholder={trans('Catatan alasan pembatalan (opsional)...', 'Reason notes (optional)...')}
                   value={alasanBatal}
                   onChange={(e) => setAlasanBatal(e.target.value)}
                 />
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
                 <button type="button" className="btn btn-light" onClick={() => setBatalModalOpen(false)}>
-                  Batal
+                  {trans('Batal', 'Cancel')}
                 </button>
                 <button
                   type="button"
@@ -686,7 +687,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                   onClick={handleConfirmBatal}
                   disabled={submittingBatal || !batalCodeId}
                 >
-                  <AppIcon name="close" /> Batalkan Billing
+                  <AppIcon name="close" /> {trans('Batalkan Billing', 'Cancel Billing')}
                 </button>
               </div>
             </div>

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function RekamMedisView({ onNavigateToExam, initialPasienId = null, onNavigatePatient = null }) {
+  const { t, trans, formatTgl, formatStatus, formatGender } = useI18n();
   // State for Tier 1: Patient List
   const [pasienList, setPasienList] = useState([]);
   const [loadingPasien, setLoadingPasien] = useState(true);
@@ -108,7 +110,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
     let age = now.getFullYear() - birth.getFullYear();
     const m = now.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-    return `${age} tahun`;
+    return `${age} ${trans('tahun', 'years old')}`;
   };
 
   const badgeMap = {
@@ -137,7 +139,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
               if (onNavigatePatient) onNavigatePatient(null);
             }}
           >
-            <AppIcon name="arrowleft" /> Daftar Pasien
+            <AppIcon name="arrowleft" /> {trans('Daftar Pasien', 'Patient List')}
           </button>
         </div>
 
@@ -147,12 +149,12 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
             <div>
               <div style={{ fontSize: 'var(--fs-title)', fontWeight: 700 }}>{selectedPatient.nama}</div>
               <div style={{ color: 'var(--muted)', marginTop: 4 }}>
-                No. MR <b>{selectedPatient.no_mr}</b> &middot; {selectedPatient.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} &middot; {calculateAge(selectedPatient.tgl_lahir)} &middot; {selectedPatient.kelompok_nama || 'Umum'}
+                {trans('No. MR', 'MR No.')} <b>{selectedPatient.no_mr}</b> &middot; {selectedPatient.jenis_kelamin === 'L' ? trans('Laki-laki', 'Male') : trans('Perempuan', 'Female')} &middot; {calculateAge(selectedPatient.tgl_lahir)} &middot; {selectedPatient.kelompok_nama || trans('Umum', 'Self-pay')}
               </div>
               <div style={{ color: 'var(--muted)' }}>
                 {formatDate(selectedPatient.tgl_lahir)} &middot; {selectedPatient.telepon || '-'}
                 {selectedPatient.gol_darah && selectedPatient.gol_darah !== '-' && (
-                  <span> &middot; Gol. Darah {selectedPatient.gol_darah}</span>
+                  <span> &middot; {trans('Gol. Darah', 'Blood Type')} {selectedPatient.gol_darah}</span>
                 )}
               </div>
               {selectedPatient.alamat && (
@@ -161,7 +163,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
             </div>
             <div style={{ textAlign: 'right' }}>
               {selectedPatient.alergi && (
-                <span className="badge badge-red"><AppIcon name="alert" /> Alergi: {selectedPatient.alergi}</span>
+                <span className="badge badge-red"><AppIcon name="alert" /> {trans('Alergi:', 'Allergy:')} {selectedPatient.alergi}</span>
               )}
             </div>
           </div>
@@ -170,7 +172,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
         {/* Riwayat Diagnosa Ringkas */}
         {patientDiagnoses.length > 0 && (
           <div className="card" style={{ marginTop: 14 }}>
-            <h3 style={{ marginBottom: 10, fontSize: 15, fontWeight: 700 }}>Riwayat Diagnosa</h3>
+            <h3 style={{ marginBottom: 10, fontSize: 15, fontWeight: 700 }}>{trans('Riwayat Diagnosa', 'Diagnosis History')}</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {patientDiagnoses.map((d, idx) => (
                 <span key={idx} className="badge badge-blue">{d}</span>
@@ -181,33 +183,33 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
 
         {/* Daftar Kunjungan Pasien */}
         <div className="section-title" style={{ marginTop: 20 }}>
-          Riwayat Kunjungan ({patientHistory.length})
+          {trans('Riwayat Kunjungan', 'Visit History')} ({patientHistory.length})
         </div>
 
         <div className="table-wrap">
           <table className="datatable dt-noscroll" style={{ width: '100%' }}>
             <thead>
               <tr>
-                <th>Tanggal</th>
-                <th>No. Kunjungan</th>
-                <th>Poli</th>
-                <th>Dokter</th>
-                <th>Keluhan / Diagnosa</th>
-                <th>Status</th>
-                <th className="col-actions">Aksi</th>
+                <th>{trans('Tanggal', 'Date')}</th>
+                <th>{trans('No. Kunjungan', 'Visit No.')}</th>
+                <th>{trans('Poli', 'Clinic')}</th>
+                <th>{trans('Dokter', 'Doctor')}</th>
+                <th>{trans('Keluhan / Diagnosa', 'Chief Complaint / Diagnosis')}</th>
+                <th>{trans('Status', 'Status')}</th>
+                <th className="col-actions">{trans('Aksi', 'Action')}</th>
               </tr>
             </thead>
             <tbody>
               {loadingHistory ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>
-                    Memuat riwayat kunjungan...
+                    {trans('Memuat riwayat kunjungan...', 'Loading visit history...')}
                   </td>
                 </tr>
               ) : patientHistory.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
-                    Belum ada kunjungan tercatat untuk pasien ini.
+                    {trans('Belum ada kunjungan tercatat untuk pasien ini.', 'No visits recorded for this patient.')}
                   </td>
                 </tr>
               ) : (
@@ -220,7 +222,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                     <td>{k.diagnosa || k.keluhan_awal || '-'}</td>
                     <td>
                       <span className={`badge ${badgeMap[k.status] || 'badge-gray'}`}>
-                        {k.status}
+                        {formatStatus(k.status)}
                       </span>
                     </td>
                     <td className="cell-actions">
@@ -230,7 +232,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                           className="btn btn-sm"
                           onClick={() => handleOpenDetail(k.id)}
                         >
-                          Lihat Detail
+                          {trans('Lihat Detail', 'View Details')}
                         </button>
                       </div>
                     </td>
@@ -253,42 +255,42 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
   const rekamMedisColumns = [
     {
       key: 'no_mr',
-      label: 'NO. MR',
+      label: trans('NO. MR', 'MR NO.'),
       render: (row) => <b>{row.no_mr}</b>,
     },
     {
       key: 'nama',
-      label: 'NAMA PASIEN',
+      label: trans('NAMA PASIEN', 'PATIENT NAME'),
     },
     {
       key: 'jenis_kelamin',
-      label: 'L/P',
-      render: (row) => (row.jenis_kelamin === 'L' ? 'L' : 'P'),
+      label: trans('L/P', 'GENDER'),
+      render: (row) => formatGender(row.jenis_kelamin, true),
     },
     {
       key: 'no_passport',
-      label: 'NO. PASSPORT',
+      label: trans('NO. PASSPORT', 'PASSPORT NO.'),
       render: (row) => row.no_passport || '-',
     },
     {
       key: 'alergi',
-      label: 'ALERGI',
+      label: trans('ALERGI', 'ALLERGY'),
       render: (row) =>
         row.alergi ? <span className="badge badge-red">{row.alergi}</span> : '-',
     },
     {
       key: 'jml_kunjungan',
-      label: 'JML KUNJUNGAN',
+      label: trans('JML KUNJUNGAN', 'TOTAL VISITS'),
       render: (row) => Number(row.jml_kunjungan || 0),
     },
     {
       key: 'last_visit',
-      label: 'KUNJUNGAN TERAKHIR',
+      label: trans('KUNJUNGAN TERAKHIR', 'LAST VISIT'),
       render: (row) => (row.last_visit ? formatDate(row.last_visit) : '-'),
     },
     {
       key: 'aksi',
-      label: 'AKSI',
+      label: trans('AKSI', 'ACTION'),
       sortable: false,
       thClassName: 'col-actions',
       className: 'cell-actions',
@@ -299,7 +301,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
             className="btn btn-sm"
             onClick={() => handleSelectPatient(row.id)}
           >
-            <AppIcon name="rekam" /> Lihat
+            <AppIcon name="rekam" /> {trans('Lihat', 'View')}
           </button>
         </div>
       ),
@@ -310,8 +312,8 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
     <div className="rekam-medis-view">
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">Rekam Medis Pasien</div>
-          <div className="pt-sub">{pasienList.length} pasien</div>
+          <div className="pt-title">{trans('Rekam Medis Pasien', 'Electronic Medical Records (EMR)')}</div>
+          <div className="pt-sub">{pasienList.length} {trans('pasien', 'patients')}</div>
         </div>
       </div>
 
@@ -320,7 +322,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
           columns={rekamMedisColumns}
           data={pasienList}
           defaultPageSize={25}
-          emptyText="Belum ada data"
+          emptyText={trans('Belum ada data', 'No data available')}
           rowKey="id"
         />
       </div>
@@ -346,7 +348,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
         <div className="modal-box modal-lg" style={{ maxWidth: 840 }}>
           <div className="modal-head">
             <div className="modal-title">
-              Detail Rekam Medis (RME) &middot; {kj?.no_kunjungan || ''}
+              {trans('Detail Rekam Medis (RME)', 'Medical Record Details (EMR)')} &middot; {kj?.no_kunjungan || ''}
             </div>
             <button
               type="button"
@@ -360,11 +362,11 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
           <div className="modal-body" style={{ maxHeight: '78vh', overflowY: 'auto' }}>
             {loadingDetail ? (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                Memuat data rekam medis...
+                {trans('Memuat data rekam medis...', 'Loading medical record...')}
               </div>
             ) : !rmeData ? (
               <div className="alert alert-warning">
-                Data rekam medis belum tersedia untuk kunjungan ini.
+                {trans('Data rekam medis belum tersedia untuk kunjungan ini.', 'Medical record is not yet available for this visit.')}
               </div>
             ) : (
               <>
@@ -374,7 +376,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                     <div>
                       <div style={{ fontSize: 'var(--fs-sub)', fontWeight: 700 }}>{kj.pasien_nama}</div>
                       <div style={{ color: 'var(--muted)' }}>
-                        No. MR <b>{kj.no_mr}</b> &middot; {kj.pasien_jk === 'L' ? 'L' : 'P'} &middot; {calculateAge(kj.pasien_tgl_lahir)}
+                        {trans('No. MR', 'MR No.')} <b>{kj.no_mr}</b> &middot; {formatGender(kj.pasien_jk, true)} &middot; {calculateAge(kj.pasien_tgl_lahir)}
                       </div>
                       <div style={{ color: 'var(--muted)' }}>
                         {formatDate(kj.tgl_kunjungan)} &middot; {kj.poli_nama} &middot; {kj.dokter_nama || '-'}
@@ -384,7 +386,7 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                       <span className="badge badge-blue">{kj.no_kunjungan}</span>
                       {kj.pasien_alergi && (
                         <div style={{ marginTop: 6 }}>
-                          <span className="badge badge-red"><AppIcon name="alert" /> Alergi: {kj.pasien_alergi}</span>
+                          <span className="badge badge-red"><AppIcon name="alert" /> {trans('Alergi:', 'Allergy:')} {kj.pasien_alergi}</span>
                         </div>
                       )}
                     </div>
@@ -393,36 +395,36 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
 
                 {!rm ? (
                   <div className="alert alert-warning" style={{ marginTop: 14 }}>
-                    Pemeriksaan dokter (SOAP) belum diinput pada kunjungan ini.
+                    {trans('Pemeriksaan dokter (SOAP) belum diinput pada kunjungan ini.', 'Doctor exam (SOAP) has not been entered for this visit.')}
                   </div>
                 ) : (
                   <>
                     {/* Vital Sign */}
                     <div className="card" style={{ marginTop: 14 }}>
-                      <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Tanda Vital (Vital Signs)</h3>
+                      <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Tanda Vital (Vital Signs)', 'Vital Signs')}</h3>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, color: 'var(--muted)' }}>
-                        <div>Tekanan Darah<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tekanan_darah || '-'}</b></div>
-                        <div>Suhu Badan<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.suhu ? `${rm.suhu} °C` : '-'}</b></div>
-                        <div>Nadi<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.nadi ? `${rm.nadi} x/mnt` : '-'}</b></div>
-                        <div>Berat Badan<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.berat_badan ? `${rm.berat_badan} kg` : '-'}</b></div>
-                        <div>Tinggi Badan<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tinggi_badan ? `${rm.tinggi_badan} cm` : '-'}</b></div>
+                        <div>{trans('Tekanan Darah', 'Blood Pressure')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tekanan_darah || '-'}</b></div>
+                        <div>{trans('Suhu Badan', 'Body Temperature')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.suhu ? `${rm.suhu} °C` : '-'}</b></div>
+                        <div>{trans('Nadi', 'Pulse')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.nadi ? `${rm.nadi} x/mnt` : '-'}</b></div>
+                        <div>{trans('Berat Badan', 'Weight')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.berat_badan ? `${rm.berat_badan} kg` : '-'}</b></div>
+                        <div>{trans('Tinggi Badan', 'Height')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tinggi_badan ? `${rm.tinggi_badan} cm` : '-'}</b></div>
                       </div>
                     </div>
 
                     {/* SOAP */}
                     <div className="card" style={{ marginTop: 14 }}>
-                      <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Rekam Medis (SOAP)</h3>
+                      <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Rekam Medis (SOAP)', 'Medical Record (SOAP)')}</h3>
                       <div className="form-row">
-                        <div><b>S — Subjective (Keluhan / Anamnesa)</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.subjective || '-'}</p></div>
-                        <div><b>O — Objective (Pemeriksaan Fisik)</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.objective || '-'}</p></div>
+                        <div><b>{trans('S — Subjective (Keluhan / Anamnesa)', 'S — Subjective (Complaints / Anamnesis)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.subjective || '-'}</p></div>
+                        <div><b>{trans('O — Objective (Pemeriksaan Fisik)', 'O — Objective (Physical Exam)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.objective || '-'}</p></div>
                       </div>
                       <div className="form-row" style={{ marginTop: 12 }}>
-                        <div><b>A — Assessment (Analisa / Diagnosa Kerja)</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.assessment || '-'}</p></div>
-                        <div><b>P — Plan (Rencana Terapi / Edukasi)</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.plan || '-'}</p></div>
+                        <div><b>{trans('A — Assessment (Analisa / Diagnosa Kerja)', 'A — Assessment (Working Diagnosis)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.assessment || '-'}</p></div>
+                        <div><b>{trans('P — Plan (Rencana Terapi / Edukasi)', 'P — Plan (Therapy / Education)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.plan || '-'}</p></div>
                       </div>
                       {rm.edukasi && (
                         <div style={{ marginTop: 12 }}>
-                          <b>Edukasi Pasien</b>
+                          <b>{trans('Edukasi Pasien', 'Patient Education')}</b>
                           <p style={{ color: 'var(--muted)', margin: '4px 0 0' }}>{rm.edukasi}</p>
                         </div>
                       )}
@@ -431,14 +433,14 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                     {/* Diagnosa & Tindakan Row */}
                     <div className="form-row" style={{ marginTop: 14 }}>
                       <div className="card">
-                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Diagnosa ICD-10</h3>
+                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Diagnosa ICD-10', 'ICD-10 Diagnosis')}</h3>
                         {diagnosa.length === 0 ? (
-                          <p style={{ color: 'var(--muted)', margin: 0 }}>Tidak ada diagnosa tersimpan.</p>
+                          <p style={{ color: 'var(--muted)', margin: 0 }}>{trans('Tidak ada diagnosa tersimpan.', 'No diagnosis saved.')}</p>
                         ) : (
                           diagnosa.map((d, i) => (
                             <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                               <span className={`badge ${d.jenis === 'primer' ? 'badge-blue' : 'badge-gray'}`} style={{ marginRight: 6 }}>
-                                {d.jenis || 'Diagnosa'}
+                                {d.jenis === 'primer' ? trans('Primer', 'Primary') : (d.jenis === 'sekunder' ? trans('Sekunder', 'Secondary') : (d.jenis || trans('Diagnosa', 'Diagnosis')))}
                               </span>
                               {d.kode_icd10 && <code>{d.kode_icd10} </code>}
                               {d.diagnosa}
@@ -448,9 +450,9 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                       </div>
 
                       <div className="card">
-                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Tindakan Medis</h3>
+                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Tindakan Medis', 'Medical Procedures')}</h3>
                         {tindakan.length === 0 ? (
-                          <p style={{ color: 'var(--muted)', margin: 0 }}>Tidak ada tindakan medis.</p>
+                          <p style={{ color: 'var(--muted)', margin: 0 }}>{trans('Tidak ada tindakan medis.', 'No procedures recorded.')}</p>
                         ) : (
                           tindakan.map((t, i) => (
                             <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
@@ -465,14 +467,14 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
                     {/* Resep Obat */}
                     {resep && resep.items && resep.items.length > 0 && (
                       <div className="card" style={{ marginTop: 14 }}>
-                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Resep Obat</h3>
+                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Resep Obat', 'Prescription')}</h3>
                         <table className="datatable" style={{ width: '100%', fontSize: 13 }}>
                           <thead>
                             <tr>
-                              <th>Nama Obat</th>
-                              <th>Jumlah</th>
-                              <th>Dosis</th>
-                              <th>Aturan Pakai</th>
+                              <th>{trans('Nama Obat', 'Medicine Name')}</th>
+                              <th>{trans('Jumlah', 'Qty')}</th>
+                              <th>{trans('Dosis', 'Dosage')}</th>
+                              <th>{trans('Aturan Pakai', 'Signa / Instructions')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -500,14 +502,14 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
               className="btn btn-light"
               onClick={() => window.print()}
             >
-              <AppIcon name="print" /> Cetak Rekam Medis
+              <AppIcon name="print" /> {trans('Cetak Rekam Medis', 'Print Medical Record')}
             </button>
             <button
               type="button"
               className="btn btn-light"
               onClick={() => setDetailModalOpen(false)}
             >
-              Tutup
+              {trans('Tutup', 'Close')}
             </button>
           </div>
         </div>

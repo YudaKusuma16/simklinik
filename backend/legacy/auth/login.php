@@ -1,80 +1,82 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/icons.php';
+require_once __DIR__ . '/../includes/lang.php';
 
 if (is_logged_in()) {
     legacy_redirect('modules/dashboard/index.php');
 }
 
 $error = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     sim_csrf_verify();
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     if ($username === '' || $password === '') {
-        $error = 'Username dan password wajib diisi.';
+        $error = t('app.login_err_required');
     } elseif (attempt_login($username, $password)) {
         legacy_redirect('modules/dashboard/index.php');
     } else {
-        $error = 'Username atau password salah.';
+        $error = t('app.login_failed');
     }
 }
 $flash = get_flash();
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="<?= e(app_locale()) ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login &middot; <?= APP_NAME ?></title>
+  <title><?= e(t('app.login_title')) ?> &middot; <?= APP_NAME ?></title>
   <link rel="stylesheet" href="<?= legacy_url('assets/css/login.css') ?>?v=<?= @filemtime(ASSETS_FS_PATH . '/css/login.css') ?>">
+  <link rel="stylesheet" href="<?= legacy_url('assets/css/lang-picker.css') ?>?v=<?= @filemtime(ASSETS_FS_PATH . '/css/lang-picker.css') ?>">
 </head>
 <body class="login-page">
 <div class="login-split">
 
   <!-- ============ Panel kiri: branding ============ -->
   <section class="login-brand">
-    <span class="lb-badge"><?= app_icon('shield') ?> Sistem Informasi Manajemen Klinik</span>
+    <span class="lb-badge"><?= app_icon('shield') ?> <?= e(t('app.login_badge')) ?></span>
 
-    <h1 class="lb-title">Pelayanan Klinik yang<br>Cepat, Aman, dan<br>Terintegrasi</h1>
-    <p class="lb-sub">
-      SIM Klinik menghadirkan sistem manajemen klinik terintegrasi untuk registrasi
-      pasien, pemeriksaan, farmasi, hingga pembayaran secara cepat, akurat, dan profesional.
-    </p>
+    <h1 class="lb-title"><?= t('app.login_headline') ?></h1>
+    <p class="lb-sub"><?= e(t('app.login_sub')) ?></p>
 
     <div class="lb-features">
       <div class="lb-feat">
         <span class="lb-feat-ico"><?= app_icon('registrasi') ?></span>
         <div>
-          <h4>Registrasi &amp; Antrian Pasien</h4>
-          <p>Pendaftaran pasien dan papan antrian yang rapi serta real-time.</p>
+          <h4><?= e(t('app.login_feat_reg_title')) ?></h4>
+          <p><?= e(t('app.login_feat_reg_desc')) ?></p>
         </div>
       </div>
       <div class="lb-feat">
         <span class="lb-feat-ico"><?= app_icon('rekam') ?></span>
         <div>
-          <h4>Rekam Medis &amp; Pelayanan</h4>
-          <p>Pemeriksaan dokter, resep obat, dan rekam medis terpusat.</p>
+          <h4><?= e(t('app.login_feat_emr_title')) ?></h4>
+          <p><?= e(t('app.login_feat_emr_desc')) ?></p>
         </div>
       </div>
       <div class="lb-feat">
         <span class="lb-feat-ico"><?= app_icon('money') ?></span>
         <div>
-          <h4>Billing &amp; Keuangan Aman</h4>
-          <p>Tagihan, invoice, dan pembayaran dengan akses sesuai peran.</p>
+          <h4><?= e(t('app.login_feat_bill_title')) ?></h4>
+          <p><?= e(t('app.login_feat_bill_desc')) ?></p>
         </div>
       </div>
     </div>
 
     <div class="lb-foot">
       <div class="lb-foot-name"><?= e(CLINIC_NAME) ?><small><?= e(CLINIC_UNIT) ?></small></div>
-      <span class="lb-secure"><?= app_icon('shield') ?> Akses Aman Aktif</span>
+      <span class="lb-secure"><?= app_icon('shield') ?> <?= e(t('app.login_secure')) ?></span>
     </div>
   </section>
 
   <!-- ============ Panel kanan: form login ============ -->
   <section class="login-form-side">
     <div class="login-card">
+      <div class="login-lang-wrap" style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <?= lang_switcher_html() ?>
+      </div>
 
       <div class="lc-logo">
         <img src="<?= legacy_url('assets/img/logo.png') ?>" alt="<?= e(APP_NAME) ?>">
@@ -82,8 +84,8 @@ $flash = get_flash();
         <div class="lc-logo-sub"><?= APP_FULL ?></div>
       </div>
 
-      <h2 class="lc-welcome">Selamat Datang</h2>
-      <p class="lc-welcome-sub">Silakan login untuk mengakses SIM Klinik<br>secara aman dan profesional.</p>
+      <h2 class="lc-welcome"><?= e(t('app.login_welcome')) ?></h2>
+      <p class="lc-welcome-sub"><?= t('app.login_welcome_sub') ?></p>
 
       <?php if ($flash): ?>
         <div class="lc-alert warn"><?= e($flash['msg']) ?></div>
@@ -96,39 +98,38 @@ $flash = get_flash();
         <?= sim_csrf_field() ?>
 
         <div class="lc-field">
-          <label>Username</label>
+          <label><?= e(t('app.login_username')) ?></label>
           <div class="lc-input">
             <?= app_icon('user') ?>
-            <input type="text" name="username" placeholder="Masukkan username" autofocus
+            <input type="text" name="username" placeholder="<?= e(t('app.login_username_ph')) ?>" autofocus
                    value="<?= e($_POST['username'] ?? '') ?>">
           </div>
         </div>
 
         <div class="lc-field">
-          <label>Password</label>
+          <label><?= e(t('app.login_password')) ?></label>
           <div class="lc-input">
             <?= app_icon('shield') ?>
-            <input type="password" name="password" id="pwd" placeholder="Masukkan password">
-            <button type="button" class="lc-eye" onclick="togglePwd(this)" aria-label="Tampilkan/sembunyikan password"><?= app_icon('eye') ?></button>
+            <input type="password" name="password" id="pwd" placeholder="<?= e(t('app.login_password_ph')) ?>">
+            <button type="button" class="lc-eye" onclick="togglePwd(this)" aria-label="<?= e(t('app.login_toggle_pwd')) ?>"><?= app_icon('eye') ?></button>
           </div>
         </div>
 
         <label class="lc-remember">
-          <input type="checkbox" name="remember" value="1"> Ingat saya
+          <input type="checkbox" name="remember" value="1"> <?= e(t('app.login_remember')) ?>
         </label>
 
-        <button type="submit" class="lc-btn"><?= app_icon('logout') ?> Login ke Sistem</button>
+        <button type="submit" class="lc-btn"><?= app_icon('logout') ?> <?= e(t('app.login_submit')) ?></button>
       </form>
 
       <div class="lc-note">
         <?= app_icon('shield') ?>
-        <span>Pastikan akun dan password hanya digunakan oleh pengguna berwenang
-        untuk menjaga keamanan data pasien dan informasi klinik.</span>
+        <span><?= e(t('app.login_security_note')) ?></span>
       </div>
 
       <div class="lc-foot">
         &copy; <?= date('Y') ?> <b><?= APP_NAME ?></b><br>
-        Dikelola oleh <?= e(CLINIC_NAME) ?>
+        <?= e(t('app.login_managed_by', ['name' => CLINIC_NAME])) ?>
       </div>
     </div>
   </section>

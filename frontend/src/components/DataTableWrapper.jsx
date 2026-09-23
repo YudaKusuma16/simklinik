@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useI18n } from '../i18n';
 
 /**
  * Reusable DataTableWrapper component replicating jQuery DataTables in simklinik-backup.
@@ -6,7 +7,7 @@ import React, { useState, useMemo } from 'react';
  * - .dataTables_wrapper
  * - .dt-top-row (.dataTables_length + customControls + .dataTables_filter)
  * - table.dataTable.datatable.no-auto-num with th.sorting / th.sorting_asc / th.sorting_desc
- * - .dataTables_info ("Menampilkan 1–N dari Total data")
+ * - .dataTables_info ("Menampilkan 1–N dari Total data" / "Showing 1-N of Total entries")
  * - .dataTables_paginate ("Awal", "Sebelumnya", "1", "Berikutnya", "Akhir")
  */
 export default function DataTableWrapper({
@@ -15,13 +16,16 @@ export default function DataTableWrapper({
   defaultPageSize = 25,
   pageSizeOptions = [10, 25, 50, 100],
   searchable = true,
-  searchPlaceholder = 'ketik untuk mencari...',
+  searchPlaceholder = null,
   customControls = null,
   sortButtons = null,
-  emptyText = 'Belum ada data',
+  emptyText = null,
   rowKey = 'id',
   tfootRows = null, // Optional array of footer row cell arrays for report totals
 }) {
+  const { t, isEn } = useI18n();
+  const effectiveEmptyText = emptyText || t('datatable.empty');
+  const effectiveSearchPlaceholder = searchPlaceholder || t('datatable.search_placeholder');
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,7 +116,7 @@ export default function DataTableWrapper({
       <div className="dt-top-row">
         <div className="dataTables_length">
           <label>
-            Tampilkan{' '}
+            {t('datatable.show')}{' '}
             <select
               className="dt-custom-select"
               value={pageSize}
@@ -127,13 +131,13 @@ export default function DataTableWrapper({
                 </option>
               ))}
             </select>{' '}
-            data
+            {t('datatable.length')}
           </label>
         </div>
 
         {sortButtons && sortButtons.length > 0 && (
           <div className="dt-custom-sort">
-            <span className="dt-sort-label">Urutkan</span>
+            <span className="dt-sort-label">{t('datatable.sort')}</span>
             <div className="dt-sort-btn-group">
               {sortButtons.map((b) => {
                 const isSorted = sortConfig.key === b.key;
@@ -172,10 +176,10 @@ export default function DataTableWrapper({
         {searchable && (
           <div className="dataTables_filter">
             <label>
-              Cari:
+              {t('datatable.search')}
               <input
                 type="search"
-                placeholder={searchPlaceholder}
+                placeholder={effectiveSearchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -226,7 +230,7 @@ export default function DataTableWrapper({
                 className="dataTables_empty"
                 style={{ textAlign: 'center', padding: '16px', color: 'var(--muted)' }}
               >
-                {searchTerm ? 'Data tidak ditemukan' : emptyText}
+                {searchTerm ? t('datatable.no_matching') : effectiveEmptyText}
               </td>
             </tr>
           ) : (
@@ -265,10 +269,14 @@ export default function DataTableWrapper({
       {/* Bottom Info and Pagination */}
       <div className="dataTables_info">
         {totalRecords === 0
-          ? 'Tidak ada data'
-          : `Menampilkan ${startRecord}-${endRecord} dari ${totalRecords} data${
-              searchTerm ? ` (disaring dari ${data.length} total data)` : ''
-            }`}
+          ? effectiveEmptyText
+          : isEn
+            ? `Showing ${startRecord} to ${endRecord} of ${totalRecords} entries${
+                searchTerm ? ` (filtered from ${data.length} total entries)` : ''
+              }`
+            : `Menampilkan ${startRecord}–${endRecord} dari ${totalRecords} data${
+                searchTerm ? ` (disaring dari ${data.length} total data)` : ''
+              }`}
       </div>
 
       <div className="dataTables_paginate">
@@ -278,7 +286,7 @@ export default function DataTableWrapper({
           onClick={() => safeCurrentPage > 1 && setCurrentPage(1)}
           disabled={safeCurrentPage <= 1 || totalRecords === 0}
         >
-          Awal
+          {t('datatable.first')}
         </button>
         <button
           type="button"
@@ -286,7 +294,7 @@ export default function DataTableWrapper({
           onClick={() => safeCurrentPage > 1 && setCurrentPage(safeCurrentPage - 1)}
           disabled={safeCurrentPage <= 1 || totalRecords === 0}
         >
-          Sebelumnya
+          {t('datatable.previous')}
         </button>
         <span>
           {getPaginationPages().map((p) => (
@@ -306,7 +314,7 @@ export default function DataTableWrapper({
           onClick={() => safeCurrentPage < totalPages && setCurrentPage(safeCurrentPage + 1)}
           disabled={safeCurrentPage >= totalPages || totalRecords === 0}
         >
-          Berikutnya
+          {t('datatable.next')}
         </button>
         <button
           type="button"
@@ -314,7 +322,7 @@ export default function DataTableWrapper({
           onClick={() => safeCurrentPage < totalPages && setCurrentPage(totalPages)}
           disabled={safeCurrentPage >= totalPages || totalRecords === 0}
         >
-          Akhir
+          {t('datatable.last')}
         </button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 const REPORT_GROUPS = {
   'Operasional': [
@@ -23,6 +24,7 @@ const REPORT_GROUPS = {
 };
 
 export default function LaporanView({ initialTab, initialSlug = null, onNavigateSlug = null }) {
+  const { t, trans, formatTgl, formatStatus } = useI18n();
   const [activeGroup, setActiveGroup] = useState(() => {
     if (initialTab && REPORT_GROUPS[initialTab]) return initialTab;
     return 'Operasional';
@@ -126,7 +128,7 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
   const exportCsv = () => {
     const rows = reportData?.data?.rows || [];
     if (rows.length === 0) {
-      alert('Tidak ada data untuk diexport.');
+      alert(trans('Tidak ada data untuk diexport.', 'No data to export.'));
       return;
     }
 
@@ -187,13 +189,44 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
     });
   }
 
+  const formatReportColLabel = (key, rawLabel) => {
+    const map = {
+      tanggal: trans('TANGGAL', 'DATE'),
+      no_kunjungan: trans('NO. KUNJUNGAN', 'VISIT NO.'),
+      no_mr: trans('NO. MR', 'MR NO.'),
+      pasien: trans('PASIEN', 'PATIENT'),
+      dokter: trans('DOKTER', 'DOCTOR'),
+      penjamin: trans('PENJAMIN', 'GUARANTOR'),
+      status: trans('STATUS', 'STATUS'),
+      action_periksa: trans('AKSI', 'ACTION'),
+      no_invoice: trans('NO. INVOICE', 'INVOICE NO.'),
+      metode: trans('METODE', 'METHOD'),
+      jumlah: trans('JUMLAH', 'AMOUNT'),
+      subtotal: trans('SUBTOTAL', 'SUBTOTAL'),
+      diskon: trans('DISKON', 'DISCOUNT'),
+      total: trans('TOTAL', 'TOTAL'),
+      terbayar: trans('TERBAYAR', 'PAID AMOUNT'),
+      sisa: trans('SISA', 'BALANCE'),
+      poli: trans('POLI', 'CLINIC'),
+      jml: trans('JUMLAH', 'COUNT'),
+      obat: trans('OBAT', 'MEDICINE'),
+      kategori: trans('KATEGORI', 'CATEGORY'),
+      stok: trans('STOK', 'STOCK'),
+      satuan: trans('SATUAN', 'UNIT'),
+      pemeriksaan: trans('PEMERIKSAAN', 'EXAMINATION'),
+      hasil: trans('HASIL', 'RESULT'),
+      tarif: trans('TARIF', 'FEE'),
+    };
+    return map[key] || (rawLabel ? rawLabel.toUpperCase() : key.toUpperCase());
+  };
+
   rawCols.forEach((c) => {
     const isMoneyOrNum = ['money', 'number'].includes(c.type);
     const isStatus = c.type === 'status';
 
     dynamicColumns.push({
       key: c.key,
-      label: c.label.toUpperCase(),
+      label: formatReportColLabel(c.key, c.label),
       sortable: c.type !== 'action_periksa',
       thClassName: c.type === 'action_periksa' ? 'no-sort col-actions' : '',
       className: c.type === 'action_periksa' ? 'cell-actions' : '',
@@ -207,12 +240,9 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
         if (c.type === 'datetime') return formatDateTime(val);
         if (c.type === 'upper') return String(val || '').toUpperCase();
         if (c.type === 'status') {
-          const text = String(val || '')
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, l => l.toUpperCase());
           return (
             <span className="badge badge-gray">
-              {text}
+              {formatStatus(val)}
             </span>
           );
         }
@@ -275,6 +305,22 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
     return [cells];
   }, [dynamicColumns, sumCols, totals, reportData]);
 
+  const getReportLabel = (key, defaultLabel) => {
+    switch (key) {
+      case 'kunjungan': return trans('Laporan Kunjungan', 'Visit Report');
+      case 'dokter': return trans('Laporan per Dokter', 'Doctor Report');
+      case 'poli': return trans('Laporan per Poli', 'Clinic Report');
+      case 'pendapatan': return trans('Laporan Pendapatan', 'Revenue Report');
+      case 'billing': return trans('Laporan Billing', 'Billing Report');
+      case 'piutang': return trans('Laporan Piutang', 'Receivables Report');
+      case 'penjamin': return trans('Laporan per Penjamin', 'Guarantor Report');
+      case 'farmasi': return trans('Laporan Farmasi', 'Pharmacy Report');
+      case 'laboratorium': return trans('Laporan Laboratorium', 'Laboratory Report');
+      case 'radiologi': return trans('Laporan Radiologi', 'Radiology Report');
+      default: return defaultLabel;
+    }
+  };
+
   return (
     <div>
       {/* Panel laporan: tab vertikal (jenis) di kiri + konten di kanan */}
@@ -296,7 +342,7 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
               >
                 <span className="vt-main">
                   <span className="vt-ico"><AppIcon name={r.icon} /></span>
-                  <span>{r.label}</span>
+                  <span>{getReportLabel(r.key, r.label)}</span>
                 </span>
                 <span className="tab-count">{count}</span>
               </a>
@@ -309,7 +355,7 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
           <div className="panel-toolbar">
             <form className="report-filter no-print" onSubmit={(e) => e.preventDefault()}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label>Dari</label>
+                <label>{trans('Dari', 'From')}</label>
                 <input
                   type="date"
                   name="dari"
@@ -319,7 +365,7 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label>Sampai</label>
+                <label>{trans('Sampai', 'To')}</label>
                 <input
                   type="date"
                   name="sampai"
@@ -331,24 +377,24 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
             </form>
             <div className="report-actions no-print">
               <button type="button" className="btn btn-light" onClick={exportCsv}>
-                <AppIcon name="download" /> Export CSV
+                <AppIcon name="download" /> {trans('Ekspor CSV', 'Export CSV')}
               </button>
               <button type="button" className="btn btn-light" onClick={() => window.print()}>
-                <AppIcon name="print" /> Cetak
+                <AppIcon name="print" /> {trans('Cetak', 'Print')}
               </button>
             </div>
           </div>
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
-              Memuat laporan...
+              {trans('Memuat laporan...', 'Loading report...')}
             </div>
           ) : (
             <DataTableWrapper
               columns={dynamicColumns}
               data={rows}
               defaultPageSize={25}
-              emptyText="Belum ada data"
+              emptyText={trans('Belum ada data', 'No data available')}
               rowKey="id"
               tfootRows={tfootRows}
             />
@@ -362,7 +408,7 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
           <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
             <div className="modal-head">
               <div className="modal-title">
-                Detail Kunjungan {selectedDetailKunjungan?.no_kunjungan ? `— ${selectedDetailKunjungan.no_kunjungan}` : ''}
+                {trans('Detail Kunjungan', 'Visit Details')} {selectedDetailKunjungan?.no_kunjungan ? `— ${selectedDetailKunjungan.no_kunjungan}` : ''}
               </div>
               <button type="button" className="modal-close" onClick={() => setDetailModalOpen(false)}>
                 &times;
@@ -371,28 +417,28 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
             <div className="modal-body" style={{ padding: 20 }}>
               {loadingDetail || !selectedDetailKunjungan ? (
                 <div style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)' }}>
-                  Memuat detail kunjungan...
+                  {trans('Memuat detail kunjungan...', 'Loading visit details...')}
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '10px 16px', fontSize: 14 }}>
-                  <span style={{ color: 'var(--muted)' }}>No. Kunjungan:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('No. Kunjungan', 'Visit No.')}:</span>
                   <b>{selectedDetailKunjungan.no_kunjungan}</b>
 
-                  <span style={{ color: 'var(--muted)' }}>Tanggal:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Tanggal', 'Date')}:</span>
                   <span>{formatDate(selectedDetailKunjungan.tgl_kunjungan)}</span>
 
-                  <span style={{ color: 'var(--muted)' }}>Pasien:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Pasien', 'Patient')}:</span>
                   <b>
                     {selectedDetailKunjungan.pasien_nama} ({selectedDetailKunjungan.no_mr})
                   </b>
 
-                  <span style={{ color: 'var(--muted)' }}>Poli / Unit:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Poli / Unit', 'Clinic / Unit')}:</span>
                   <span>{selectedDetailKunjungan.poli_nama}</span>
 
-                  <span style={{ color: 'var(--muted)' }}>Dokter:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Dokter', 'Doctor')}:</span>
                   <span>{selectedDetailKunjungan.dokter_nama || '-'}</span>
 
-                  <span style={{ color: 'var(--muted)' }}>Penjamin:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Penjamin', 'Guarantor')}:</span>
                   <span>
                     <span className="badge badge-gray">
                       {selectedDetailKunjungan.jenis_penjamin?.toUpperCase() || 'UMUM'}
@@ -401,16 +447,14 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
                     {selectedDetailKunjungan.corporate_nama ? ` - ${selectedDetailKunjungan.corporate_nama}` : ''}
                   </span>
 
-                  <span style={{ color: 'var(--muted)' }}>Status:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Status', 'Status')}:</span>
                   <span>
                     <span className="badge badge-gray">
-                      {String(selectedDetailKunjungan.status || '')
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      {formatStatus(selectedDetailKunjungan.status)}
                     </span>
                   </span>
 
-                  <span style={{ color: 'var(--muted)' }}>Keluhan Awal:</span>
+                  <span style={{ color: 'var(--muted)' }}>{trans('Keluhan Awal', 'Chief Complaint')}:</span>
                   <span>{selectedDetailKunjungan.keluhan_awal || '-'}</span>
                 </div>
               )}
@@ -421,14 +465,14 @@ export default function LaporanView({ initialTab, initialSlug = null, onNavigate
                 className="btn btn-light"
                 onClick={() => window.print()}
               >
-                <AppIcon name="print" /> Cetak
+                <AppIcon name="print" /> {trans('Cetak', 'Print')}
               </button>
               <button
                 type="button"
                 className="btn"
                 onClick={() => setDetailModalOpen(false)}
               >
-                Tutup
+                {trans('Tutup', 'Close')}
               </button>
             </div>
           </div>

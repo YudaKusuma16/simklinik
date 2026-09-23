@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function PembelianObatView({ onBack, onNewPurchase }) {
+  const { t, trans, isEn } = useI18n();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +36,7 @@ export default function PembelianObatView({ onBack, onNewPurchase }) {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('id-ID', {
+      return d.toLocaleDateString(isEn ? 'en-US' : 'id-ID', {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -47,34 +49,34 @@ export default function PembelianObatView({ onBack, onNewPurchase }) {
   const columns = [
     {
       key: 'no_beli',
-      label: 'NO. BELI',
+      label: trans('NO. BELI', 'PURCHASE NO.'),
       render: (r) => <b>{r.no_beli}</b>,
     },
     {
       key: 'tanggal',
-      label: 'TANGGAL',
+      label: trans('TANGGAL', 'DATE'),
       render: (r) => formatDate(r.tanggal),
     },
     {
       key: 'supplier',
-      label: 'SUPPLIER',
+      label: trans('SUPPLIER', 'SUPPLIER'),
       render: (r) => r.supplier || '-',
     },
     {
       key: 'jml',
-      label: 'JML ITEM',
-      render: (r) => `${r.jml || 0} item`,
+      label: trans('JML ITEM', 'ITEM QTY'),
+      render: (r) => `${r.jml || 0} ${trans('item', 'items')}`,
     },
     {
       key: 'total',
-      label: 'JUMLAH',
+      label: trans('JUMLAH', 'TOTAL'),
       style: { textAlign: 'right' },
       tdStyle: { textAlign: 'right' },
       render: (r) => formatRupiah(r.total),
     },
     {
       key: 'keterangan',
-      label: 'KETERANGAN',
+      label: trans('KETERANGAN', 'NOTES'),
       render: (r) => r.keterangan || '-',
     },
   ];
@@ -84,14 +86,14 @@ export default function PembelianObatView({ onBack, onNewPurchase }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className="btn btn-light btn-sm" onClick={onBack}>
-            <AppIcon name="arrowleft" /> Inventory Farmasi
+            <AppIcon name="arrowleft" /> {trans('Inventory Farmasi', 'Pharmacy Inventory')}
           </button>
           <h2 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, margin: 0, fontSize: 20 }}>
-            <AppIcon name="truck" /> Pembelian Obat
+            <AppIcon name="truck" /> {trans('Pembelian Obat', 'Medicine Purchases')}
           </h2>
         </div>
         <button type="button" className="btn" onClick={onNewPurchase}>
-          <AppIcon name="plus" /> Pembelian Baru
+          <AppIcon name="plus" /> {trans('Pembelian Baru', 'New Purchase')}
         </button>
       </div>
 
@@ -100,7 +102,7 @@ export default function PembelianObatView({ onBack, onNewPurchase }) {
           columns={columns}
           data={data}
           defaultPageSize={25}
-          emptyText="Belum ada data"
+          emptyText={trans('Belum ada data', 'No data available')}
           rowKey="id"
         />
       </div>

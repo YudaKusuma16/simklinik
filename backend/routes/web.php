@@ -23,10 +23,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Root: arahkan ke dashboard
-Route::get('/', fn () => redirect('/legacy/modules/dashboard/index.php'));
-Route::get('/dashboard', fn () => redirect('/legacy/modules/dashboard/index.php'));
-Route::get('/login', fn () => redirect('/legacy/auth/login.php'))->name('login');
+// Root: halaman default Laravel & Vite
+Route::get('/', fn () => view('welcome'));
 
 // Pengalihan bahasa/locale (dipertahankan untuk kompatibilitas)
 Route::get('/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch'])
@@ -39,5 +37,3 @@ Route::get('/app/{any?}', fn () => file_get_contents(public_path('app/index.html
 Route::match(['get', 'post'], '/legacy/{path}', LegacyController::class)
     ->where('path', '.*')
     ->name('legacy');
-
-

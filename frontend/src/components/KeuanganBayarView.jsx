@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 
 export default function KeuanganBayarView({ kunjunganId, onBack }) {
+  const { t, isEn, trans, formatTgl } = useI18n();
   const [loading, setLoading] = useState(true);
   const [kunjungan, setKunjungan] = useState(null);
   const [billing, setBilling] = useState(null);
@@ -36,7 +38,9 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
     if (!dateStr) return '-';
     try {
       const d = new Date(dateStr);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const monthsId = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = isEn ? monthsEn : monthsId;
       const datePart = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
       if (!withTime) return datePart;
       const timePart = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -48,25 +52,25 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
 
   const getMetodeLabel = (m) => {
     switch (m) {
-      case 'cash': return 'Tunai (Cash)';
-      case 'transfer': return 'Transfer Bank';
+      case 'cash': return trans('Tunai (Cash)', 'Cash');
+      case 'transfer': return trans('Transfer Bank', 'Bank Transfer');
       case 'qris': return 'QRIS';
-      case 'edc': return 'Mesin EDC / Kartu';
+      case 'edc': return trans('Mesin EDC / Kartu', 'EDC Machine / Card');
       case 'va': return 'Virtual Account (VA)';
       case 'ewallet': return 'E-Wallet';
-      case 'penjamin': return 'Tanggungan Penjamin';
-      default: return m || 'Tunai';
+      case 'penjamin': return trans('Tanggungan Penjamin', 'Guarantor Coverage');
+      default: return m || trans('Tunai', 'Cash');
     }
   };
 
   const getPenjaminLabel = (p) => {
     switch (p) {
-      case 'umum': return 'Umum';
-      case 'asuransi': return 'Asuransi Swasta';
+      case 'umum': return trans('Umum', 'General');
+      case 'asuransi': return trans('Asuransi Swasta', 'Private Insurance');
       case 'bpjs': return 'BPJS Kesehatan';
       case 'corporate': return 'Corporate';
       case 'ar': return 'AR';
-      default: return p || 'Umum';
+      default: return p || trans('Umum', 'General');
     }
   };
 
@@ -139,7 +143,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
     e.preventDefault();
     const jm = parseFloat(jumlah);
     if (!jm || jm <= 0) {
-      showToast('danger', 'Jumlah bayar harus lebih dari 0.');
+      showToast('danger', trans('Jumlah bayar harus lebih dari 0.', 'Payment amount must be greater than 0.'));
       return;
     }
 
@@ -153,13 +157,13 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
       });
 
       if (res && res.success) {
-        showToast('success', res.message || 'Pembayaran lunas. Kunjungan selesai. Silakan cetak struk.');
+        showToast('success', res.message || trans('Pembayaran lunas. Kunjungan selesai. Silakan cetak struk.', 'Payment completed. Visit finished. Please print receipt.'));
         await loadData();
       } else {
-        showToast('danger', res?.message || 'Gagal memproses pembayaran.');
+        showToast('danger', res?.message || trans('Gagal memproses pembayaran.', 'Failed to process payment.'));
       }
     } catch (err) {
-      showToast('danger', err.message || 'Gagal memproses pembayaran.');
+      showToast('danger', err.message || trans('Gagal memproses pembayaran.', 'Failed to process payment.'));
     } finally {
       setSubmitting(false);
     }
@@ -168,7 +172,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
   if (loading) {
     return (
       <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--muted)' }}>
-        Memuat lembar pembayaran kasir...
+        {trans('Memuat lembar pembayaran kasir...', 'Loading cashier payment sheet...')}
       </div>
     );
   }
@@ -177,10 +181,10 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
     return (
       <div style={{ padding: '20px 0' }}>
         <button type="button" className="btn btn-light btn-sm" onClick={() => onBack()}>
-          <AppIcon name="arrowleft" /> Kembali
+          <AppIcon name="arrowleft" /> {trans('Kembali', 'Back')}
         </button>
         <div className="alert alert-danger" style={{ marginTop: 14 }}>
-          Data kunjungan tidak ditemukan.
+          {trans('Data kunjungan tidak ditemukan.', 'Visit data not found.')}
         </div>
       </div>
     );
@@ -227,7 +231,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
         onClick={() => onBack()}
         style={{ marginBottom: 14 }}
       >
-        <AppIcon name="arrowleft" /> Kembali
+        <AppIcon name="arrowleft" /> {trans('Kembali', 'Back')}
       </button>
 
       <div className="pay-page" style={{ marginTop: 0 }}>
@@ -241,7 +245,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
             <div>
               <div className="bd-pasien">{kunjungan.pasien || kunjungan.pasien_nama}</div>
               <div className="bd-meta">
-                <span><AppIcon name="user" /> No. MR <b>{kunjungan.no_mr}</b></span>
+                <span><AppIcon name="user" /> {trans('No. MR', 'MR No.')} <b>{kunjungan.no_mr}</b></span>
                 <span><AppIcon name="hospital" /> {kunjungan.poli || kunjungan.poli_nama}</span>
                 <span><AppIcon name="ticket" /> {kunjungan.no_kunjungan}</span>
               </div>
@@ -252,7 +256,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
               Invoice {invoice?.no_invoice || '-'}
             </div>
             <span className={`badge ${isLunas ? 'badge-green' : 'badge-orange'}`}>
-              {isLunas ? 'LUNAS' : 'Belum Lunas'}
+              {isLunas ? trans('LUNAS', 'PAID') : trans('Belum Lunas', 'Unpaid')}
             </span>
           </div>
         </div>
@@ -261,8 +265,8 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
         <div className="pay-penjamin">
           {kunjungan.jenis_penjamin === 'umum' ? (
             <>
-              <span className="badge badge-gray">UMUM / CASH</span>
-              <span>Pasien membayar sendiri (tanpa penjamin).</span>
+              <span className="badge badge-gray">{trans('UMUM / CASH', 'SELF-PAY / CASH')}</span>
+              <span>{trans('Pasien membayar sendiri (tanpa penjamin).', 'Patient pays directly (no guarantor).')}</span>
             </>
           ) : (
             <>
@@ -271,7 +275,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
               {kunjungan.corporate_nama && (
                 <span>&middot; <b>{kunjungan.corporate_nama}</b> {kunjungan.limit_jaminan > 0 && `(limit ${formatRupiah(kunjungan.limit_jaminan)})`}</span>
               )}
-              {kunjungan.no_jaminan && <span>&middot; No. Jaminan: <b>{kunjungan.no_jaminan}</b></span>}
+              {kunjungan.no_jaminan && <span>&middot; {trans('No. Jaminan:', 'Guarantee No.:')} <b>{kunjungan.no_jaminan}</b></span>}
             </>
           )}
         </div>
@@ -281,35 +285,35 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
           {/* Kolom Kiri: Ringkasan Tagihan */}
           <div className="pay-card">
             <div className="pay-card-title">
-              <AppIcon name="billing" /> Ringkasan Tagihan
+              <AppIcon name="billing" /> {trans('Ringkasan Tagihan', 'Billing Summary')}
             </div>
             <div className="pay-sum-rows">
               <div className="bd-sum-row">
-                <span>Total Tagihan</span>
+                <span>{trans('Total Tagihan', 'Total Bill')}</span>
                 <b>{formatRupiah(totalBill)}</b>
               </div>
               {kunjungan.jenis_penjamin !== 'umum' && (
                 <>
                   <div className="bd-sum-row" style={{ color: 'var(--primary)' }}>
-                    <span>Tanggungan Penjamin ({penjaminNama})</span>
+                    <span>{trans('Tanggungan Penjamin', 'Guarantor Coverage')} ({penjaminNama})</span>
                     <b>{formatRupiah(effectivePenjaminCover)}</b>
                   </div>
                   <div className="bd-sum-row" style={{ fontWeight: 600 }}>
-                    <span>Tanggungan Pasien</span>
+                    <span>{trans('Tanggungan Pasien', 'Patient Responsibility')}</span>
                     <b>{formatRupiah(tanggunganPasien)}</b>
                   </div>
                 </>
               )}
               {(realPasienPaid > 0 || kunjungan.jenis_penjamin === 'umum') && (
                 <div className="bd-sum-row">
-                  <span>Sudah Terbayar Pasien</span>
+                  <span>{trans('Sudah Terbayar Pasien', 'Paid by Patient')}</span>
                   <b style={{ color: 'var(--green)' }}>{formatRupiah(realPasienPaid)}</b>
                 </div>
               )}
             </div>
 
             <div className={`pay-sisa ${sisaPasien > 0 ? 'owe' : 'paid'}`}>
-              <div className="lbl">SISA TAGIHAN PASIEN</div>
+              <div className="lbl">{trans('SISA TAGIHAN PASIEN', 'PATIENT REMAINING BALANCE')}</div>
               <div className="val">{formatRupiah(sisaPasien)}</div>
             </div>
 
@@ -321,7 +325,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => handleCetakStruk(invoice?.id, false)}
                 >
-                  <AppIcon name="print" /> Cetak Struk
+                  <AppIcon name="print" /> {trans('Cetak Struk', 'Print Receipt')}
                 </button>
                 <button
                   type="button"
@@ -329,7 +333,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
                   style={{ flex: 1, justifyContent: 'center', border: '1px solid #cbd5e1' }}
                   onClick={() => handleCetakStruk(invoice?.id, true)}
                 >
-                  Cetak Copy
+                  {trans('Cetak Copy', 'Print Copy')}
                 </button>
               </div>
             )}
@@ -338,47 +342,47 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
           {/* Kolom Kanan: Input Pembayaran */}
           <div className="pay-card">
             <div className="pay-card-title">
-              <AppIcon name="money" /> Input Pembayaran
+              <AppIcon name="money" /> {trans('Input Pembayaran', 'Payment Input')}
             </div>
             {isLunas ? (
               <div className="pay-lunas-banner">
                 <AppIcon name="check" />
                 <div>
-                  <b>Tagihan sudah lunas</b>
-                  <small>Tidak ada pembayaran lagi. Silakan cetak struk.</small>
+                  <b>{trans('Tagihan sudah lunas', 'Bill is fully paid')}</b>
+                  <small>{trans('Tidak ada pembayaran lagi. Silakan cetak struk.', 'No further payment required. Please print receipt.')}</small>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleSubmitPembayaran}>
                 <div className="form-group">
-                  <label>Metode Pembayaran</label>
+                  <label>{trans('Metode Pembayaran', 'Payment Method')}</label>
                   <select
                     className="form-control"
                     value={metode}
                     onChange={(e) => setMetode(e.target.value)}
                   >
-                    <option value="cash">Tunai (Cash)</option>
-                    <option value="transfer">Transfer Bank</option>
+                    <option value="cash">{trans('Tunai (Cash)', 'Cash')}</option>
+                    <option value="transfer">{trans('Transfer Bank', 'Bank Transfer')}</option>
                     <option value="qris">QRIS</option>
-                    <option value="edc">Mesin EDC / Kartu</option>
+                    <option value="edc">{trans('Mesin EDC / Kartu', 'EDC Machine / Card')}</option>
                     <option value="va">Virtual Account (VA)</option>
                     <option value="ewallet">E-Wallet</option>
                     {kunjungan.jenis_penjamin !== 'umum' && (
-                      <option value="penjamin">Tanggungan Penjamin</option>
+                      <option value="penjamin">{trans('Tanggungan Penjamin', 'Guarantor Coverage')}</option>
                     )}
                   </select>
                 </div>
 
                 {metode === 'transfer' && (
                   <div className="form-group">
-                    <label>Pilih Bank Tujuan</label>
+                    <label>{trans('Pilih Bank Tujuan', 'Select Target Bank')}</label>
                     <select
                       className="form-control"
                       value={bankId}
                       onChange={(e) => setBankId(e.target.value)}
                       required
                     >
-                      <option value="">Pilih Bank Tujuan...</option>
+                      <option value="">{trans('Pilih Bank Tujuan...', 'Select Target Bank...')}</option>
                       {banks.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.nama_bank} &mdash; {b.no_rekening} ({b.atas_nama})
@@ -389,7 +393,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
                 )}
 
                 <div className="form-group">
-                  <label>Jumlah Bayar</label>
+                  <label>{trans('Jumlah Bayar', 'Payment Amount')}</label>
                   <input
                     type="number"
                     min="1"
@@ -402,11 +406,11 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
                 </div>
 
                 <div className="form-group">
-                  <label>Keterangan</label>
+                  <label>{trans('Keterangan / Catatan Transaksi', 'Transaction Notes')}</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Catatan pembayaran (opsional)..."
+                    placeholder={trans('Contoh: Pembayaran tunai kasir...', 'E.g., Cash payment...')}
                     value={keterangan}
                     onChange={(e) => setKeterangan(e.target.value)}
                   />
@@ -418,7 +422,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
                   style={{ width: '100%', justifyContent: 'center' }}
                   disabled={submitting}
                 >
-                  <AppIcon name="check" /> {submitting ? 'Menyimpan...' : 'Simpan Pembayaran'}
+                  <AppIcon name="check" /> {submitting ? trans('Menyimpan...', 'Saving...') : trans('Simpan Pembayaran', 'Save Payment')}
                 </button>
               </form>
             )}
@@ -428,25 +432,25 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
         {/* Bagian Bawah: Riwayat Pembayaran */}
         <div className="pay-card">
           <div className="pay-card-title">
-            <AppIcon name="clock" /> Riwayat Pembayaran
+            <AppIcon name="clock" /> {trans('Riwayat Pembayaran', 'Payment History')}
           </div>
           <div className="bd-table-wrap">
             <table className="bd-table">
               <thead>
                 <tr>
-                  <th>WAKTU</th>
-                  <th>METODE PEMBAYARAN</th>
-                  <th>BANK</th>
-                  <th className="num">JUMLAH</th>
-                  <th>BUKTI</th>
-                  <th>KASIR</th>
+                  <th>{trans('WAKTU', 'TIME')}</th>
+                  <th>{trans('METODE PEMBAYARAN', 'PAYMENT METHOD')}</th>
+                  <th>{trans('BANK', 'BANK')}</th>
+                  <th className="num">{trans('JUMLAH', 'AMOUNT')}</th>
+                  <th>{trans('BUKTI', 'PROOF')}</th>
+                  <th>{trans('KASIR', 'CASHIER')}</th>
                 </tr>
               </thead>
               <tbody>
                 {pembayaranList.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="bd-empty">
-                      Belum ada pembayaran.
+                      {trans('Belum ada pembayaran.', 'No payment records yet.')}
                     </td>
                   </tr>
                 ) : (
@@ -461,7 +465,7 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
                       <td>
                         {pm.bukti ? (
                           <a href={`/${pm.bukti}`} target="_blank" rel="noreferrer">
-                            Lihat
+                            {trans('Lihat', 'View')}
                           </a>
                         ) : (
                           '-'

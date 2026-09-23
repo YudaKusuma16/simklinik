@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 
 export default function PembelianFormView({ onBack, onSuccess }) {
+  const { t, trans, isEn } = useI18n();
   const [suppliers, setSuppliers] = useState([]);
   const [obatList, setObatList] = useState([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
@@ -38,7 +40,7 @@ export default function PembelianFormView({ onBack, onSuccess }) {
       }
     } catch (err) {
       console.error('Error loading pembelian lookups:', err);
-      setErrorMessage('Gagal memuat daftar supplier/obat: ' + err.message);
+      setErrorMessage(trans('Gagal memuat daftar supplier/obat: ', 'Failed to load supplier/medicine list: ') + err.message);
     } finally {
       setLoadingLookups(false);
     }
@@ -90,7 +92,7 @@ export default function PembelianFormView({ onBack, onSuccess }) {
     // Validasi
     const validItems = items.filter(it => it.obat_id && Number(it.qty) > 0);
     if (validItems.length === 0) {
-      setErrorMessage('Minimal isi 1 baris obat dengan jumlah (qty) lebih dari 0.');
+      setErrorMessage(trans('Minimal isi 1 baris obat dengan jumlah (qty) lebih dari 0.', 'Please add at least 1 medicine row with qty greater than 0.'));
       return;
     }
 
@@ -111,13 +113,13 @@ export default function PembelianFormView({ onBack, onSuccess }) {
 
       const res = await api.post('/farmasi/pembelian', payload);
       if (res && res.success) {
-        onSuccess(res.message || 'Pembelian obat berhasil disimpan.');
+        onSuccess(res.message || trans('Pembelian obat berhasil disimpan.', 'Medicine purchase saved successfully.'));
       } else {
-        setErrorMessage(res.message || 'Gagal menyimpan pembelian.');
+        setErrorMessage(res.message || trans('Gagal menyimpan pembelian.', 'Failed to save purchase.'));
       }
     } catch (err) {
       console.error('Error saving pembelian:', err);
-      setErrorMessage(err.message || 'Terjadi kesalahan saat menyimpan.');
+      setErrorMessage(err.message || trans('Terjadi kesalahan saat menyimpan.', 'An error occurred while saving.'));
     } finally {
       setSubmitting(false);
     }
@@ -126,7 +128,7 @@ export default function PembelianFormView({ onBack, onSuccess }) {
   return (
     <div className="pembelian-form-view">
       <button type="button" className="btn btn-light btn-sm" onClick={onBack}>
-        <AppIcon name="arrowleft" /> Pembelian
+        <AppIcon name="arrowleft" /> {trans('Pembelian', 'Purchases')}
       </button>
 
       {errorMessage && (
@@ -139,21 +141,21 @@ export default function PembelianFormView({ onBack, onSuccess }) {
         <div className="card">
           <div className="form-row">
             <div className="form-group">
-              <label>Supplier</label>
+              <label>{trans('Supplier', 'Supplier')}</label>
               <select
                 name="supplier_id"
                 className="form-control"
                 value={supplierId}
                 onChange={e => setSupplierId(e.target.value)}
               >
-                <option value="">— Pilih Supplier —</option>
+                <option value="">— {trans('Pilih Supplier', 'Select Supplier')} —</option>
                 {suppliers.map(s => (
                   <option key={s.id} value={s.id}>{s.nama}</option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label>Tanggal</label>
+              <label>{trans('Tanggal', 'Date')}</label>
               <input
                 type="date"
                 name="tanggal"
@@ -164,7 +166,7 @@ export default function PembelianFormView({ onBack, onSuccess }) {
             </div>
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Keterangan</label>
+            <label>{trans('Keterangan', 'Notes')}</label>
             <input
               type="text"
               name="keterangan"
@@ -177,9 +179,9 @@ export default function PembelianFormView({ onBack, onSuccess }) {
 
         <div className="card" style={{ marginTop: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 style={{ margin: 0 }}>Daftar Obat Dibeli</h3>
+            <h3 style={{ margin: 0 }}>{trans('Daftar Obat Dibeli', 'Purchased Medicine List')}</h3>
             <button type="button" className="btn btn-sm" onClick={handleAddRow}>
-              <AppIcon name="plus" /> Tambah Obat
+              <AppIcon name="plus" /> {trans('Tambah Obat', 'Add Medicine')}
             </button>
           </div>
 
@@ -187,11 +189,11 @@ export default function PembelianFormView({ onBack, onSuccess }) {
             <table className="table-inline-form">
               <thead>
                 <tr>
-                  <th className="col-obat">OBAT</th>
-                  <th className="col-batch">NO. BATCH</th>
-                  <th className="col-exp">KEDALUWARSA</th>
+                  <th className="col-obat">{trans('OBAT', 'MEDICINE')}</th>
+                  <th className="col-batch">{trans('NO. BATCH', 'BATCH NO.')}</th>
+                  <th className="col-exp">{trans('KEDALUWARSA', 'EXPIRY DATE')}</th>
                   <th className="col-qty">QTY</th>
-                  <th className="col-harga">HARGA BELI</th>
+                  <th className="col-harga">{trans('HARGA BELI', 'PURCHASE PRICE')}</th>
                   <th className="col-del"></th>
                 </tr>
               </thead>
@@ -204,10 +206,10 @@ export default function PembelianFormView({ onBack, onSuccess }) {
                         value={row.obat_id}
                         onChange={(e) => handleObatChange(index, e.target.value)}
                       >
-                        <option value="">— Pilih Obat —</option>
+                        <option value="">— {trans('Pilih Obat', 'Select Medicine')} —</option>
                         {obatList.map(o => (
                           <option key={o.id} value={o.id}>
-                            {o.nama} (Stok {parseInt(o.stok || 0, 10)})
+                            {o.nama} ({trans('Stok', 'Stock')} {parseInt(o.stok || 0, 10)})
                           </option>
                         ))}
                       </select>
@@ -252,7 +254,7 @@ export default function PembelianFormView({ onBack, onSuccess }) {
                         type="button"
                         className="btn btn-sm btn-red"
                         onClick={() => handleRemoveRow(index)}
-                        title="Hapus Baris"
+                        title={trans('Hapus Baris', 'Delete Row')}
                       >
                         <AppIcon name="close" />
                       </button>
@@ -270,7 +272,7 @@ export default function PembelianFormView({ onBack, onSuccess }) {
             className="btn btn-green"
             disabled={submitting}
           >
-            <AppIcon name="save" /> {submitting ? 'Menyimpan...' : 'Simpan Pembelian & Tambah Stok'}
+            <AppIcon name="save" /> {submitting ? trans('Menyimpan...', 'Saving...') : trans('Simpan Pembelian & Tambah Stok', 'Save Purchase & Add Stock')}
           </button>
         </div>
       </form>

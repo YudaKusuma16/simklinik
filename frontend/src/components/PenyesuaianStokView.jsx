@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
+  const { t, trans, isEn } = useI18n();
   const [obatList, setObatList] = useState([]);
   const [riwayatList, setRiwayatList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
       }
     } catch (err) {
       console.error('Error fetching penyesuaian data:', err);
-      setErrorMessage('Gagal memuat data penyesuaian: ' + err.message);
+      setErrorMessage(trans('Gagal memuat data penyesuaian: ', 'Failed to load stock adjustment data: ') + err.message);
     } finally {
       setLoading(false);
     }
@@ -57,11 +59,11 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
     setSuccessMessage('');
 
     if (!selectedObatId) {
-      setErrorMessage('Silakan pilih obat terlebih dahulu.');
+      setErrorMessage(trans('Silakan pilih obat terlebih dahulu.', 'Please select a medicine first.'));
       return;
     }
     if (stokFisik === '' || Number(stokFisik) < 0) {
-      setErrorMessage('Stok fisik harus diisi (>= 0).');
+      setErrorMessage(trans('Stok fisik harus diisi (>= 0).', 'Physical stock must be specified (>= 0).'));
       return;
     }
 
@@ -75,7 +77,7 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
 
       const res = await api.post('/farmasi/penyesuaian', payload);
       if (res && res.success) {
-        setSuccessMessage(res.message || 'Penyesuaian stok berhasil disimpan.');
+        setSuccessMessage(res.message || trans('Penyesuaian stok berhasil disimpan.', 'Stock adjustment saved successfully.'));
         if (onSuccessMessage) onSuccessMessage(res.message);
         // Reset form input
         setSelectedObatId('');
@@ -85,11 +87,11 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
         // Refresh data
         fetchData();
       } else {
-        setErrorMessage(res.message || 'Gagal menyimpan penyesuaian stok.');
+        setErrorMessage(res.message || trans('Gagal menyimpan penyesuaian stok.', 'Failed to save stock adjustment.'));
       }
     } catch (err) {
       console.error('Error saving penyesuaian stok:', err);
-      setErrorMessage(err.message || 'Terjadi kesalahan saat menyimpan.');
+      setErrorMessage(err.message || trans('Terjadi kesalahan saat menyimpan.', 'An error occurred while saving.'));
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +102,7 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('id-ID', {
+      return d.toLocaleDateString(isEn ? 'en-US' : 'id-ID', {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -122,17 +124,17 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
     },
     {
       key: 'tanggal',
-      label: 'WAKTU',
+      label: trans('WAKTU', 'TIME'),
       render: (r) => formatDateTime(r.tanggal),
     },
     {
       key: 'obat',
-      label: 'OBAT',
+      label: trans('OBAT', 'MEDICINE'),
       render: (r) => <b>{r.obat}</b>,
     },
     {
       key: 'qty',
-      label: 'SELISIH',
+      label: trans('SELISIH', 'DIFFERENCE'),
       style: { textAlign: 'center' },
       tdStyle: { textAlign: 'center' },
       render: (r) => {
@@ -146,19 +148,19 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
     },
     {
       key: 'stok_akhir',
-      label: 'STOK AKHIR',
+      label: trans('STOK AKHIR', 'FINAL STOCK'),
       style: { textAlign: 'center' },
       tdStyle: { textAlign: 'center' },
       render: (r) => parseInt(r.stok_akhir || 0, 10),
     },
     {
       key: 'keterangan',
-      label: 'KETERANGAN',
+      label: trans('KETERANGAN', 'NOTES'),
       render: (r) => r.keterangan || '-',
     },
     {
       key: 'petugas',
-      label: 'PETUGAS',
+      label: trans('PETUGAS', 'OFFICER'),
       render: (r) => r.petugas || '-',
     },
   ];
@@ -166,7 +168,7 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
   return (
     <div className="penyesuaian-stok-view">
       <button type="button" className="btn btn-light btn-sm" onClick={onBack}>
-        <AppIcon name="arrowleft" /> Inventory Farmasi
+        <AppIcon name="arrowleft" /> {trans('Inventory Farmasi', 'Pharmacy Inventory')}
       </button>
 
       {successMessage && (
@@ -183,32 +185,32 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
 
       <div className="card" style={{ maxWidth: 560, marginTop: 14 }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 18 }}>
-          <AppIcon name="scale" /> Penyesuaian / Opname
+          <AppIcon name="scale" /> {trans('Penyesuaian / Opname', 'Adjustment / Stock Opname')}
         </h2>
         <p style={{ color: 'var(--muted)', marginBottom: 16, fontSize: 13 }}>
-          Masukkan jumlah fisik hasil hitung. Sistem akan mencatat selisihnya.
+          {trans('Masukkan jumlah fisik hasil hitung. Sistem akan mencatat selisihnya.', 'Enter counted physical stock. The system will record the difference.')}
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Obat *</label>
+            <label>{trans('Obat *', 'Medicine *')}</label>
             <select
               className="form-control"
               value={selectedObatId}
               onChange={handleObatChange}
               required
             >
-              <option value="">— Pilih Obat —</option>
+              <option value="">— {trans('Pilih Obat', 'Select Medicine')} —</option>
               {obatList.map(o => (
                 <option key={o.id} value={o.id}>
-                  {o.nama} (Stok sistem: {parseInt(o.stok || 0, 10)})
+                  {o.nama} ({trans('Stok sistem', 'System stock')}: {parseInt(o.stok || 0, 10)})
                 </option>
               ))}
             </select>
           </div>
 
           <div className="form-group">
-            <label>Stok Sistem Saat Ini</label>
+            <label>{trans('Stok Sistem Saat Ini', 'Current System Stock')}</label>
             <input
               type="text"
               className="form-control"
@@ -219,7 +221,7 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
           </div>
 
           <div className="form-group">
-            <label>Stok Fisik (hasil hitung) *</label>
+            <label>{trans('Stok Fisik (hasil hitung) *', 'Physical Stock (counted) *')}</label>
             <input
               type="number"
               min="0"
@@ -232,13 +234,13 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
           </div>
 
           <div className="form-group">
-            <label>Keterangan</label>
+            <label>{trans('Keterangan', 'Notes')}</label>
             <input
               type="text"
               className="form-control"
               value={keterangan}
               onChange={e => setKeterangan(e.target.value)}
-              placeholder="cth: Stok opname bulanan / koreksi rusak"
+              placeholder={trans('cth: Stok opname bulanan / koreksi rusak', 'e.g.: Monthly stock opname / damaged correction')}
             />
           </div>
 
@@ -247,13 +249,13 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
             className="btn btn-green"
             disabled={submitting}
           >
-            <AppIcon name="save" /> {submitting ? 'Menyimpan...' : 'Simpan Penyesuaian'}
+            <AppIcon name="save" /> {submitting ? trans('Menyimpan...', 'Saving...') : trans('Simpan Penyesuaian', 'Save Adjustment')}
           </button>
         </form>
       </div>
 
       <div className="section-title" style={{ marginTop: 24 }}>
-        Riwayat Penyesuaian
+        {trans('Riwayat Penyesuaian', 'Adjustment History')}
       </div>
 
       <div className="table-wrap">
@@ -261,7 +263,7 @@ export default function PenyesuaianStokView({ onBack, onSuccessMessage }) {
           columns={columns}
           data={riwayatList}
           defaultPageSize={25}
-          emptyText="Belum ada data"
+          emptyText={trans('Belum ada data', 'No data available')}
           rowKey="id"
         />
       </div>

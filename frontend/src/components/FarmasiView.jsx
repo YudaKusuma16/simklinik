@@ -5,8 +5,10 @@ import DataTableWrapper from './DataTableWrapper';
 import PembelianObatView from './PembelianObatView';
 import PembelianFormView from './PembelianFormView';
 import PenyesuaianStokView from './PenyesuaianStokView';
+import { useI18n } from '../i18n';
 
 export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView }) {
+  const { t, trans, formatTgl, formatStatus } = useI18n();
   const [subView, setSubView] = useState(initialSubView); // 'stok' | 'pembelian_list' | 'pembelian_form' | 'penyesuaian'
 
   useEffect(() => {
@@ -182,9 +184,9 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
       {/* Page Toolbar persis legacy modules/inventory/index.php */}
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">Inventory Farmasi</div>
+          <div className="pt-title">{t('farmasi.title')}</div>
           <div className="pt-sub">
-            Pantau stok obat, nilai modal, dan masa kedaluwarsa. Catat pembelian masuk & penyesuaian stok.
+            {t('farmasi.subtitle')}
           </div>
         </div>
         <div className="pt-actions">
@@ -193,14 +195,14 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
             className="btn btn-light"
             onClick={() => changeSubView('penyesuaian')}
           >
-            <AppIcon name="pengaturan" /> Penyesuaian / Opname
+            <AppIcon name="pengaturan" /> {t('farmasi.penyesuaian_btn')}
           </button>
           <button
             type="button"
             className="btn"
             onClick={() => changeSubView('pembelian_list')}
           >
-            <AppIcon name="inventory" /> Pembelian Obat
+            <AppIcon name="inventory" /> {t('farmasi.pembelian_btn')}
           </button>
         </div>
       </div>
@@ -210,28 +212,28 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
         <div className="card stat">
           <div>
             <div className="num">{totalObat}</div>
-            <div className="lbl">Jenis Obat</div>
+            <div className="lbl">{t('farmasi.total_obat')}</div>
           </div>
           <div className="ico bg-blue"><AppIcon name="pills" /></div>
         </div>
         <div className="card stat">
           <div>
             <div className="num">{menipis}</div>
-            <div className="lbl">Obat Stok Menipis</div>
+            <div className="lbl">{t('farmasi.stok_menipis')}</div>
           </div>
           <div className="ico bg-red"><AppIcon name="bell" /></div>
         </div>
         <div className="card stat">
           <div>
             <div className="num">{formatRupiah(nilaiStok)}</div>
-            <div className="lbl">Nilai Stok (modal)</div>
+            <div className="lbl">{t('farmasi.nilai_stok')}</div>
           </div>
           <div className="ico bg-green"><AppIcon name="money" /></div>
         </div>
         <div className="card stat">
           <div>
             <div className="num">{expSoon}</div>
-            <div className="lbl">Akan Kedaluwarsa (&le;30 hari)</div>
+            <div className="lbl">{t('farmasi.exp_soon')}</div>
           </div>
           <div className="ico bg-orange"><AppIcon name="calendar" /></div>
         </div>
@@ -239,28 +241,28 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
 
       {/* TAB 1: STOK OBAT persis legacy */}
       <div style={{ marginTop: 20 }}>
-        <div className="section-title">Daftar Stok Obat</div>
+        <div className="section-title">{t('farmasi.daftar_stok')}</div>
 
         <div className="table-wrap">
           <DataTableWrapper
             columns={[
               {
                 key: 'kode',
-                label: 'KODE',
+                label: t('farmasi.kode'),
                 render: (o) => <code>{o.kode}</code>,
               },
               {
                 key: 'nama',
-                label: 'NAMA OBAT',
+                label: t('farmasi.nama_obat'),
               },
               {
                 key: 'kategori',
-                label: 'KATEGORI',
+                label: t('farmasi.kategori'),
                 render: (o) => o.kategori_nama || o.kategori || '-',
               },
               {
                 key: 'stok',
-                label: 'STOK',
+                label: t('farmasi.stok'),
                 style: { textAlign: 'center' },
                 tdStyle: { textAlign: 'center' },
                 render: (o) => (
@@ -271,21 +273,21 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
               },
               {
                 key: 'stok_minimal',
-                label: 'STOK MINIMAL',
+                label: t('farmasi.stok_min'),
                 style: { textAlign: 'center' },
                 tdStyle: { textAlign: 'center' },
                 render: (o) => parseInt(o.stok_minimal || 0, 10),
               },
               {
                 key: 'harga_beli',
-                label: 'HARGA BELI',
+                label: t('farmasi.harga_beli'),
                 style: { textAlign: 'right' },
                 tdStyle: { textAlign: 'right' },
                 render: (o) => formatRupiah(o.harga_beli),
               },
               {
                 key: 'harga_jual',
-                label: 'HARGA JUAL',
+                label: t('farmasi.harga_jual'),
                 style: { textAlign: 'right' },
                 tdStyle: { textAlign: 'right' },
                 render: (o) => {
@@ -296,21 +298,21 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
               },
               {
                 key: 'status',
-                label: 'STATUS',
+                label: t('farmasi.status'),
                 style: { textAlign: 'center' },
                 tdStyle: { textAlign: 'center' },
                 render: (o) => {
                   const isLow = Number(o.stok) <= Number(o.stok_minimal || 10);
                   return (
                     <span className={`badge ${isLow ? 'badge-red' : 'badge-green'}`}>
-                      {isLow ? 'Menipis' : 'Aman'}
+                      {isLow ? t('farmasi.menipis') : t('farmasi.aman')}
                     </span>
                   );
                 },
               },
               {
                 key: 'aksi',
-                label: 'AKSI',
+                label: t('farmasi.aksi'),
                 sortable: false,
                 thClassName: 'no-sort col-actions',
                 className: 'cell-actions',
@@ -319,9 +321,9 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                     <button
                       type="button"
                       className="btn btn-sm btn-light"
-                      onClick={() => alert(`Kartu stok obat: ${o.nama} (${o.stok} ${o.satuan_nama || ''})`)}
+                      onClick={() => alert(`${t('farmasi.kartu_stok')}: ${o.nama} (${o.stok} ${o.satuan_nama || ''})`)}
                     >
-                      Kartu Stok
+                      {t('farmasi.kartu_stok')}
                     </button>
                   </div>
                 ),
@@ -329,7 +331,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
             ]}
             data={stokList}
             defaultPageSize={25}
-            emptyText="Belum ada data"
+            emptyText={trans('Belum ada data', 'No data available')}
             rowKey="id"
           />
         </div>
@@ -338,22 +340,22 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
       {/* TAB 2: ANTREAN RESEP persis legacy modules/pelayanan/farmasi.php */}
       {activeTab === 'antrean' && (
         <div style={{ marginTop: 20 }}>
-          <div className="section-title">Antrian Farmasi / Resep</div>
+          <div className="section-title">{t('farmasi.antrean_title')}</div>
           <div className="table-wrap">
             <DataTableWrapper
               columns={[
                 {
                   key: 'no_antrian',
-                  label: 'ANTRIAN',
+                  label: trans('ANTREAN', 'QUEUE'),
                   render: (a) => <b>{a.poli_kode}-{String(a.no_antrian).padStart(3, '0')}</b>,
                 },
                 {
                   key: 'no_mr',
-                  label: 'NO. MR',
+                  label: trans('NO. MR', 'MR NO.'),
                 },
                 {
                   key: 'pasien_nama',
-                  label: 'PASIEN',
+                  label: trans('PASIEN', 'PATIENT'),
                   render: (a) => (
                     <>
                       {a.pasien_nama}
@@ -361,7 +363,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                         <>
                           <br />
                           <span className="badge badge-red" style={{ fontSize: 11 }}>
-                            Alergi: {a.pasien_alergi}
+                            {trans('Alergi:', 'Allergy:')} {a.pasien_alergi}
                           </span>
                         </>
                       )}
@@ -370,25 +372,25 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                 },
                 {
                   key: 'poli_nama',
-                  label: 'POLI',
+                  label: trans('POLI', 'CLINIC'),
                 },
                 {
                   key: 'jml_obat',
-                  label: 'JUMLAH OBAT',
-                  render: (a) => `${a.jml_obat} item`,
+                  label: trans('JUMLAH OBAT', 'TOTAL MEDICINES'),
+                  render: (a) => `${a.jml_obat} ${trans('item', 'items')}`,
                 },
                 {
                   key: 'resep_status',
-                  label: 'STATUS',
+                  label: trans('STATUS', 'STATUS'),
                   render: (a) => (
                     <span className="badge badge-orange">
-                      {a.resep_status === 'baru' ? 'Menunggu Penyiapan' : a.resep_status}
+                      {a.resep_status === 'baru' ? trans('Menunggu Penyiapan', 'Awaiting Preparation') : formatStatus(a.resep_status)}
                     </span>
                   ),
                 },
                 {
                   key: 'aksi',
-                  label: 'AKSI',
+                  label: trans('AKSI', 'ACTION'),
                   sortable: false,
                   thClassName: 'col-actions',
                   className: 'cell-actions',
@@ -399,7 +401,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                         className="btn btn-sm"
                         onClick={() => openResepModal(a.resep_id)}
                       >
-                        Siapkan & Serahkan
+                        {t('farmasi.serahkan_btn')}
                       </button>
                     </div>
                   ),
@@ -407,7 +409,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
               ]}
               data={antreanList}
               defaultPageSize={25}
-              emptyText="Belum ada data"
+              emptyText={trans('Belum ada data', 'No data available')}
               rowKey="resep_id"
             />
           </div>
@@ -420,7 +422,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
           <div className="modal-box" style={{ maxWidth: 780 }}>
             <div className="modal-head">
               <div className="modal-title">
-                Verifikasi Resep & Penyerahan Obat
+                {t('farmasi.modal_title')}
               </div>
               <button type="button" className="modal-close" onClick={() => setModalOpen(false)}>
                 &times;
@@ -429,7 +431,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
 
             <div className="modal-body" style={{ maxHeight: '78vh', overflowY: 'auto' }}>
               {loadingDetail || !resepDetail ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>Memuat rincian resep...</div>
+                <div style={{ padding: '40px', textAlign: 'center' }}>{trans('Memuat rincian resep...', 'Loading prescription details...')}</div>
               ) : (
                 <>
                   {/* Patient Info Card */}
@@ -440,7 +442,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                           {resepDetail.resep.pasien_nama}
                         </div>
                         <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-                          No. MR: <b style={{ fontFamily: 'monospace' }}>{resepDetail.resep.no_mr}</b> &middot; Poli: {resepDetail.resep.poli_nama} &middot; Dokter: {resepDetail.resep.dokter_nama || '-'}
+                          {trans('No. MR', 'MR No.')}: <b style={{ fontFamily: 'monospace' }}>{resepDetail.resep.no_mr}</b> &middot; {trans('Poli', 'Clinic')}: {resepDetail.resep.poli_nama} &middot; {trans('Dokter', 'Doctor')}: {resepDetail.resep.dokter_nama || '-'}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
@@ -450,7 +452,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                         {resepDetail.resep.pasien_alergi && (
                           <div style={{ marginTop: 4 }}>
                             <span className="badge badge-red">
-                              Alergi: {resepDetail.resep.pasien_alergi}
+                              {trans('Alergi:', 'Allergy:')} {resepDetail.resep.pasien_alergi}
                             </span>
                           </div>
                         )}
@@ -458,7 +460,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                     </div>
                     {resepDetail.resep.catatan && (
                       <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', fontSize: 13 }}>
-                        <span style={{ color: 'var(--muted)' }}>Catatan Dokter:</span> <i>{resepDetail.resep.catatan}</i>
+                        <span style={{ color: 'var(--muted)' }}>{trans('Catatan Dokter:', "Doctor's Notes:")}</span> <i>{resepDetail.resep.catatan}</i>
                       </div>
                     )}
                   </div>
@@ -466,11 +468,11 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                   {/* Stock Warning Alert if any */}
                   {!resepDetail.stok_cukup && (
                     <div className="alert alert-danger" style={{ marginBottom: 16 }}>
-                      <b>Peringatan: Stok obat tidak mencukupi untuk resep ini!</b>
+                      <b>{t('farmasi.warning_stok')}</b>
                       <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
                         {resepDetail.stok_kurang.map((k) => (
                           <li key={k.obat_id}>
-                            {k.nama} &mdash; Dibutuhkan: {k.butuh}, Sisa Stok di Farmasi: {k.stok}
+                            {k.nama} &mdash; {trans('Dibutuhkan:', 'Required:')} {k.butuh}, {trans('Sisa Stok di Farmasi:', 'Stock Left in Pharmacy:')} {k.stok}
                           </li>
                         ))}
                       </ul>
@@ -482,11 +484,11 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                     <table className="datatable" style={{ width: '100%', fontSize: 13 }}>
                       <thead>
                         <tr>
-                          <th>Nama Obat</th>
-                          <th style={{ width: 70, textAlign: 'center' }}>Jumlah</th>
-                          <th>Dosis</th>
-                          <th>Aturan Pakai</th>
-                          <th style={{ width: 90, textAlign: 'center' }}>Stok Gudang</th>
+                          <th>{trans('Nama Obat', 'Medicine Name')}</th>
+                          <th style={{ width: 70, textAlign: 'center' }}>{trans('Jumlah', 'Qty')}</th>
+                          <th>{trans('Dosis', 'Dosage')}</th>
+                          <th>{trans('Aturan Pakai', 'Signa / Instructions')}</th>
+                          <th style={{ width: 90, textAlign: 'center' }}>{trans('Stok Gudang', 'Warehouse Stock')}</th>
                           <th style={{ textAlign: 'right', width: 110 }}>Subtotal</th>
                         </tr>
                       </thead>
@@ -516,7 +518,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                         ))}
                         <tr>
                           <td colSpan="5" style={{ textAlign: 'right', fontWeight: 700 }}>
-                            Total Biaya Obat
+                            {trans('Total Biaya Obat', 'Total Medicine Cost')}
                           </td>
                           <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>
                             Rp {Number(resepDetail.total_biaya).toLocaleString('id-ID')}
@@ -530,14 +532,14 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                   <div style={{ marginTop: 18, padding: 14, background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>
-                        <AppIcon name="printer" /> Preview Label Etiket Obat
+                        <AppIcon name="printer" /> {trans('Preview Label Etiket Obat', 'Preview Medicine Label')}
                       </div>
                       <button
                         type="button"
                         className="btn btn-sm btn-light"
                         onClick={() => window.print()}
                       >
-                        Cetak Etiket
+                        {t('farmasi.cetak_etiket')}
                       </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
@@ -546,8 +548,8 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                           <div style={{ fontWeight: 700, borderBottom: '1px solid #ddd', paddingBottom: 3, marginBottom: 4 }}>
                             KLINIK PRATAMA SEHAT
                           </div>
-                          <div>Pasien: <b>{resepDetail.resep.pasien_nama}</b></div>
-                          <div>Obat: <b>{it.obat_nama}</b> ({it.qty} {it.satuan_nama || 'Pcs'})</div>
+                          <div>{trans('Pasien', 'Patient')}: <b>{resepDetail.resep.pasien_nama}</b></div>
+                          <div>{trans('Obat', 'Medicine')}: <b>{it.obat_nama}</b> ({it.qty} {it.satuan_nama || 'Pcs'})</div>
                           <div style={{ marginTop: 4, fontWeight: 700, color: '#0369a1' }}>
                             {it.aturan_pakai}
                           </div>
@@ -566,7 +568,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                 onClick={() => setModalOpen(false)}
                 disabled={submittingSerah}
               >
-                Batal
+                {trans('Batal', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -574,7 +576,7 @@ export default function FarmasiView({ initialSubView = 'stok', onNavigateSubView
                 disabled={submittingSerah || !resepDetail?.stok_cukup}
                 onClick={handleSerahkan}
               >
-                {submittingSerah ? 'Menyerahkan...' : 'Serahkan Obat & Teruskan ke Kasir'}
+                {submittingSerah ? trans('Menyerahkan...', 'Dispensing...') : t('farmasi.serahkan_selesai')}
               </button>
             </div>
           </div>

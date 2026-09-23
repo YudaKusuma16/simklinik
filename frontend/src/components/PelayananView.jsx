@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function PelayananView({ initialKunjunganId, onExamCompleted, onExamStateChange }) {
+  const { t, isEn, trans, formatTgl, formatStatus } = useI18n();
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -165,7 +167,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
       }
     } catch (err) {
       console.error('Error loading examination data:', err);
-      showToast('Gagal memuat lembar periksa: ' + err.message);
+      showToast(trans('Gagal memuat lembar periksa: ', 'Failed to load examination sheet: ') + err.message);
     } finally {
       setLoadingExam(false);
     }
@@ -319,14 +321,9 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         {/* Toolbar */}
         <div className="page-toolbar">
           <div>
-            <div className="pt-title">Pelayanan Medis</div>
+            <div className="pt-title">{trans('Pelayanan Medis', 'Outpatient Services')}</div>
             <div className="pt-sub">
-              {(() => {
-                const d = new Date(selectedDate);
-                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-              })()} &middot; {antreanList.length} antrean
+              {formatTgl(selectedDate)} &middot; {antreanList.length} {trans('antrean', 'queues')}
             </div>
           </div>
           <div className="pt-actions">
@@ -343,7 +340,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                 onChange={(e) => setFilterPoli(e.target.value)}
                 className="form-control"
               >
-                <option value="">Semua Poli</option>
+                <option value="">{trans('Semua Poli', 'All Clinics')}</option>
                 {lookups.poli && lookups.poli.map(p => (
                   <option key={p.id} value={p.id}>{p.nama}</option>
                 ))}
@@ -358,26 +355,26 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             columns={[
               {
                 key: 'no_antrian',
-                label: 'ANTRIAN',
+                label: t('kunjungan.queue'),
                 render: (a) => <b>{a.poli_kode}-{String(a.no_antrian).padStart(3, '0')}</b>,
               },
               {
                 key: 'no_mr',
-                label: 'NO. MR',
+                label: t('common.mr_no'),
                 render: (a) => <b>{a.no_mr}</b>,
               },
               {
                 key: 'pasien_nama',
-                label: 'PASIEN',
+                label: t('common.patient'),
                 render: (a) => (
                   <>
                     <div style={{ fontWeight: 600 }}>{a.pasien_nama}</div>
                     <small style={{ color: 'var(--muted)' }}>
-                      {a.pasien_jk === 'L' ? 'L' : 'P'} &middot; {calculateAge(a.pasien_tgl_lahir)}
+                      {a.pasien_jk === 'L' ? (isEn ? 'M' : 'L') : (isEn ? 'F' : 'P')} &middot; {calculateAge(a.pasien_tgl_lahir)}
                     </small>
                     {a.pasien_alergi && (
                       <span className="badge badge-red" style={{ marginLeft: 6 }}>
-                        Alergi: {a.pasien_alergi}
+                        {trans('Alergi: ', 'Allergy: ')}{a.pasien_alergi}
                       </span>
                     )}
                   </>
@@ -385,22 +382,22 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               },
               {
                 key: 'poli_nama',
-                label: 'POLI',
+                label: t('common.poli'),
                 render: (a) => a.poli_nama,
               },
               {
                 key: 'dokter_nama',
-                label: 'DOKTER',
+                label: t('common.doctor'),
                 render: (a) => a.dokter_nama || '-',
               },
               {
                 key: 'keluhan_awal',
-                label: 'KELUHAN',
+                label: trans('KELUHAN', 'COMPLAINT'),
                 render: (a) => a.keluhan_awal || '-',
               },
               {
                 key: 'status',
-                label: 'STATUS',
+                label: t('common.status'),
                 render: (a) => {
                   const badgeMap = {
                     menunggu: 'badge-orange',
@@ -412,14 +409,14 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                   };
                   return (
                     <span className={`badge ${badgeMap[a.status] || 'badge-gray'}`}>
-                      {a.status === 'menunggu' ? 'Menunggu' : a.status === 'periksa' ? 'Periksa' : a.status}
+                      {formatStatus(a.status)}
                     </span>
                   );
                 },
               },
               {
                 key: 'aksi',
-                label: 'AKSI',
+                label: t('common.action'),
                 sortable: false,
                 thClassName: 'col-actions',
                 className: 'cell-actions',
@@ -433,7 +430,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                         if (onExamStateChange) onExamStateChange(a.id);
                       }}
                     >
-                      {a.status === 'periksa' ? 'Lanjutkan Periksa' : 'Periksa'}
+                      <AppIcon name={a.status === 'periksa' ? 'pencil' : 'stethoscope'} /> {a.status === 'periksa' ? trans('Lanjutkan Periksa', 'Continue Exam') : trans('Periksa', 'Examine')}
                     </button>
                   </div>
                 ),
@@ -441,7 +438,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             ]}
             data={antreanList}
             defaultPageSize={25}
-            emptyText="Belum ada data"
+            emptyText={t('datatable.empty')}
             rowKey="id"
           />
         </div>
@@ -453,7 +450,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
   if (loadingExam || !activeData) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        Memuat lembar rekam medis pasien...
+        {trans('Memuat lembar rekam medis pasien...', 'Loading patient medical record...')}
       </div>
     );
   }
@@ -477,7 +474,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             if (onExamStateChange) onExamStateChange(null);
           }}
         >
-          &larr; Kembali ke Antrean
+          &larr; {trans('Kembali ke Antrean', 'Back to Queue')}
         </button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -485,7 +482,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             className="btn btn-light btn-sm"
             onClick={() => setShowHistory(!showHistory)}
           >
-            {showHistory ? 'Sembunyikan Riwayat' : `Riwayat Pasien (${riwayat.length})`}
+            {showHistory ? trans('Sembunyikan Riwayat', 'Hide History') : `${trans('Riwayat Pasien', 'Patient History')} (${riwayat.length})`}
           </button>
           <button
             type="button"
@@ -493,7 +490,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             disabled={savingExam}
             onClick={() => handleSubmitExam('simpan')}
           >
-            <AppIcon name="save" /> Simpan Draf
+            <AppIcon name="save" /> {trans('Simpan Draf', 'Save Draft')}
           </button>
           <button
             type="button"
@@ -501,7 +498,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             disabled={savingExam}
             onClick={() => handleSubmitExam('selesai')}
           >
-            <AppIcon name="check" /> Selesai Pemeriksaan
+            <AppIcon name="check" /> {trans('Selesai Pemeriksaan', 'Complete Examination')}
           </button>
         </div>
       </div>
@@ -513,11 +510,11 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             <div style={{ fontSize: 18, fontWeight: 700 }}>
               {kj.pasien_nama}
               <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--muted)', marginLeft: 8 }}>
-                No. MR: <b style={{ color: 'var(--primary)', fontFamily: 'monospace' }}>{kj.no_mr}</b> &middot; {kj.pasien_jk === 'L' ? 'Laki-laki' : 'Perempuan'} &middot; {calculateAge(kj.pasien_tgl_lahir)}
+                {t('common.mr_no')}: <b style={{ color: 'var(--primary)', fontFamily: 'monospace' }}>{kj.no_mr}</b> &middot; {kj.pasien_jk === 'L' ? trans('Laki-laki', 'Male') : trans('Perempuan', 'Female')} &middot; {calculateAge(kj.pasien_tgl_lahir)}
               </span>
             </div>
             <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
-              Poli: <b>{kj.poli_nama}</b> &middot; Dokter: <b>{kj.dokter_nama || '-'}</b> &middot; No. Kunjungan: <span style={{ fontFamily: 'monospace' }}>{kj.no_kunjungan}</span>
+              {trans('Poli:', 'Clinic:')} <b>{kj.poli_nama}</b> &middot; {trans('Dokter:', 'Doctor:')} <b>{kj.dokter_nama || '-'}</b> &middot; {trans('No. Kunjungan:', 'Visit No.:')} <span style={{ fontFamily: 'monospace' }}>{kj.no_kunjungan}</span>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -527,7 +524,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
             {kj.pasien_alergi && (
               <div style={{ marginTop: 4 }}>
                 <span className="badge badge-red">
-                  Alergi: {kj.pasien_alergi}
+                  {trans('Alergi: ', 'Allergy: ')}{kj.pasien_alergi}
                 </span>
               </div>
             )}
@@ -535,7 +532,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         </div>
         {kj.keluhan_awal && (
           <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)', fontSize: 13 }}>
-            <span style={{ color: 'var(--muted)' }}>Keluhan Awal Pasien:</span> <b>{kj.keluhan_awal}</b>
+            <span style={{ color: 'var(--muted)' }}>{trans('Keluhan Awal Pasien:', 'Patient Initial Complaint:')}</span> <b>{kj.keluhan_awal}</b>
           </div>
         )}
       </div>
@@ -543,9 +540,9 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
       {/* Riwayat Pasien Terdahulu Panel */}
       {showHistory && (
         <div className="card" style={{ padding: 16, marginBottom: 16, borderLeft: '4px solid var(--accent-purple, #8b5cf6)' }}>
-          <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700 }}>Riwayat Kunjungan & Rekam Medis Terdahulu</h4>
+          <h4 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700 }}>{trans('Riwayat Kunjungan & Rekam Medis Terdahulu', 'Previous Visits & Medical Records')}</h4>
           {riwayat.length === 0 ? (
-            <div style={{ color: 'var(--muted)', fontSize: 13 }}>Tidak ada catatan kunjungan terdahulu untuk pasien ini.</div>
+            <div style={{ color: 'var(--muted)', fontSize: 13 }}>{trans('Tidak ada catatan kunjungan terdahulu untuk pasien ini.', 'No previous visit records for this patient.')}</div>
           ) : (
             <div style={{ display: 'grid', gap: 10 }}>
               {riwayat.map((r, i) => (
@@ -558,7 +555,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                     TD: <b>{r.tekanan_darah || '-'}</b> &middot; Suhu: <b>{r.suhu ? `${r.suhu} °C` : '-'}</b>
                   </div>
                   {r.assessment && (
-                    <div style={{ marginTop: 2 }}>Diagnosa/Assesment: <i>{r.assessment}</i></div>
+                    <div style={{ marginTop: 2 }}>{trans('Diagnosa / Assessment:', 'Diagnosis / Assessment:')} <i>{r.assessment}</i></div>
                   )}
                 </div>
               ))}
@@ -573,11 +570,11 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         {/* PANEL 1: TANDA VITAL (VITAL SIGNS) */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ fontWeight: 700, fontSize: 14, borderBottom: '2px solid var(--primary)', paddingBottom: 6, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AppIcon name="activity" /> 1. Tanda-Tanda Vital (Vital Signs)
+            <AppIcon name="activity" /> {trans('1. Tanda-Tanda Vital (Vital Signs)', '1. Vital Signs')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="form-group">
-              <label>Tekanan Darah (mmHg)</label>
+              <label>{trans('Tekanan Darah (mmHg)', 'Blood Pressure (mmHg)')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -587,7 +584,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               />
             </div>
             <div className="form-group">
-              <label>Suhu Tubuh (°C)</label>
+              <label>{trans('Suhu Tubuh (°C)', 'Body Temperature (°C)')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -597,7 +594,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               />
             </div>
             <div className="form-group">
-              <label>Denyut Nadi (x/mnt)</label>
+              <label>{trans('Denyut Nadi (x/mnt)', 'Pulse Rate (bpm)')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -607,7 +604,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               />
             </div>
             <div className="form-group">
-              <label>Berat Badan (kg)</label>
+              <label>{trans('Berat Badan (kg)', 'Body Weight (kg)')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -617,7 +614,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               />
             </div>
             <div className="form-group">
-              <label>Tinggi Badan (cm)</label>
+              <label>{trans('Tinggi Badan (cm)', 'Body Height (cm)')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -627,7 +624,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               />
             </div>
             <div className="form-group">
-              <label>Indeks Massa Tubuh (BMI)</label>
+              <label>{trans('Indeks Massa Tubuh (BMI)', 'Body Mass Index (BMI)')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -642,45 +639,45 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         {/* PANEL 2: CATATAN REKAM MEDIS (SOAP) */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ fontWeight: 700, fontSize: 14, borderBottom: '2px solid var(--accent-blue, #3b82f6)', paddingBottom: 6, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AppIcon name="rekam" /> 2. Rekam Medis (SOAP)
+            <AppIcon name="rekam" /> {trans('2. Rekam Medis (SOAP)', '2. Medical Records (SOAP)')}
           </div>
           <div style={{ display: 'grid', gap: 10 }}>
             <div className="form-group">
-              <label><b>S</b> &mdash; Anamnesis / Keluhan Pasien (Subjective)</label>
+              <label><b>S</b> &mdash; {trans('Anamnesis / Keluhan Pasien (Subjective)', 'Subjective / Chief Complaint')}</label>
               <textarea
                 className="form-control"
                 rows="2"
-                placeholder="Keluhan utama, riwayat penyakit sekarang..."
+                placeholder={trans('Keluhan utama, riwayat penyakit sekarang...', 'Chief complaints, history of present illness...')}
                 value={soapData.subjective}
                 onChange={(e) => setSoapData({ ...soapData, subjective: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label><b>O</b> &mdash; Pemeriksaan Fisik (Objective)</label>
+              <label><b>O</b> &mdash; {trans('Pemeriksaan Fisik (Objective)', 'Objective / Physical Exam')}</label>
               <textarea
                 className="form-control"
                 rows="2"
-                placeholder="Temuan fisik, auskultasi, palpasi, inspeksi..."
+                placeholder={trans('Temuan fisik, auskultasi, palpasi, inspeksi...', 'Physical findings, auscultation, palpation, inspection...')}
                 value={soapData.objective}
                 onChange={(e) => setSoapData({ ...soapData, objective: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label><b>A</b> &mdash; Analisis / Diagnosis Klinis (Assessment)</label>
+              <label><b>A</b> &mdash; {trans('Analisis / Diagnosis Klinis (Assessment)', 'Assessment / Clinical Diagnosis')}</label>
               <textarea
                 className="form-control"
                 rows="2"
-                placeholder="Kesimpulan analisa klinis dokter..."
+                placeholder={trans('Kesimpulan analisa klinis dokter...', 'Doctor clinical assessment summary...')}
                 value={soapData.assessment}
                 onChange={(e) => setSoapData({ ...soapData, assessment: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label><b>P</b> &mdash; Rencana Terapi & Tatalaksana (Plan)</label>
+              <label><b>P</b> &mdash; {trans('Rencana Terapi & Tatalaksana (Plan)', 'Therapy & Management Plan (Plan)')}</label>
               <textarea
                 className="form-control"
                 rows="2"
-                placeholder="Rencana pengobatan, tindakan, edukasi..."
+                placeholder={trans('Rencana pengobatan, tindakan, edukasi...', 'Treatment plan, actions, patient education...')}
                 value={soapData.plan}
                 onChange={(e) => setSoapData({ ...soapData, plan: e.target.value })}
               />
@@ -697,10 +694,10 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid var(--accent-orange, #f59e0b)', paddingBottom: 6, marginBottom: 14 }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>
-              3. Diagnosa ICD-10
+              3. {trans('Diagnosa ICD-10', 'ICD-10 Diagnoses')}
             </div>
             <button type="button" className="btn btn-sm btn-light" onClick={handleAddDiagnosa}>
-              + Tambah Diagnosa
+              + {trans('Tambah Diagnosa', 'Add Diagnosis')}
             </button>
           </div>
 
@@ -724,7 +721,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Nama diagnosa..."
+                    placeholder={trans('Nama diagnosa...', 'Diagnosis name...')}
                     value={d.diagnosa}
                     onChange={(e) => {
                       const next = [...diagnosaList];
@@ -743,8 +740,8 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                       setDiagnosaList(next);
                     }}
                   >
-                    <option value="primer">Primer</option>
-                    <option value="sekunder">Sekunder</option>
+                    <option value="primer">{trans('Primer', 'Primary')}</option>
+                    <option value="sekunder">{trans('Sekunder', 'Secondary')}</option>
                   </select>
                 </div>
                 {diagnosaList.length > 1 && (
@@ -762,7 +759,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
 
           {/* Quick ICD-10 Suggestions */}
           <div style={{ marginTop: 12, fontSize: 12 }}>
-            <span style={{ color: 'var(--muted)' }}>Pilihan Diagnosa Cepat: </span>
+            <span style={{ color: 'var(--muted)' }}>{trans('Pilihan Diagnosa Cepat:', 'Quick Diagnosis Suggestions:')} </span>
             {lookups.icd10.slice(0, 5).map((icd) => (
               <button
                 key={icd.kode}
@@ -780,7 +777,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         {/* Tindakan Medis */}
         <div className="card" style={{ padding: 18 }}>
           <div style={{ fontWeight: 700, fontSize: 14, borderBottom: '2px solid var(--accent-green, #10b981)', paddingBottom: 6, marginBottom: 14 }}>
-            4. Tindakan & Layanan Medis
+            {trans('4. Tindakan & Layanan Medis', '4. Medical Procedures & Services')}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -791,7 +788,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                 e.target.value = '';
               }}
             >
-              <option value="">+ Pilih Tindakan untuk Ditambahkan</option>
+              <option value="">{trans('+ Pilih Tindakan untuk Ditambahkan', '+ Select Procedure to Add')}</option>
               {lookups.tindakan.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.nama} &mdash; Rp {Number(t.harga_jual || t.tarif * 1.4).toLocaleString('id-ID')}
@@ -802,15 +799,15 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
 
           {tindakanList.length === 0 ? (
             <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '16px' }}>
-              Belum ada tindakan medis dipilih.
+              {trans('Belum ada tindakan medis dipilih.', 'No medical procedures selected.')}
             </div>
           ) : (
             <table className="datatable" style={{ width: '100%', fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th>Tindakan</th>
+                  <th>{trans('Tindakan', 'Procedure')}</th>
                   <th style={{ width: 60 }}>Qty</th>
-                  <th>Tarif</th>
+                  <th>{trans('Tarif', 'Tariff')}</th>
                   <th style={{ width: 40 }}></th>
                 </tr>
               </thead>
@@ -855,7 +852,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
       {/* PANEL 4: E-RESEP (ELECTRONIC PRESCRIPTION) */}
       <div className="card" style={{ padding: 18, marginTop: 16 }}>
         <div style={{ fontWeight: 700, fontSize: 14, borderBottom: '2px solid var(--primary)', paddingBottom: 6, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <AppIcon name="pills" /> 5. Resep Elektronik (E-Prescription) &mdash; Diteruskan ke Farmasi
+          <AppIcon name="pills" /> {trans('5. Resep Elektronik (E-Prescription) — Diteruskan ke Farmasi', '5. Electronic Prescription (E-Prescription) — Forwarded to Pharmacy')}
         </div>
 
         <div style={{ marginBottom: 14 }}>
@@ -866,7 +863,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
               e.target.value = '';
             }}
           >
-            <option value="">+ Pilih Obat untuk Ditambahkan ke Resep</option>
+            <option value="">{trans('+ Pilih Obat untuk Ditambahkan ke Resep', '+ Select Medicine to Add to Prescription')}</option>
             {lookups.obat.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.nama} (Stok: {o.stok} {o.satuan_nama || 'Pcs'}) &mdash; Rp {Number(o.harga_jual || o.harga_beli * 1.4).toLocaleString('id-ID')}
@@ -877,17 +874,17 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
 
         {resepList.length === 0 ? (
           <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '16px' }}>
-            Belum ada resep obat. Pasien tidak diberikan obat resep (langsung ke kasir/billing setelah periksa).
+            {trans('Belum ada resep obat. Pasien tidak diberikan obat resep (langsung ke kasir/billing setelah periksa).', 'No prescription added. Patient will proceed directly to billing.')}
           </div>
         ) : (
           <div className="table-wrap">
             <table className="datatable" style={{ width: '100%', fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th>Nama Obat & Sediaan</th>
-                  <th style={{ width: 80 }}>Jumlah</th>
-                  <th>Dosis</th>
-                  <th>Aturan Pakai</th>
+                  <th>{trans('Nama Obat & Sediaan', 'Medicine Name & Dosage')}</th>
+                  <th style={{ width: 80 }}>{trans('Jumlah', 'Qty')}</th>
+                  <th>{trans('Dosis', 'Dosage')}</th>
+                  <th>{trans('Aturan Pakai', 'Directions')}</th>
                   <th style={{ width: 40 }}></th>
                 </tr>
               </thead>
@@ -916,7 +913,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                       <input
                         type="text"
                         className="form-control form-control-sm"
-                        placeholder="Contoh: 500 mg"
+                        placeholder={trans('Contoh: 500 mg', 'E.g.: 500 mg')}
                         value={r.dosis}
                         onChange={(e) => {
                           const next = [...resepList];
@@ -929,7 +926,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
                       <input
                         type="text"
                         className="form-control form-control-sm"
-                        placeholder="Contoh: 3 x 1 tablet sesudah makan"
+                        placeholder={trans('Contoh: 3 x 1 tablet sesudah makan', 'E.g.: 3 x 1 tablet after meals')}
                         value={r.aturan_pakai}
                         onChange={(e) => {
                           const next = [...resepList];
@@ -955,11 +952,11 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
         )}
 
         <div className="form-group" style={{ marginTop: 14 }}>
-          <label>Catatan Tambahan untuk Petugas Farmasi / Pasien</label>
+          <label>{trans('Catatan Tambahan untuk Petugas Farmasi / Pasien', 'Additional Notes for Pharmacy / Patient')}</label>
           <input
             type="text"
             className="form-control"
-            placeholder="Contoh: Diminum jika demam, hindari makanan berlemak..."
+            placeholder={trans('Contoh: Diminum jika demam, hindari makanan berlemak...', 'E.g.: Take when fever occurs, avoid fatty foods...')}
             value={resepCatatan}
             onChange={(e) => setResepCatatan(e.target.value)}
           />
@@ -974,7 +971,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
           onClick={() => setActiveKunjunganId(null)}
           disabled={savingExam}
         >
-          Kembali
+          {trans('Kembali', 'Back')}
         </button>
         <button
           type="button"
@@ -982,7 +979,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
           onClick={() => handleSubmitExam('simpan')}
           disabled={savingExam}
         >
-          <AppIcon name="save" /> {savingExam ? 'Menyimpan...' : 'Simpan Draf Pemeriksaan'}
+          <AppIcon name="save" /> {savingExam ? trans('Menyimpan...', 'Saving...') : trans('Simpan Draf Pemeriksaan', 'Save Examination Draft')}
         </button>
         <button
           type="button"
@@ -990,7 +987,7 @@ export default function PelayananView({ initialKunjunganId, onExamCompleted, onE
           onClick={() => handleSubmitExam('selesai')}
           disabled={savingExam}
         >
-          <AppIcon name="check" /> {savingExam ? 'Menyimpan...' : 'Selesai & Teruskan'}
+          <AppIcon name="check" /> {savingExam ? trans('Menyimpan...', 'Saving...') : trans('Selesai & Teruskan', 'Finish & Forward')}
         </button>
       </div>
 

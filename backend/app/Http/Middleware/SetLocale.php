@@ -14,13 +14,25 @@ class SetLocale
 
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = session('locale', config('app.locale', 'id'));
+        $locale = $request->query('lang')
+            ?? session('locale')
+            ?? $request->cookie('locale')
+            ?? $request->header('X-Locale')
+            ?? config('app.locale', 'id');
 
         if (! in_array($locale, self::SUPPORTED, true)) {
             $locale = 'id';
         }
 
+        session(['locale' => $locale]);
         App::setLocale($locale);
+
+        if (session_status() !== PHP_SESSION_ACTIVE && ! headers_sent()) {
+            @session_start();
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['locale'] = $locale;
+        }
 
         return $next($request);
     }

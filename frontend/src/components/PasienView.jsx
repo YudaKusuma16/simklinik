@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function PasienView({
   onRegisterVisit,
@@ -11,6 +12,7 @@ export default function PasienView({
   onCloseInitialForm,
   onNavigateMode = null,
 }) {
+  const { t, isEn, trans, formatStatus, formatMaritalStatus, formatReligion } = useI18n();
   const [pasienList, setPasienList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -201,10 +203,10 @@ export default function PasienView({
     try {
       if (isEditing) {
         await api.put(`/pasien/${formData.id}`, formData);
-        showToast('Data pasien berhasil diperbarui.');
+        showToast(trans('Data pasien berhasil diperbarui.', 'Patient data updated successfully.'));
       } else {
         const res = await api.post('/pasien', formData);
-        showToast(`Pasien berhasil didaftarkan dengan No. MR: ${res.no_mr}`);
+        showToast(trans(`Pasien berhasil didaftarkan dengan No. MR: ${res.no_mr}`, `Patient registered successfully with MR No: ${res.no_mr}`));
       }
       setViewMode('list');
       if (onNavigateMode) onNavigateMode('list');
@@ -214,7 +216,7 @@ export default function PasienView({
         const msgs = Object.values(err.errors).flat();
         setFormErrors(msgs);
       } else {
-        setFormErrors([err.message || 'Gagal menyimpan data pasien.']);
+        setFormErrors([err.message || trans('Gagal menyimpan data pasien.', 'Failed to save patient data.')]);
       }
     } finally {
       setFormSubmitting(false);
@@ -230,7 +232,7 @@ export default function PasienView({
     if (!dateStr) return '-';
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      return d.toLocaleDateString(isEn ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     } catch {
       return dateStr;
     }
@@ -243,7 +245,7 @@ export default function PasienView({
     let age = now.getFullYear() - birth.getFullYear();
     const m = now.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-    return `${age} tahun`;
+    return `${age} ${isEn ? 'years' : 'tahun'}`;
   };
 
   return (
@@ -262,12 +264,12 @@ export default function PasienView({
         <div className="pasien-form-full">
           <div className="page-toolbar">
             <div>
-              <div className="pt-title">{isEditing ? 'Edit Pasien' : 'Pasien Baru'}</div>
+              <div className="pt-title">{isEditing ? (isEn ? 'Edit Patient' : 'Edit Pasien') : (isEn ? 'New Patient' : 'Pasien Baru')}</div>
               <div className="pt-sub">
                 {isEditing ? (
-                  <>No. MR: <b>{formData.no_mr}</b></>
+                  <>{t('common.mr_no')}: <b>{formData.no_mr}</b></>
                 ) : (
-                  'No. MR dibuat otomatis saat disimpan'
+                  isEn ? 'MR No. is generated automatically upon saving' : 'No. MR dibuat otomatis saat disimpan'
                 )}
               </div>
             </div>
@@ -281,7 +283,7 @@ export default function PasienView({
                   if (onNavigateMode) onNavigateMode('list');
                 }}
               >
-                <AppIcon name="chevron" /> Kembali
+                &larr; {t('common.back')}
               </button>
             </div>
           </div>
@@ -301,11 +303,11 @@ export default function PasienView({
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="step-head">
                 <div className="step-num acc-blue"><AppIcon name="user" /></div>
-                <div><div className="st-title">Identitas Pasien</div></div>
+                <div><div className="st-title">{trans('Identitas Pasien', 'Patient Identity')}</div></div>
               </div>
               <div className="field-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                 <div className="form-group fg-full">
-                  <label>Nama Lengkap <span className="req">*</span></label>
+                  <label>{trans('Nama Lengkap', 'Full Name')} <span className="req">*</span></label>
                   <input
                     type="text"
                     name="nama"
@@ -331,7 +333,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>No. Passport/Kitas</label>
+                  <label>{trans('No. Passport/Kitas', 'Passport / KITAS No.')}</label>
                   <input
                     type="text"
                     name="no_passport"
@@ -342,7 +344,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Tempat Lahir</label>
+                  <label>{trans('Tempat Lahir', 'Place of Birth')}</label>
                   <input
                     type="text"
                     name="tempat_lahir"
@@ -353,7 +355,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Tgl Lahir</label>
+                  <label>{trans('Tgl Lahir', 'Date of Birth')}</label>
                   <input
                     type="date"
                     name="tgl_lahir"
@@ -364,7 +366,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Jenis Kelamin <span className="req">*</span></label>
+                  <label>{trans('Jenis Kelamin', 'Gender')} <span className="req">*</span></label>
                   <select
                     name="jenis_kelamin"
                     className="form-control"
@@ -372,13 +374,13 @@ export default function PasienView({
                     value={formData.jenis_kelamin}
                     onChange={(e) => setFormData({ ...formData, jenis_kelamin: e.target.value })}
                   >
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
+                    <option value="L">{trans('Laki-laki', 'Male')}</option>
+                    <option value="P">{trans('Perempuan', 'Female')}</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Gol. Darah</label>
+                  <label>{trans('Gol. Darah', 'Blood Type')}</label>
                   <select
                     name="gol_darah"
                     className="form-control"
@@ -392,52 +394,74 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Agama</label>
+                  <label>{trans('Agama', 'Religion')}</label>
                   <select
                     name="agama"
                     className="form-control"
                     value={formData.agama}
                     onChange={(e) => setFormData({ ...formData, agama: e.target.value })}
                   >
-                    <option value="">— Pilih —</option>
-                    {['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'].map((ag) => (
-                      <option key={ag} value={ag}>{ag}</option>
+                    <option value="">{trans('— Pilih —', '— Select —')}</option>
+                    {[
+                      { id: 'Islam', en: 'Islam' },
+                      { id: 'Kristen', en: 'Protestant' },
+                      { id: 'Katolik', en: 'Catholic' },
+                      { id: 'Hindu', en: 'Hindu' },
+                      { id: 'Buddha', en: 'Buddhist' },
+                      { id: 'Konghucu', en: 'Confucian' },
+                      { id: 'Lainnya', en: 'Other' },
+                    ].map((ag) => (
+                      <option key={ag.id} value={ag.id}>{trans(ag.id, ag.en)}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Status Perkawinan</label>
+                  <label>{trans('Status Perkawinan', 'Marital Status')}</label>
                   <select
                     name="status_kawin"
                     className="form-control"
                     value={formData.status_kawin}
                     onChange={(e) => setFormData({ ...formData, status_kawin: e.target.value })}
                   >
-                    <option value="">— Pilih —</option>
-                    {['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'].map((st) => (
-                      <option key={st} value={st}>{st}</option>
+                    <option value="">{trans('— Pilih —', '— Select —')}</option>
+                    {[
+                      { id: 'Belum Kawin', en: 'Single' },
+                      { id: 'Kawin', en: 'Married' },
+                      { id: 'Cerai Hidup', en: 'Divorced' },
+                      { id: 'Cerai Mati', en: 'Widowed' },
+                    ].map((st) => (
+                      <option key={st.id} value={st.id}>{trans(st.id, st.en)}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Pendidikan</label>
+                  <label>{trans('Pendidikan', 'Education')}</label>
                   <select
                     name="pendidikan"
                     className="form-control"
                     value={formData.pendidikan}
                     onChange={(e) => setFormData({ ...formData, pendidikan: e.target.value })}
                   >
-                    <option value="">— Pilih —</option>
-                    {['Tidak Sekolah', 'SD', 'SMP', 'SMA/SMK', 'D1/D2/D3', 'S1', 'S2', 'S3'].map((pd) => (
-                      <option key={pd} value={pd}>{pd}</option>
+                    <option value="">{trans('— Pilih —', '— Select —')}</option>
+                    {[
+                      { id: 'Tidak Sekolah', en: 'No Formal Education' },
+                      { id: 'SD', en: 'Elementary' },
+                      { id: 'SMP', en: 'Junior High' },
+                      { id: 'SMA/SMK', en: 'Senior High' },
+                      { id: 'D1/D2/D3', en: 'Diploma' },
+                      { id: 'S1', en: 'Bachelor' },
+                      { id: 'S2', en: 'Master' },
+                      { id: 'S3', en: 'Doctorate' },
+                    ].map((pd) => (
+                      <option key={pd.id} value={pd.id}>{trans(pd.id, pd.en)}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Kewarganegaraan</label>
+                  <label>{trans('Kewarganegaraan', 'Citizenship')}</label>
                   <select
                     name="kewarganegaraan"
                     className="form-control"
@@ -455,11 +479,11 @@ export default function PasienView({
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="step-head">
                 <div className="step-num acc-green"><AppIcon name="mapPin" /></div>
-                <div><div className="st-title">Alamat & Kontak</div></div>
+                <div><div className="st-title">{trans('Alamat & Kontak', 'Address & Contact')}</div></div>
               </div>
               <div className="field-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                 <div className="form-group fg-full">
-                  <label>Alamat Lengkap</label>
+                  <label>{trans('Alamat Lengkap', 'Full Address')}</label>
                   <textarea
                     name="alamat"
                     className="form-control"
@@ -470,7 +494,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Kelurahan/Desa</label>
+                  <label>{trans('Kelurahan/Desa', 'Subdistrict / Village')}</label>
                   <input
                     type="text"
                     name="kelurahan"
@@ -481,7 +505,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Kecamatan</label>
+                  <label>{trans('Kecamatan', 'District')}</label>
                   <input
                     type="text"
                     name="kecamatan"
@@ -492,7 +516,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Kota/Kabupaten</label>
+                  <label>{trans('Kota/Kabupaten', 'City / Regency')}</label>
                   <input
                     type="text"
                     name="kota"
@@ -503,7 +527,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Provinsi</label>
+                  <label>{trans('Provinsi', 'Province')}</label>
                   <input
                     type="text"
                     name="provinsi"
@@ -516,7 +540,7 @@ export default function PasienView({
 
               <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 10 }}>
                 <div className="form-group">
-                  <label>Kode Pos</label>
+                  <label>{trans('Kode Pos', 'Postal Code')}</label>
                   <input
                     type="text"
                     name="kode_pos"
@@ -527,7 +551,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Telepon</label>
+                  <label>{trans('Telepon', 'Phone')}</label>
                   <input
                     type="tel"
                     name="telepon"
@@ -538,7 +562,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Email</label>
+                  <label>{trans('Email', 'Email')}</label>
                   <input
                     type="email"
                     name="email"
@@ -554,18 +578,18 @@ export default function PasienView({
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="step-head">
                 <div className="step-num acc-orange"><AppIcon name="shield" /></div>
-                <div><div className="st-title">Penjamin & Pekerjaan</div></div>
+                <div><div className="st-title">{trans('Penjamin & Pekerjaan', 'Guarantor & Occupation')}</div></div>
               </div>
               <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div className="form-group">
-                  <label>Jaminan</label>
+                  <label>{trans('Jaminan', 'Guarantor')}</label>
                   <select
                     name="kelompok_id"
                     className="form-control"
                     value={formData.kelompok_id}
                     onChange={(e) => setFormData({ ...formData, kelompok_id: e.target.value })}
                   >
-                    <option value="">— Pilih —</option>
+                    <option value="">{trans('— Pilih —', '— Select —')}</option>
                     {kelompokList.map((k) => (
                       <option key={k.id} value={k.id}>{k.nama}</option>
                     ))}
@@ -573,7 +597,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>No. Asuransi</label>
+                  <label>{trans('No. Asuransi', 'Insurance No.')}</label>
                   <input
                     type="text"
                     name="no_asuransi"
@@ -584,7 +608,7 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Pekerjaan</label>
+                  <label>{trans('Pekerjaan', 'Occupation')}</label>
                   <input
                     type="text"
                     name="pekerjaan"
@@ -600,11 +624,11 @@ export default function PasienView({
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="step-head">
                 <div className="step-num acc-purple"><AppIcon name="users" /></div>
-                <div><div className="st-title">Kontak Darurat</div></div>
+                <div><div className="st-title">{trans('Kontak Darurat', 'Emergency Contact')}</div></div>
               </div>
               <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div className="form-group">
-                  <label>Nama Kontak Darurat</label>
+                  <label>{trans('Nama Kontak Darurat', 'Emergency Contact Name')}</label>
                   <input
                     type="text"
                     name="kontak_nama"
@@ -615,19 +639,19 @@ export default function PasienView({
                 </div>
 
                 <div className="form-group">
-                  <label>Hubungan</label>
+                  <label>{trans('Hubungan', 'Relationship')}</label>
                   <input
                     type="text"
                     name="kontak_hubungan"
                     className="form-control"
-                    placeholder="cth: Suami/Istri/Anak"
+                    placeholder={trans('cth: Suami/Istri/Anak', 'e.g. Spouse/Parent/Child')}
                     value={formData.kontak_hubungan}
                     onChange={(e) => setFormData({ ...formData, kontak_hubungan: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Telepon Kontak</label>
+                  <label>{trans('Telepon Kontak', 'Emergency Phone')}</label>
                   <input
                     type="tel"
                     name="kontak_telepon"
@@ -643,28 +667,28 @@ export default function PasienView({
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="step-head">
                 <div className="step-num acc-red"><AppIcon name="pills" /></div>
-                <div><div className="st-title">Informasi Medis</div></div>
+                <div><div className="st-title">{trans('Informasi Medis', 'Medical Information')}</div></div>
               </div>
               <div className="field-grid" style={{ gridTemplateColumns: '1fr' }}>
                 <div className="form-group fg-full">
-                  <label>Riwayat Alergi</label>
+                  <label>{trans('Riwayat Alergi', 'Allergy History')}</label>
                   <input
                     type="text"
                     name="alergi"
                     className="form-control"
-                    placeholder="cth: Penisilin, Seafood"
+                    placeholder={trans('cth: Penisilin, Seafood', 'e.g. Penicillin, Seafood')}
                     value={formData.alergi}
                     onChange={(e) => setFormData({ ...formData, alergi: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group fg-full">
-                  <label>Riwayat Penyakit</label>
+                  <label>{trans('Riwayat Penyakit', 'Disease History')}</label>
                   <textarea
                     name="riwayat_penyakit"
                     className="form-control"
                     rows="2"
-                    placeholder="cth: Hipertensi, Diabetes"
+                    placeholder={trans('cth: Hipertensi, Diabetes', 'e.g. Hypertension, Diabetes')}
                     value={formData.riwayat_penyakit}
                     onChange={(e) => setFormData({ ...formData, riwayat_penyakit: e.target.value })}
                   />
@@ -697,10 +721,10 @@ export default function PasienView({
                 }}
                 disabled={formSubmitting}
               >
-                Batal
+                {trans('Batal', 'Cancel')}
               </button>
               <button type="submit" className="btn" disabled={formSubmitting}>
-                <AppIcon name="save" /> {formSubmitting ? 'Menyimpan...' : 'Simpan Pasien'}
+                <AppIcon name="save" /> {formSubmitting ? trans('Menyimpan...', 'Saving...') : trans('Simpan Pasien', 'Save Patient')}
               </button>
             </div>
           </form>
@@ -712,14 +736,14 @@ export default function PasienView({
         <>
           <div className="page-toolbar">
             <div>
-              <div className="pt-title">Data Pasien</div>
+              <div className="pt-title">{t('menu.patient_data')}</div>
               <div className="pt-sub">
-                {totalCount} pasien terdaftar
+                {totalCount} {isEn ? 'registered patients' : 'pasien terdaftar'}
               </div>
             </div>
             <div className="pt-actions">
               <button className="btn" onClick={openCreateModal}>
-                <AppIcon name="plus" /> Pasien Baru
+                <AppIcon name="plus" /> {t('dashboard.new_patient')}
               </button>
             </div>
           </div>
@@ -727,19 +751,19 @@ export default function PasienView({
           <div className="table-wrap">
             {loading ? (
               <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
-                Memuat data pasien...
+                {isEn ? 'Loading patient data...' : 'Memuat data pasien...'}
               </div>
             ) : (
               <DataTableWrapper
                 columns={[
                   {
                     key: 'no_mr',
-                    label: 'NO. MR',
+                    label: t('common.mr_no'),
                     render: (p) => <b>{p.no_mr}</b>,
                   },
                   {
                     key: 'nama',
-                    label: 'NAMA',
+                    label: t('common.name'),
                     render: (p) => (
                       <>
                         {p.nama}
@@ -754,22 +778,22 @@ export default function PasienView({
                   },
                   {
                     key: 'jenis_kelamin',
-                    label: 'L/P',
-                    render: (p) => (p.jenis_kelamin === 'L' ? 'L' : 'P'),
+                    label: t('common.gender'),
+                    render: (p) => (p.jenis_kelamin === 'L' ? (isEn ? 'M' : 'L') : (isEn ? 'F' : 'P')),
                   },
                   {
                     key: 'tgl_lahir',
-                    label: 'TGL LAHIR',
+                    label: t('common.birth_date'),
                     render: (p) => formatDate(p.tgl_lahir),
                   },
                   {
                     key: 'kelompok_nama',
-                    label: 'KELOMPOK',
+                    label: t('common.group'),
                     render: (p) => p.kelompok_nama || p.kelompok || '-',
                   },
                   {
                     key: 'actions',
-                    label: 'AKSI',
+                    label: t('common.action'),
                     sortable: false,
                     thClassName: 'no-sort col-actions col-actions-wide',
                     className: 'cell-actions cell-actions-wide',
@@ -778,7 +802,7 @@ export default function PasienView({
                         <button
                           type="button"
                           className="btn btn-sm btn-light btn-icon"
-                          title="Lihat Detail"
+                          title={isEn ? 'View Detail' : 'Lihat Detail'}
                           onClick={() => openDetailModal(p)}
                         >
                           <AppIcon name="eye" />
@@ -786,7 +810,7 @@ export default function PasienView({
                         <button
                           type="button"
                           className="btn btn-sm btn-light btn-icon"
-                          title="Edit"
+                          title={isEn ? 'Edit' : 'Edit'}
                           onClick={() => openEditModal(p)}
                         >
                           <AppIcon name="pencil" />
@@ -794,12 +818,12 @@ export default function PasienView({
                         <button
                           type="button"
                           className="btn btn-sm"
-                          title="Daftar Kunjungan"
+                          title={isEn ? 'Register Visit' : 'Daftar Kunjungan'}
                           onClick={() => {
                             if (onRegisterVisit) onRegisterVisit(p);
                           }}
                         >
-                          Daftar Kunjungan
+                          {isEn ? 'Register Visit' : 'Daftar Kunjungan'}
                         </button>
                       </div>
                     ),
@@ -807,7 +831,7 @@ export default function PasienView({
                 ]}
                 data={pasienList}
                 defaultPageSize={25}
-                emptyText="Tidak ada data pasien yang terdaftar."
+                emptyText={isEn ? 'No registered patient data.' : 'Tidak ada data pasien yang terdaftar.'}
               />
             )}
           </div>
@@ -822,7 +846,7 @@ export default function PasienView({
           <div className="modal-box modal-lg" style={{ maxWidth: 880 }}>
             <div className="modal-head">
               <div className="modal-title">
-                Rekam Data Pasien: <b>{selectedPasien.nama}</b>
+                {trans('Rekam Data Pasien:', 'Patient Record:')} <b>{selectedPasien.nama}</b>
               </div>
               <button
                 type="button"
@@ -839,18 +863,18 @@ export default function PasienView({
                   <div>
                     <div style={{ fontSize: 'var(--fs-title)', fontWeight: 700 }}>{selectedPasien.nama}</div>
                     <div style={{ color: 'var(--muted)', marginTop: 4 }}>
-                      No. MR <b>{selectedPasien.no_mr}</b> &middot; {selectedPasien.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} &middot; {calculateAge(selectedPasien.tgl_lahir)} &middot; {selectedPasien.kelompok_nama || 'Umum'}
+                      {trans('No. MR', 'MR No.')} <b>{selectedPasien.no_mr}</b> &middot; {selectedPasien.jenis_kelamin === 'L' ? trans('Laki-laki', 'Male') : trans('Perempuan', 'Female')} &middot; {calculateAge(selectedPasien.tgl_lahir)} &middot; {selectedPasien.kelompok_nama || trans('Umum', 'General')}
                     </div>
                     <div style={{ color: 'var(--muted)' }}>
                       {selectedPasien.tgl_lahir ? formatDate(selectedPasien.tgl_lahir) : '-'}
                       {selectedPasien.gol_darah && selectedPasien.gol_darah !== '-' && (
-                        <span> &middot; Gol. Darah {selectedPasien.gol_darah}</span>
+                        <span> &middot; {trans('Gol. Darah', 'Blood Type')} {selectedPasien.gol_darah}</span>
                       )}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     {selectedPasien.alergi ? (
-                      <span className="badge badge-red"><AppIcon name="alert" /> Alergi: {selectedPasien.alergi}</span>
+                      <span className="badge badge-red"><AppIcon name="alert" /> {trans('Alergi:', 'Allergy:')} {selectedPasien.alergi}</span>
                     ) : null}
                   </div>
                 </div>
@@ -860,7 +884,7 @@ export default function PasienView({
               <div className="detail-section">
                 <div className="step-head">
                   <div className="step-num acc-blue"><AppIcon name="user" /></div>
-                  <div><div className="st-title">Identitas Pasien</div></div>
+                  <div><div className="st-title">{trans('Identitas Pasien', 'Patient Identity')}</div></div>
                 </div>
                 <div className="detail-grid">
                   <div className="detail-item">
@@ -868,40 +892,40 @@ export default function PasienView({
                     <div className={`di-value ${!selectedPasien.nik ? 'empty' : ''}`}>{selectedPasien.nik || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">No. Passport / KITAS</div>
+                    <div className="di-label">{trans('No. Passport / KITAS', 'Passport / KITAS No.')}</div>
                     <div className={`di-value ${!selectedPasien.no_passport ? 'empty' : ''}`}>{selectedPasien.no_passport || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Tempat Lahir</div>
+                    <div className="di-label">{trans('Tempat Lahir', 'Place of Birth')}</div>
                     <div className={`di-value ${!selectedPasien.tempat_lahir ? 'empty' : ''}`}>{selectedPasien.tempat_lahir || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Tanggal Lahir</div>
+                    <div className="di-label">{trans('Tanggal Lahir', 'Date of Birth')}</div>
                     <div className={`di-value ${!selectedPasien.tgl_lahir ? 'empty' : ''}`}>{selectedPasien.tgl_lahir ? formatDate(selectedPasien.tgl_lahir) : '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Jenis Kelamin</div>
-                    <div className="di-value">{selectedPasien.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</div>
+                    <div className="di-label">{trans('Jenis Kelamin', 'Gender')}</div>
+                    <div className="di-value">{selectedPasien.jenis_kelamin === 'L' ? trans('Laki-laki', 'Male') : trans('Perempuan', 'Female')}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Golongan Darah</div>
+                    <div className="di-label">{trans('Golongan Darah', 'Blood Type')}</div>
                     <div className={`di-value ${!selectedPasien.gol_darah || selectedPasien.gol_darah === '-' ? 'empty' : ''}`}>{selectedPasien.gol_darah && selectedPasien.gol_darah !== '-' ? selectedPasien.gol_darah : '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Agama</div>
-                    <div className={`di-value ${!selectedPasien.agama ? 'empty' : ''}`}>{selectedPasien.agama || '—'}</div>
+                    <div className="di-label">{trans('Agama', 'Religion')}</div>
+                    <div className={`di-value ${!selectedPasien.agama ? 'empty' : ''}`}>{formatReligion(selectedPasien.agama)}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Status Perkawinan</div>
-                    <div className={`di-value ${!selectedPasien.status_kawin ? 'empty' : ''}`}>{selectedPasien.status_kawin || '—'}</div>
+                    <div className="di-label">{trans('Status Perkawinan', 'Marital Status')}</div>
+                    <div className={`di-value ${!selectedPasien.status_kawin ? 'empty' : ''}`}>{formatMaritalStatus(selectedPasien.status_kawin)}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Pendidikan</div>
+                    <div className="di-label">{trans('Pendidikan', 'Education')}</div>
                     <div className={`di-value ${!selectedPasien.pendidikan ? 'empty' : ''}`}>{selectedPasien.pendidikan || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Kewarganegaraan</div>
-                    <div className="di-value">{selectedPasien.kewarganegaraan || 'WNI'}</div>
+                    <div className="di-label">{trans('Kewarganegaraan', 'Citizenship')}</div>
+                    <div className="di-value">{selectedPasien.kewarganegaraan === 'WNI' || !selectedPasien.kewarganegaraan ? trans('WNI', 'Indonesian') : selectedPasien.kewarganegaraan}</div>
                   </div>
                 </div>
               </div>
@@ -910,35 +934,35 @@ export default function PasienView({
               <div className="detail-section">
                 <div className="step-head">
                   <div className="step-num acc-green"><AppIcon name="mapPin" /></div>
-                  <div><div className="st-title">Alamat & Kontak</div></div>
+                  <div><div className="st-title">{trans('Alamat & Kontak', 'Address & Contact')}</div></div>
                 </div>
                 <div className="detail-grid">
                   <div className="detail-item dg-full">
-                    <div className="di-label">Alamat Lengkap</div>
+                    <div className="di-label">{trans('Alamat Lengkap', 'Full Address')}</div>
                     <div className={`di-value ${!selectedPasien.alamat ? 'empty' : ''}`}>{selectedPasien.alamat || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Kelurahan / Desa</div>
+                    <div className="di-label">{trans('Kelurahan / Desa', 'Subdistrict / Village')}</div>
                     <div className={`di-value ${!selectedPasien.kelurahan ? 'empty' : ''}`}>{selectedPasien.kelurahan || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Kecamatan</div>
+                    <div className="di-label">{trans('Kecamatan', 'District')}</div>
                     <div className={`di-value ${!selectedPasien.kecamatan ? 'empty' : ''}`}>{selectedPasien.kecamatan || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Kota / Kabupaten</div>
+                    <div className="di-label">{trans('Kota / Kabupaten', 'City / Regency')}</div>
                     <div className={`di-value ${!selectedPasien.kota ? 'empty' : ''}`}>{selectedPasien.kota || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Provinsi</div>
+                    <div className="di-label">{trans('Provinsi', 'Province')}</div>
                     <div className={`di-value ${!selectedPasien.provinsi ? 'empty' : ''}`}>{selectedPasien.provinsi || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Kode Pos</div>
+                    <div className="di-label">{trans('Kode Pos', 'Postal Code')}</div>
                     <div className={`di-value ${!selectedPasien.kode_pos ? 'empty' : ''}`}>{selectedPasien.kode_pos || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">No. Telepon / HP</div>
+                    <div className="di-label">{trans('No. Telepon / HP', 'Phone Number')}</div>
                     <div className={`di-value ${!selectedPasien.telepon ? 'empty' : ''}`}>{selectedPasien.telepon || '—'}</div>
                   </div>
                   <div className="detail-item">
@@ -952,19 +976,19 @@ export default function PasienView({
               <div className="detail-section">
                 <div className="step-head">
                   <div className="step-num acc-orange"><AppIcon name="shield" /></div>
-                  <div><div className="st-title">Penjamin & Pekerjaan</div></div>
+                  <div><div className="st-title">{trans('Penjamin & Pekerjaan', 'Guarantor & Occupation')}</div></div>
                 </div>
                 <div className="detail-grid">
                   <div className="detail-item">
-                    <div className="di-label">Kelompok Penjamin</div>
-                    <div className="di-value">{selectedPasien.kelompok_nama || 'Umum'}</div>
+                    <div className="di-label">{trans('Kelompok Penjamin', 'Guarantor Group')}</div>
+                    <div className="di-value">{selectedPasien.kelompok_nama || trans('Umum', 'General')}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">No. Kartu / Asuransi</div>
+                    <div className="di-label">{trans('No. Kartu / Asuransi', 'Card / Insurance No.')}</div>
                     <div className={`di-value ${!selectedPasien.no_asuransi ? 'empty' : ''}`}>{selectedPasien.no_asuransi || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Pekerjaan</div>
+                    <div className="di-label">{trans('Pekerjaan', 'Occupation')}</div>
                     <div className={`di-value ${!selectedPasien.pekerjaan ? 'empty' : ''}`}>{selectedPasien.pekerjaan || '—'}</div>
                   </div>
                 </div>
@@ -974,19 +998,19 @@ export default function PasienView({
               <div className="detail-section">
                 <div className="step-head">
                   <div className="step-num acc-purple"><AppIcon name="users" /></div>
-                  <div><div className="st-title">Kontak Darurat</div></div>
+                  <div><div className="st-title">{trans('Kontak Darurat', 'Emergency Contact')}</div></div>
                 </div>
                 <div className="detail-grid">
                   <div className="detail-item">
-                    <div className="di-label">Nama Kontak Darurat</div>
+                    <div className="di-label">{trans('Nama Kontak Darurat', 'Emergency Contact Name')}</div>
                     <div className={`di-value ${!selectedPasien.kontak_nama ? 'empty' : ''}`}>{selectedPasien.kontak_nama || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">Hubungan</div>
+                    <div className="di-label">{trans('Hubungan', 'Relationship')}</div>
                     <div className={`di-value ${!selectedPasien.kontak_hubungan ? 'empty' : ''}`}>{selectedPasien.kontak_hubungan || '—'}</div>
                   </div>
                   <div className="detail-item">
-                    <div className="di-label">No. Telepon Darurat</div>
+                    <div className="di-label">{trans('No. Telepon Darurat', 'Emergency Phone')}</div>
                     <div className={`di-value ${!selectedPasien.kontak_telepon ? 'empty' : ''}`}>{selectedPasien.kontak_telepon || '—'}</div>
                   </div>
                 </div>
@@ -996,15 +1020,15 @@ export default function PasienView({
               <div className="detail-section">
                 <div className="step-head">
                   <div className="step-num acc-red"><AppIcon name="pills" /></div>
-                  <div><div className="st-title">Informasi Medis</div></div>
+                  <div><div className="st-title">{trans('Informasi Medis', 'Medical Information')}</div></div>
                 </div>
                 <div className="detail-grid">
                   <div className="detail-item dg-full">
-                    <div className="di-label">Riwayat Alergi</div>
+                    <div className="di-label">{trans('Riwayat Alergi', 'Allergy History')}</div>
                     <div className={`di-value ${!selectedPasien.alergi ? 'empty' : ''}`}>{selectedPasien.alergi || '—'}</div>
                   </div>
                   <div className="detail-item dg-full">
-                    <div className="di-label">Riwayat Penyakit</div>
+                    <div className="di-label">{trans('Riwayat Penyakit', 'Disease History')}</div>
                     <div className={`di-value ${!selectedPasien.riwayat_penyakit ? 'empty' : ''}`}>{selectedPasien.riwayat_penyakit || '—'}</div>
                   </div>
                 </div>
@@ -1012,24 +1036,24 @@ export default function PasienView({
 
               {/* Riwayat Kunjungan */}
               <div style={{ marginTop: 20 }}>
-                <div className="section-title">Riwayat Kunjungan ({riwayatKunjungan.length})</div>
+                <div className="section-title">{trans('Riwayat Kunjungan', 'Visit History')} ({riwayatKunjungan.length})</div>
                 <div className="table-wrap">
                   <table className="datatable dt-noscroll" style={{ width: '100%' }}>
                     <thead>
                       <tr>
-                        <th>No. Kunjungan</th>
-                        <th>Tanggal</th>
-                        <th>Poli</th>
-                        <th>Dokter</th>
-                        <th>Keluhan</th>
-                        <th>Status</th>
+                        <th>{trans('No. Kunjungan', 'Visit No.')}</th>
+                        <th>{trans('Tanggal', 'Date')}</th>
+                        <th>{trans('Poli', 'Clinic')}</th>
+                        <th>{trans('Dokter', 'Doctor')}</th>
+                        <th>{trans('Keluhan', 'Complaint')}</th>
+                        <th>{trans('Status', 'Status')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {riwayatKunjungan.length === 0 ? (
                         <tr>
                           <td colSpan="6" style={{ textAlign: 'center', color: 'var(--muted)', padding: '16px' }}>
-                            Belum ada riwayat kunjungan.
+                            {trans('Belum ada riwayat kunjungan.', 'No visit history recorded.')}
                           </td>
                         </tr>
                       ) : (
@@ -1042,7 +1066,7 @@ export default function PasienView({
                             <td>{k.keluhan_utama || '-'}</td>
                             <td>
                               <span className={`badge badge-${k.status === 'selesai' ? 'green' : k.status === 'batal' ? 'red' : 'blue'}`}>
-                                {k.status}
+                                {formatStatus(k.status)}
                               </span>
                             </td>
                           </tr>
@@ -1055,7 +1079,7 @@ export default function PasienView({
 
               <div className="form-actions" style={{ marginTop: 18, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-light" onClick={() => setDetailModalOpen(false)}>
-                  Tutup
+                  {trans('Tutup', 'Close')}
                 </button>
                 <button 
                   type="button" 
@@ -1065,7 +1089,7 @@ export default function PasienView({
                     openEditModal(selectedPasien);
                   }}
                 >
-                  <AppIcon name="pencil" /> Edit Pasien
+                  <AppIcon name="pencil" /> {trans('Edit Pasien', 'Edit Patient')}
                 </button>
                 <button
                   type="button"
@@ -1075,7 +1099,7 @@ export default function PasienView({
                     if (onRegisterVisit) onRegisterVisit(selectedPasien);
                   }}
                 >
-                  <AppIcon name="plus" /> Daftar Kunjungan
+                  <AppIcon name="plus" /> {trans('Daftar Kunjungan', 'Register Visit')}
                 </button>
               </div>
             </div>

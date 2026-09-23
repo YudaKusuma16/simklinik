@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function MasterDataView({ initialGroup, initialSlug = null, onNavigateSlug = null }) {
+  const { t, trans, formatTgl } = useI18n();
   const [entities, setEntities] = useState({});
   const [loadingEntities, setLoadingEntities] = useState(true);
 
@@ -292,10 +294,94 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
     }
   };
 
+  const getEntityLabel = (slug, defaultLabel = '') => {
+    const map = {
+      poli: trans('Poli & Layanan', 'Clinics & Units'),
+      dokter: trans('Dokter & Tenaga Medis', 'Doctors & Medical Staff'),
+      spesialisasi: trans('Spesialisasi', 'Specializations'),
+      jadwal_dokter: trans('Jadwal Dokter', 'Doctor Schedules'),
+      tindakan: trans('Tindakan & Prosedur', 'Procedures & Treatments'),
+      konsultasi: trans('Tarif Konsultasi', 'Consultation Tariffs'),
+      lab_kategori: trans('Kategori Laboratorium', 'Lab Categories'),
+      lab_pemeriksaan: trans('Pemeriksaan Laboratorium', 'Lab Tests'),
+      rad_kategori: trans('Kategori Radiologi', 'Radiology Categories'),
+      rad_pemeriksaan: trans('Pemeriksaan Radiologi', 'Radiology Examinations'),
+      diag_kategori: trans('Kategori Diagnostik', 'Diagnostic Categories'),
+      diag_pemeriksaan: trans('Pemeriksaan Diagnostik', 'Diagnostic Examinations'),
+      fisio_kategori: trans('Kategori Fisioterapi', 'Physiotherapy Categories'),
+      fisio_pemeriksaan: trans('Pemeriksaan Fisioterapi', 'Physiotherapy Services'),
+      obat: trans('Obat & Alkes', 'Medicines & Supplies'),
+      obat_kategori: trans('Kategori Obat', 'Medicine Categories'),
+      obat_satuan: trans('Satuan Obat', 'Medicine Units'),
+      supplier: trans('Pemasok / Supplier', 'Suppliers'),
+      asuransi: trans('Asuransi & Penjamin', 'Insurance & Guarantors'),
+      corporate: trans('Perusahaan Mitra', 'Corporate Partners'),
+      bank: trans('Bank & Rekening', 'Banks & Accounts'),
+      kode_pembatalan: trans('Kode Pembatalan Billing', 'Billing Cancellation Codes'),
+      kode_pembatalan_reg: trans('Kode Pembatalan Registrasi', 'Registration Cancellation Codes'),
+      kelompok_pasien: trans('Kelompok Pasien', 'Patient Groups'),
+    };
+    return map[slug] || defaultLabel;
+  };
+
+  const getGroupLabel = (grp) => {
+    const map = {
+      'SDM & Poli': trans('SDM & Poli', 'Staff & Clinics'),
+      'Layanan & Tarif': trans('Layanan & Tarif', 'Services & Tariffs'),
+      'Farmasi': trans('Farmasi', 'Pharmacy'),
+      'Medicine': trans('Farmasi', 'Pharmacy'),
+      'Penjamin & Bank': trans('Penjamin & Bank', 'Guarantors & Banks'),
+      'Billing': trans('Kode Pembatalan', 'Cancellation Codes'),
+      'Kode Pembatalan': trans('Kode Pembatalan', 'Cancellation Codes'),
+      'Pasien': trans('Pasien', 'Patients'),
+    };
+    return map[grp] || grp;
+  };
+
+  const getFieldLabel = (key, defaultLabel = '') => {
+    const map = {
+      kode: trans('KODE', 'CODE'),
+      nama: trans('NAMA', 'NAME'),
+      keterangan: trans('KETERANGAN', 'DESCRIPTION'),
+      status: trans('STATUS', 'STATUS'),
+      alamat: trans('ALAMAT', 'ADDRESS'),
+      telepon: trans('TELEPON', 'PHONE'),
+      hp: trans('NO. HP', 'MOBILE PHONE'),
+      email: trans('EMAIL', 'EMAIL'),
+      tarif: trans('TARIF', 'TARIFF'),
+      harga_beli: trans('HARGA BELI', 'PURCHASE PRICE'),
+      harga_jual: trans('HARGA JUAL', 'SELLING PRICE'),
+      stok: trans('STOK', 'STOCK'),
+      stok_minimal: trans('STOK MIN', 'MIN STOCK'),
+      stok_min: trans('STOK MIN', 'MIN STOCK'),
+      satuan: trans('SATUAN', 'UNIT'),
+      satuan_id: trans('SATUAN', 'UNIT'),
+      kategori: trans('KATEGORI', 'CATEGORY'),
+      kategori_id: trans('KATEGORI', 'CATEGORY'),
+      spesialisasi: trans('SPESIALISASI', 'SPECIALIZATION'),
+      poli: trans('POLI', 'CLINIC/UNIT'),
+      poli_id: trans('POLI', 'CLINIC/UNIT'),
+      dokter: trans('DOKTER', 'DOCTOR'),
+      dokter_id: trans('DOKTER', 'DOCTOR'),
+      no_mr: trans('NO. REKAM MEDIS', 'MR NO.'),
+      no_rekening: trans('NO. REKENING', 'ACCOUNT NO.'),
+      nama_bank: trans('NAMA BANK', 'BANK NAME'),
+      atas_nama: trans('ATAS NAMA', 'ACCOUNT HOLDER'),
+      diskon: trans('DISKON', 'DISCOUNT'),
+      tipe: trans('TIPE', 'TYPE'),
+      hari: trans('HARI', 'DAY'),
+      jam_mulai: trans('JAM MULAI', 'START TIME'),
+      jam_selesai: trans('JAM SELESAI', 'END TIME'),
+      kuota: trans('KUOTA', 'QUOTA'),
+      persentase: trans('PERSENTASE', 'PERCENTAGE'),
+    };
+    return map[key] || (defaultLabel ? defaultLabel.toUpperCase() : key.toUpperCase());
+  };
+
   if (loadingEntities && Object.keys(entities).length === 0) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>
-        Memuat Master Data SIM Klinik...
+        {trans('Memuat Master Data SIM Klinik...', 'Loading SIM Clinic Master Data...')}
       </div>
     );
   }
@@ -324,12 +410,12 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
       {/* Page Toolbar matching backend/legacy/modules/master/index.php */}
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">{currentEntity?.label || 'Master Data'}</div>
-          <div className="pt-sub">Master Data &middot; {activeGroup === 'Billing' ? 'Kode Pembatalan' : activeGroup}</div>
+          <div className="pt-title">{getEntityLabel(currentEntity?.slug, currentEntity?.label) || trans('Master Data', 'Master Data')}</div>
+          <div className="pt-sub">{trans('Master Data', 'Master Data')} &middot; {getGroupLabel(activeGroup)}</div>
         </div>
         <div className="pt-actions">
           <button type="button" className="btn" onClick={handleOpenCreate}>
-            <AppIcon name="plus" /> Tambah {currentEntity?.singular || currentEntity?.label || 'Data'}
+            <AppIcon name="plus" /> {trans('Tambah', 'Add')} {getEntityLabel(currentEntity?.slug, currentEntity?.singular || currentEntity?.label) || trans('Data', 'Data')}
           </button>
         </div>
       </div>
@@ -363,7 +449,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
               >
                 <span className="vt-main">
                   <span className="vt-ico"><AppIcon name={ent.icon_name || getEntityIcon(ent.slug)} /></span>
-                  <span>{ent.label}</span>
+                  <span>{getEntityLabel(ent.slug, ent.label)}</span>
                 </span>
                 <span className="tab-count">{ent.count || 0}</span>
               </a>
@@ -375,7 +461,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
         <div className="table-wrap" style={{ flex: 1, minWidth: 0, margin: 0 }}>
           {loadingRecords ? (
             <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
-              Memuat data...
+              {trans('Memuat data...', 'Loading data...')}
             </div>
           ) : (
             <DataTableWrapper
@@ -391,7 +477,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                 },
                 ...listFields.map(([key, f]) => ({
                   key,
-                  label: f.label.toUpperCase(),
+                  label: getFieldLabel(key, f.label),
                   sortable: true,
                   render: (row) => {
                     let displayVal = row[key];
@@ -402,7 +488,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                     } else if (f.type === 'enum' && key === 'status') {
                       return (
                         <span className={`badge ${displayVal === 'aktif' ? 'badge-green' : 'badge-gray'}`}>
-                          {displayVal === 'aktif' ? 'Aktif' : 'Nonaktif'}
+                          {displayVal === 'aktif' ? trans('Aktif', 'Active') : trans('Nonaktif', 'Inactive')}
                         </span>
                       );
                     } else if (f.type === 'readonly') {
@@ -413,7 +499,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                 })),
                 {
                   key: '_actions',
-                  label: 'AKSI',
+                  label: trans('AKSI', 'ACTION'),
                   sortable: false,
                   thClassName: 'no-sort col-actions',
                   className: 'cell-actions',
@@ -424,14 +510,14 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                         className="btn btn-sm btn-light"
                         onClick={() => handleOpenEdit(row)}
                       >
-                        Edit
+                        {trans('Edit', 'Edit')}
                       </button>
                       <button
                         type="button"
                         className="btn btn-sm btn-red"
                         onClick={() => handleDelete(row)}
                       >
-                        Hapus
+                        {trans('Hapus', 'Delete')}
                       </button>
                     </div>
                   ),
@@ -440,7 +526,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
               data={records}
               defaultPageSize={25}
               sortButtons={sortButtons}
-              emptyText={`Belum ada data untuk ${currentEntity?.singular || 'entitas ini'}.`}
+              emptyText={trans('Belum ada data', 'No data available')}
             />
           )}
         </div>
@@ -452,13 +538,13 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
           <div className="modal-box" role="dialog" aria-modal="true" style={{ maxWidth: 600 }}>
             <div className="modal-head">
               <div className="modal-title">
-                {isEditing ? `Edit ${currentEntity?.singular || 'Data'}` : `Tambah ${currentEntity?.singular || 'Data'}`}
+                {isEditing ? `${trans('Edit', 'Edit')} ${currentEntity?.singular || trans('Data', 'Data')}` : `${trans('Tambah', 'Add')} ${currentEntity?.singular || trans('Data', 'Data')}`}
               </div>
               <button
                 type="button"
                 className="modal-close"
                 onClick={() => setModalOpen(false)}
-                aria-label="Tutup"
+                aria-label={trans('Tutup', 'Close')}
               >
                 &times;
               </button>
@@ -489,7 +575,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                           onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
                           required={field.required}
                         >
-                          <option value="">-- Pilih {field.label} --</option>
+                          <option value="">-- {trans('Pilih', 'Select')} {field.label} --</option>
                           {field.options?.map((opt) => (
                             <option key={opt} value={opt}>
                               {opt}
@@ -503,7 +589,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                           onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
                           required={field.required}
                         >
-                          <option value="">-- Pilih {field.label} --</option>
+                          <option value="">-- {trans('Pilih', 'Select')} {field.label} --</option>
                           {(lookups[field.fk_table] || []).map((item) => (
                             <option key={item.id} value={item.id}>
                               {item.nama || item.label || item.kode || `#${item.id}`}
@@ -540,10 +626,10 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                   onClick={() => setModalOpen(false)}
                   disabled={submitting}
                 >
-                  Batal
+                  {trans('Batal', 'Cancel')}
                 </button>
                 <button type="submit" className="btn" disabled={submitting}>
-                  {submitting ? 'Menyimpan...' : 'Simpan Data'}
+                  {submitting ? trans('Menyimpan...', 'Saving...') : trans('Simpan Data', 'Save Data')}
                 </button>
               </div>
             </form>

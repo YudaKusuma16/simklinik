@@ -31,6 +31,8 @@ class LegacyController extends Controller
         }
 
         $_SERVER['SCRIPT_NAME'] = '/legacy/' . ltrim($path, '/');
+        $_SERVER['REQUEST_METHOD'] = $request->method();
+        $_SERVER['REQUEST_URI'] = $request->getRequestUri();
 
         require_once base_path('legacy/includes/functions.php');
 
@@ -47,6 +49,8 @@ class LegacyController extends Controller
                 'poli_id' => $user->poli_id,
             ];
         }
+
+        $_SESSION['locale'] = app()->getLocale();
 
         chdir(dirname($realFile));
 

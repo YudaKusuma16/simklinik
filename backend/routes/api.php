@@ -22,6 +22,9 @@ Route::get('/up', function () {
     ]);
 });
 
+// Locale Switcher
+Route::match(['get', 'post'], '/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch']);
+
 // Authentication (Public)
 Route::post('/auth/login', [AuthController::class, 'login']);
 

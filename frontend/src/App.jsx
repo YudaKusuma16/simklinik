@@ -15,6 +15,7 @@ import RegistrasiDaftarView from './components/RegistrasiDaftarView';
 import ProfilKlinikView from './components/ProfilKlinikView';
 import PenggunaRoleView from './components/PenggunaRoleView';
 import CetakStrukView from './components/CetakStrukView';
+import { useI18n } from './i18n';
 
 export const ROUTES = [
   { view: 'login', path: '/login', altPaths: ['/masuk', '/auth/login', '/legacy/auth/login.php'] },
@@ -253,8 +254,10 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('sidebar') === 'collapsed');
 
-  // Language state: 'id' | 'en'
-  const [locale, setLocale] = useState(() => localStorage.getItem('locale') || 'id');
+  // Language from unified i18n context
+  const { locale, setLocale, t, isEn, trans, formatTgl } = useI18n();
+  const handleLocaleChange = setLocale;
+
   // Sidebar sub-menu dropdown states
   const [masterNavOpen, setMasterNavOpen] = useState(false);
   const [laporanNavOpen, setLaporanNavOpen] = useState(false);
@@ -501,7 +504,7 @@ export default function App() {
 
 
   const handleLogout = async () => {
-    const confirmMsg = locale === 'en' ? 'Leave the application?' : 'Keluar dari aplikasi?';
+    const confirmMsg = t('app.logout_confirm');
     if (window.confirm(confirmMsg)) {
       try {
         await api.post('/auth/logout');
@@ -563,7 +566,7 @@ export default function App() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 20 * 1024 * 1024) {
-        setErrors(['Ukuran foto maksimal 20 MB.']);
+        setErrors([trans('Ukuran foto maksimal 20 MB.', 'Max photo size is 20 MB.')]);
         return;
       }
       setAvatarFile(file);
@@ -593,7 +596,7 @@ export default function App() {
 
       const res = await api.postForm('/profile', body);
       if (res.success) {
-        setSuccessMessage(res.message || 'Profil berhasil diperbarui.');
+        setSuccessMessage(res.message || trans('Profil berhasil diperbarui.', 'Profile updated successfully.'));
         setUser(prev => ({
           ...prev,
           ...res.data
@@ -604,7 +607,7 @@ export default function App() {
         setAvatarFile(null);
       }
     } catch (err) {
-      setErrors([err.message || 'Gagal memperbarui profil.']);
+      setErrors([err.message || trans('Gagal memperbarui profil.', 'Failed to update profile.')]);
     } finally {
       setSavingProfile(false);
     }
@@ -616,12 +619,12 @@ export default function App() {
     setSuccessMessage('');
 
     if (passwordData.new_password.length < 6) {
-      setErrors(['Password baru minimal 6 karakter.']);
+      setErrors([trans('Password baru minimal 6 karakter.', 'New password must be at least 6 characters.')]);
       return;
     }
 
     if (passwordData.new_password !== passwordData.confirm_password) {
-      setErrors(['Konfirmasi password tidak cocok.']);
+      setErrors([trans('Konfirmasi password tidak cocok.', 'Password confirmation does not match.')]);
       return;
     }
 
@@ -629,7 +632,7 @@ export default function App() {
     try {
       const res = await api.post('/profile/password', passwordData);
       if (res.success) {
-        setSuccessMessage(res.message || 'Password berhasil diubah.');
+        setSuccessMessage(res.message || trans('Password berhasil diubah.', 'Password changed successfully.'));
         setPasswordData({
           current_password: '',
           new_password: '',
@@ -637,7 +640,7 @@ export default function App() {
         });
       }
     } catch (err) {
-      setErrors([err.message || 'Password saat ini tidak sesuai.']);
+      setErrors([err.message || trans('Password saat ini tidak sesuai.', 'Current password is incorrect.')]);
     } finally {
       setSavingPassword(false);
     }
@@ -658,7 +661,7 @@ export default function App() {
   if (authChecking) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f2747', color: '#fff' }}>
-        Memuat...
+        {t('common.loading_data')}
       </div>
     );
   }
@@ -702,450 +705,448 @@ export default function App() {
 
   return (
     <div className={`layout ${sidebarCollapsed ? 'collapsed' : ''}`} id="appLayout">
-      {/* Sidebar matching backend/legacy/includes/header.php & components/sidebar.blade.php */}
-      <aside className="sidebar" id="appSidebar">
-        <div className="brand">
-          <span className="brand-ico">
-            <AppIcon name="plus" />
-          </span>
-          <span className="brand-text">
-            SIM Klinik
-            <small>PT Sapta Genki Clinic</small>
-          </span>
-        </div>
-
-        <nav>
-          {/* Dashboard */}
-          <a 
-            className={currentView === 'dashboard' ? 'active' : ''} 
-            href="/dashboard" 
-            onClick={e => { e.preventDefault(); navigateTo('dashboard'); }} 
-            title="Dashboard"
-          >
-            <span className="ico"><AppIcon name="dashboard" /></span>
-            <span className="txt">Dashboard</span>
-          </a>
-
-          {/* Rekam Medis */}
-          <div className="label">REKAM MEDIS</div>
-          <a 
-            className={currentView === 'rekam_medis' ? 'active' : ''} 
-            href="/rekam-medis" 
-            onClick={e => { e.preventDefault(); navigateTo('rekam_medis'); }} 
-            title="Rekam Medis (EMR)"
-          >
-            <span className="ico"><AppIcon name="rekam" /></span>
-            <span className="txt">Rekam Medis</span>
-          </a>
-
-          {/* Operasional */}
-          <div className="label">OPERASIONAL</div>
-          <a 
-            className={currentView === 'registrasi_daftar' ? 'active' : ''} 
-            href="/pendaftaran" 
-            onClick={e => { 
-              e.preventDefault(); 
-              setSelectedPasienForVisit(null);
-              navigateTo('registrasi_daftar'); 
-            }} 
-            title="Registrasi"
-          >
-            <span className="ico"><AppIcon name="registrasi" /></span>
-            <span className="txt">Registrasi</span>
-          </a>
-          <a 
-            className={currentView === 'pasien' ? 'active' : ''} 
-            href="/pasien" 
-            onClick={e => { 
-              e.preventDefault(); 
-              setPasienSubView('list');
-              navigateTo('pasien'); 
-            }} 
-            title="Data Pasien"
-          >
-            <span className="ico"><AppIcon name="users" /></span>
-            <span className="txt">Data Pasien</span>
-          </a>
-          <a 
-            className={currentView === 'kunjungan' ? 'active' : ''} 
-            href="/kunjungan" 
-            onClick={e => { e.preventDefault(); navigateTo('kunjungan'); }} 
-            title="Data Registrasi"
-          >
-            <span className="ico"><AppIcon name="calendar" /></span>
-            <span className="txt">Data Registrasi</span>
-          </a>
-
-          {/* Keuangan */}
-          <div className="label">KEUANGAN</div>
-          <a 
-            className={currentView === 'billing' ? 'active' : ''} 
-            href="/billing" 
-            onClick={e => { e.preventDefault(); navigateTo('billing'); }} 
-            title="Billing & Tagihan"
-          >
-            <span className="ico"><AppIcon name="billing" /></span>
-            <span className="txt">Billing</span>
-          </a>
-          <a 
-            className={currentView === 'keuangan' ? 'active' : ''} 
-            href="/keuangan" 
-            onClick={e => { e.preventDefault(); navigateTo('keuangan'); }} 
-            title="Keuangan & Kas"
-          >
-            <span className="ico"><AppIcon name="keuangan" /></span>
-            <span className="txt">Keuangan</span>
-          </a>
-
-          {/* Data & Stok */}
-          <div className="label">DATA & STOK</div>
-          <div className={`nav-group ${masterNavOpen || currentView === 'master' ? 'open' : ''}`}>
-            <div className={`nav-parent ${currentView === 'master' ? 'active' : ''}`}>
-              <button 
-                type="button" 
-                className="np-link" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: selectedMasterGroup, slug: selectedMasterSlug });
-                  setMasterNavOpen(true);
-                }} 
-                title="Master Data"
-              >
-                <span className="ico"><AppIcon name="master" /></span>
-                <span className="txt">Master Data</span>
-              </button>
-              <button 
-                type="button" 
-                className="np-caret" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setMasterNavOpen(prev => !prev);
-                }} 
-                aria-label="Buka/tutup sub-menu"
-              >
-                <AppIcon name="chevron" />
-              </button>
-            </div>
-            <div className="nav-sub">
-              <a 
-                className={currentView === 'master' && selectedMasterGroup === 'Layanan & Tarif' ? 'active' : ''} 
-                href="/master/tindakan" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: 'Layanan & Tarif', slug: 'tindakan' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Layanan & Tarif</span>
-                <span className="cnt c1">{masterCounts['Layanan & Tarif'] ?? 0}</span>
-              </a>
-              <a 
-                className={currentView === 'master' && selectedMasterGroup === 'SDM & Poli' ? 'active' : ''} 
-                href="/master/poli" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: 'SDM & Poli', slug: 'poli' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">SDM & Poli</span>
-                <span className="cnt c2">{masterCounts['SDM & Poli'] ?? 0}</span>
-              </a>
-              <a 
-                className={currentView === 'master' && (selectedMasterGroup === 'Medicine' || selectedMasterGroup === 'Farmasi' || selectedMasterGroup === 'Farmasi & Obat') ? 'active' : ''} 
-                href="/master/obat" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: 'Medicine', slug: 'obat' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Medicine</span>
-                <span className="cnt c3">{masterCounts['Farmasi'] ?? 0}</span>
-              </a>
-              <a 
-                className={currentView === 'master' && selectedMasterGroup === 'Penjamin & Bank' ? 'active' : ''} 
-                href="/master/asuransi" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: 'Penjamin & Bank', slug: 'asuransi' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Penjamin & Bank</span>
-                <span className="cnt c4">{masterCounts['Penjamin & Bank'] ?? 0}</span>
-              </a>
-              <a 
-                className={currentView === 'master' && selectedMasterGroup === 'Pasien' ? 'active' : ''} 
-                href="/master/kelompok_pasien" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: 'Pasien', slug: 'kelompok_pasien' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Pasien</span>
-                <span className="cnt c5">{masterCounts['Pasien'] ?? 0}</span>
-              </a>
-              <a 
-                className={currentView === 'master' && (selectedMasterGroup === 'Kode Pembatalan' || selectedMasterGroup === 'Billing') ? 'active' : ''} 
-                href="/master/kode_pembatalan" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('master', null, { g: 'Billing', slug: 'kode_pembatalan' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Kode Pembatalan</span>
-                <span className="cnt c6">{masterCounts['Billing'] ?? 14}</span>
-              </a>
-            </div>
-          </div>
-          <a 
-            className={currentView === 'farmasi' ? 'active' : ''} 
-            href="/farmasi" 
-            onClick={e => { e.preventDefault(); navigateTo('farmasi', 'stok'); }} 
-            title="Inventory"
-          >
-            <span className="ico"><AppIcon name="inventory" /></span>
-            <span className="txt">Inventory</span>
-          </a>
-
-          {/* Lainnya */}
-          <div className="label">LAINNYA</div>
-          <div className={`nav-group ${laporanNavOpen || currentView === 'laporan' ? 'open' : ''}`}>
-            <div className={`nav-parent ${currentView === 'laporan' ? 'active' : ''}`}>
-              <button 
-                type="button" 
-                className="np-link" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('laporan', null, { g: selectedLaporanGroup, report: selectedLaporanSlug });
-                  setLaporanNavOpen(true);
-                }} 
-                title="Laporan"
-              >
-                <span className="ico"><AppIcon name="laporan" /></span>
-                <span className="txt">Laporan</span>
-              </button>
-              <button 
-                type="button" 
-                className="np-caret" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setLaporanNavOpen(prev => !prev);
-                }} 
-                aria-label="Buka/tutup sub-menu"
-              >
-                <AppIcon name="chevron" />
-              </button>
-            </div>
-            <div className="nav-sub">
-              <a 
-                className={currentView === 'laporan' && selectedLaporanGroup === 'Operasional' ? 'active' : ''} 
-                href="/laporan/kunjungan" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('laporan', null, { g: 'Operasional', report: 'kunjungan' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Operasional</span>
-                <span className="cnt c1">3</span>
-              </a>
-              <a 
-                className={currentView === 'laporan' && selectedLaporanGroup === 'Keuangan' ? 'active' : ''} 
-                href="/laporan/pendapatan" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('laporan', null, { g: 'Keuangan', report: 'pendapatan' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Keuangan</span>
-                <span className="cnt c2">4</span>
-              </a>
-              <a 
-                className={currentView === 'laporan' && selectedLaporanGroup === 'Penunjang' ? 'active' : ''} 
-                href="/laporan/farmasi" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateTo('laporan', null, { g: 'Penunjang', report: 'farmasi' });
-                }}
-              >
-                <span className="dot"></span>
-                <span className="txt">Penunjang</span>
-                <span className="cnt c3">3</span>
-              </a>
-            </div>
+        {/* Sidebar matching backend/legacy/includes/header.php & components/sidebar.blade.php */}
+        <aside className="sidebar" id="appSidebar">
+          <div className="brand">
+            <span className="brand-ico">
+              <AppIcon name="plus" />
+            </span>
+            <span className="brand-text">
+              {t('app.name')}
+              <small>{t('app.clinic_name')}</small>
+            </span>
           </div>
 
-          {/* Pengaturan */}
-          <div className="label">PENGATURAN</div>
-          <a 
-            className={currentView === 'profil_klinik' ? 'active' : ''} 
-            href="/pengaturan/klinik" 
-            onClick={e => { e.preventDefault(); navigateTo('profil_klinik'); }} 
-            title="Profil Klinik"
-          >
-            <span className="ico"><AppIcon name="hospital" /></span>
-            <span className="txt">Profil Klinik</span>
-          </a>
-          <a 
-            className={currentView === 'pengguna_role' ? 'active' : ''} 
-            href="/pengaturan/pengguna" 
-            onClick={e => { e.preventDefault(); navigateTo('pengguna_role'); }} 
-            title="Pengguna & Role"
-          >
-            <span className="ico"><AppIcon name="users" /></span>
-            <span className="txt">Pengguna &amp; Role</span>
-          </a>
-        </nav>
-
-        <div className="sidebar-foot">
-          <button type="button" className="logout-link" onClick={handleLogout} title={locale === 'en' ? 'Logout' : 'Keluar'}>
-            <span className="ico"><AppIcon name="logout" /></span>
-            <span className="txt">{locale === 'en' ? 'Logout' : 'Keluar'}</span>
-          </button>
-        </div>
-      </aside>
-
-      <button 
-        type="button" 
-        className="sidebar-backdrop" 
-        onClick={toggleSidebar} 
-        aria-label="Tutup Menu" 
-        tabIndex="-1"
-      />
-
-      {/* Main Content Area */}
-      <div className="main">
-        {/* Topbar Header matching backend/resources/views/layouts/app.blade.php */}
-        <header className="topbar">
-          <div className="topbar-left">
-            <button 
-              className="menu-toggle" 
-              type="button" 
-              id="menuToggle" 
-              onClick={toggleSidebar} 
-              title="Menu" 
-              aria-expanded={!sidebarCollapsed}
+          <nav>
+            {/* Dashboard */}
+            <a 
+              className={currentView === 'dashboard' ? 'active' : ''} 
+              href="/dashboard" 
+              onClick={e => { e.preventDefault(); navigateTo('dashboard'); }} 
+              title={t('menu.dashboard')}
             >
-              <span className="mt-bars"><AppIcon name="menu" /></span>
-              <span className="mt-x"><AppIcon name="close" /></span>
-            </button>
-            <div className="topbar-search">
-              <span className="ts-ico"><AppIcon name="search" /></span>
-              <input type="search" id="menuSearch" placeholder="Cari menu..." autoComplete="off" />
-            </div>
-          </div>
+              <span className="ico"><AppIcon name="dashboard" /></span>
+              <span className="txt">{t('menu.dashboard')}</span>
+            </a>
 
-          <div className="topbar-right">
-            {/* Language Switcher matching backend lang-switcher */}
-            <div className="lang-picker">
-              <label className="lang-picker-label" htmlFor="appLangSelect">Bahasa</label>
-              <select 
-                id="appLangSelect" 
-                className="lang-picker-select" 
-                aria-label="Bahasa"
-                value={locale}
-                onChange={(e) => {
-                  setLocale(e.target.value);
-                  localStorage.setItem('locale', e.target.value);
-                }}
-              >
-                <option value="id">Indonesia</option>
-                <option value="en">English</option>
-              </select>
-            </div>
+            {/* Rekam Medis */}
+            <div className="label">{t('menu.groups.rekam_medis')}</div>
+            <a 
+              className={currentView === 'rekam_medis' ? 'active' : ''} 
+              href="/rekam-medis" 
+              onClick={e => { e.preventDefault(); navigateTo('rekam_medis'); }} 
+              title={t('menu.rekam_medis')}
+            >
+              <span className="ico"><AppIcon name="rekam" /></span>
+              <span className="txt">{t('menu.rekam_medis')}</span>
+            </a>
 
-            {/* User Dropdown Chip */}
-            <div className="user-dropdown" id="userDropdown" style={{ position: 'relative' }}>
-              <button 
-                type="button" 
-                className="user-chip" 
-                onClick={() => setUserMenuOpen(!userMenuOpen)} 
-                aria-haspopup="true" 
-                aria-expanded={userMenuOpen}
-              >
-                <div className="avatar">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt="" />
-                  ) : (
-                    initialLetter
-                  )}
-                </div>
-                <div className="user-meta">
-                  <div className="user-name">{user.nama}</div>
-                  <div className="user-role">{user.role_nama || user.role}</div>
-                </div>
-                <span className="user-caret"><AppIcon name="chevron" /></span>
-              </button>
+            {/* Operasional */}
+            <div className="label">{t('menu.groups.operasional')}</div>
+            <a 
+              className={currentView === 'registrasi_daftar' ? 'active' : ''} 
+              href="/pendaftaran" 
+              onClick={e => { 
+                e.preventDefault(); 
+                setSelectedPasienForVisit(null);
+                navigateTo('registrasi_daftar'); 
+              }} 
+              title={t('menu.new_registration')}
+            >
+              <span className="ico"><AppIcon name="registrasi" /></span>
+              <span className="txt">{t('menu.new_registration')}</span>
+            </a>
+            <a 
+              className={currentView === 'pasien' ? 'active' : ''} 
+              href="/pasien" 
+              onClick={e => { 
+                e.preventDefault(); 
+                setPasienSubView('list');
+                navigateTo('pasien'); 
+              }} 
+              title={t('menu.patient_data')}
+            >
+              <span className="ico"><AppIcon name="users" /></span>
+              <span className="txt">{t('menu.patient_data')}</span>
+            </a>
+            <a 
+              className={currentView === 'kunjungan' ? 'active' : ''} 
+              href="/kunjungan" 
+              onClick={e => { e.preventDefault(); navigateTo('kunjungan'); }} 
+              title={t('menu.visit_list')}
+            >
+              <span className="ico"><AppIcon name="calendar" /></span>
+              <span className="txt">{t('menu.visit_list')}</span>
+            </a>
 
-              {userMenuOpen && (
-                <div 
-                  className="user-menu" 
-                  role="menu"
-                  style={{
-                    display: 'block',
-                    position: 'absolute',
-                    right: 0,
-                    top: '100%',
-                    marginTop: '8px',
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    boxShadow: 'var(--shadow-lg)',
-                    minWidth: '180px',
-                    zIndex: 100,
-                    padding: '6px'
+            {/* Keuangan */}
+            <div className="label">{t('menu.groups.keuangan')}</div>
+            <a 
+              className={currentView === 'billing' ? 'active' : ''} 
+              href="/billing" 
+              onClick={e => { e.preventDefault(); navigateTo('billing'); }} 
+              title={t('menu.billing')}
+            >
+              <span className="ico"><AppIcon name="billing" /></span>
+              <span className="txt">{t('menu.billing')}</span>
+            </a>
+            <a 
+              className={currentView === 'keuangan' ? 'active' : ''} 
+              href="/keuangan" 
+              onClick={e => { e.preventDefault(); navigateTo('keuangan'); }} 
+              title={t('menu.finance')}
+            >
+              <span className="ico"><AppIcon name="keuangan" /></span>
+              <span className="txt">{t('menu.finance')}</span>
+            </a>
+
+            {/* Data & Stok */}
+            <div className="label">{t('menu.groups.data_stok')}</div>
+            <div className={`nav-group ${masterNavOpen || currentView === 'master' ? 'open' : ''}`}>
+              <div className={`nav-parent ${currentView === 'master' ? 'active' : ''}`}>
+                <button 
+                  type="button" 
+                  className="np-link" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: selectedMasterGroup, slug: selectedMasterSlug });
+                    setMasterNavOpen(true);
+                  }} 
+                  title={t('menu.master_data')}
+                >
+                  <span className="ico"><AppIcon name="master" /></span>
+                  <span className="txt">{t('menu.master_data')}</span>
+                </button>
+                <button 
+                  type="button" 
+                  className="np-caret" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMasterNavOpen(prev => !prev);
+                  }} 
+                  aria-label="Sub-menu"
+                >
+                  <AppIcon name="chevron" />
+                </button>
+              </div>
+              <div className="nav-sub">
+                <a 
+                  className={currentView === 'master' && selectedMasterGroup === 'Layanan & Tarif' ? 'active' : ''} 
+                  href="/master/tindakan" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: 'Layanan & Tarif', slug: 'tindakan' });
                   }}
                 >
-                  <a 
-                    href="/profil-saya" 
-                    role="menuitem"
-                    onClick={(e) => { e.preventDefault(); navigateTo('profile'); setUserMenuOpen(false); }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      color: 'var(--text)'
-                    }}
-                  >
-                    <span className="ico"><AppIcon name="user" /></span> Profil Saya
-                  </a>
-                  <div className="user-menu-sep" style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }}></div>
-                  <button 
-                    type="button" 
-                    role="menuitem"
-                    onClick={handleLogout}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'none',
-                      fontSize: '14px',
-                      color: 'var(--red)',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <span className="ico"><AppIcon name="logout" /></span> {locale === 'en' ? 'Logout' : 'Keluar'}
-                  </button>
-                </div>
-              )}
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.services_tariff')}</span>
+                  <span className="cnt c1">{masterCounts['Layanan & Tarif'] ?? 0}</span>
+                </a>
+                <a 
+                  className={currentView === 'master' && selectedMasterGroup === 'SDM & Poli' ? 'active' : ''} 
+                  href="/master/poli" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: 'SDM & Poli', slug: 'poli' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.staff_poli')}</span>
+                  <span className="cnt c2">{masterCounts['SDM & Poli'] ?? 0}</span>
+                </a>
+                <a 
+                  className={currentView === 'master' && (selectedMasterGroup === 'Medicine' || selectedMasterGroup === 'Farmasi' || selectedMasterGroup === 'Farmasi & Obat') ? 'active' : ''} 
+                  href="/master/obat" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: 'Medicine', slug: 'obat' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.pharmacy')}</span>
+                  <span className="cnt c3">{masterCounts['Farmasi'] ?? 0}</span>
+                </a>
+                <a 
+                  className={currentView === 'master' && selectedMasterGroup === 'Penjamin & Bank' ? 'active' : ''} 
+                  href="/master/asuransi" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: 'Penjamin & Bank', slug: 'asuransi' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.insurance_bank')}</span>
+                  <span className="cnt c4">{masterCounts['Penjamin & Bank'] ?? 0}</span>
+                </a>
+                <a 
+                  className={currentView === 'master' && selectedMasterGroup === 'Pasien' ? 'active' : ''} 
+                  href="/master/kelompok_pasien" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: 'Pasien', slug: 'kelompok_pasien' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.patients')}</span>
+                  <span className="cnt c5">{masterCounts['Pasien'] ?? 0}</span>
+                </a>
+                <a 
+                  className={currentView === 'master' && (selectedMasterGroup === 'Kode Pembatalan' || selectedMasterGroup === 'Billing') ? 'active' : ''} 
+                  href="/master/kode_pembatalan" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('master', null, { g: 'Billing', slug: 'kode_pembatalan' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.cancel_codes')}</span>
+                  <span className="cnt c6">{masterCounts['Billing'] ?? 14}</span>
+                </a>
+              </div>
             </div>
+            <a 
+              className={currentView === 'farmasi' ? 'active' : ''} 
+              href="/farmasi" 
+              onClick={e => { e.preventDefault(); navigateTo('farmasi', 'stok'); }} 
+              title={t('menu.inventory')}
+            >
+              <span className="ico"><AppIcon name="inventory" /></span>
+              <span className="txt">{t('menu.inventory')}</span>
+            </a>
+
+            {/* Lainnya */}
+            <div className="label">{t('menu.groups.lainnya')}</div>
+            <div className={`nav-group ${laporanNavOpen || currentView === 'laporan' ? 'open' : ''}`}>
+              <div className={`nav-parent ${currentView === 'laporan' ? 'active' : ''}`}>
+                <button 
+                  type="button" 
+                  className="np-link" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('laporan', null, { g: selectedLaporanGroup, report: selectedLaporanSlug });
+                    setLaporanNavOpen(true);
+                  }} 
+                  title={t('menu.reports')}
+                >
+                  <span className="ico"><AppIcon name="laporan" /></span>
+                  <span className="txt">{t('menu.reports')}</span>
+                </button>
+                <button 
+                  type="button" 
+                  className="np-caret" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLaporanNavOpen(prev => !prev);
+                  }} 
+                  aria-label="Sub-menu"
+                >
+                  <AppIcon name="chevron" />
+                </button>
+              </div>
+              <div className="nav-sub">
+                <a 
+                  className={currentView === 'laporan' && selectedLaporanGroup === 'Operasional' ? 'active' : ''} 
+                  href="/laporan/kunjungan" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('laporan', null, { g: 'Operasional', report: 'kunjungan' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.operational')}</span>
+                  <span className="cnt c1">3</span>
+                </a>
+                <a 
+                  className={currentView === 'laporan' && selectedLaporanGroup === 'Keuangan' ? 'active' : ''} 
+                  href="/laporan/pendapatan" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('laporan', null, { g: 'Keuangan', report: 'pendapatan' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.financial')}</span>
+                  <span className="cnt c2">4</span>
+                </a>
+                <a 
+                  className={currentView === 'laporan' && selectedLaporanGroup === 'Penunjang' ? 'active' : ''} 
+                  href="/laporan/farmasi" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('laporan', null, { g: 'Penunjang', report: 'farmasi' });
+                  }}
+                >
+                  <span className="dot"></span>
+                  <span className="txt">{t('menu.support')}</span>
+                  <span className="cnt c3">3</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Pengaturan */}
+            <div className="label">{t('menu.groups.pengaturan')}</div>
+            <a 
+              className={currentView === 'profil_klinik' ? 'active' : ''} 
+              href="/pengaturan/klinik" 
+              onClick={e => { e.preventDefault(); navigateTo('profil_klinik'); }} 
+              title={t('menu.clinic_profile')}
+            >
+              <span className="ico"><AppIcon name="hospital" /></span>
+              <span className="txt">{t('menu.clinic_profile')}</span>
+            </a>
+            <a 
+              className={currentView === 'pengguna_role' ? 'active' : ''} 
+              href="/pengaturan/pengguna" 
+              onClick={e => { e.preventDefault(); navigateTo('pengguna_role'); }} 
+              title={t('menu.users_roles')}
+            >
+              <span className="ico"><AppIcon name="users" /></span>
+              <span className="txt">{t('menu.users_roles')}</span>
+            </a>
+          </nav>
+
+          <div className="sidebar-foot">
+            <button type="button" className="logout-link" onClick={handleLogout} title={t('app.logout')}>
+              <span className="ico"><AppIcon name="logout" /></span>
+              <span className="txt">{t('app.logout')}</span>
+            </button>
           </div>
-        </header>
+        </aside>
+
+        <button 
+          type="button" 
+          className="sidebar-backdrop" 
+          onClick={toggleSidebar} 
+          aria-label={t('app.close_menu')} 
+          tabIndex="-1"
+        />
+
+        {/* Main Content Area */}
+        <div className="main">
+          {/* Topbar Header matching backend/resources/views/layouts/app.blade.php */}
+          <header className="topbar">
+            <div className="topbar-left">
+              <button 
+                className="menu-toggle" 
+                type="button" 
+                id="menuToggle" 
+                onClick={toggleSidebar} 
+                title={t('app.toggle_menu')} 
+                aria-expanded={!sidebarCollapsed}
+              >
+                <span className="mt-bars"><AppIcon name="menu" /></span>
+                <span className="mt-x"><AppIcon name="close" /></span>
+              </button>
+              <div className="topbar-search">
+                <span className="ts-ico"><AppIcon name="search" /></span>
+                <input type="search" id="menuSearch" placeholder={t('app.search_menu')} autoComplete="off" />
+              </div>
+            </div>
+
+            <div className="topbar-right">
+              {/* Language Switcher matching backend lang-switcher */}
+              <div className="lang-picker">
+                <label className="lang-picker-label" htmlFor="appLangSelect">{t('app.language')}</label>
+                <select 
+                  id="appLangSelect" 
+                  className="lang-picker-select" 
+                  aria-label={t('app.language')}
+                  value={locale}
+                  onChange={(e) => handleLocaleChange(e.target.value)}
+                >
+                  <option value="id">{t('app.lang_id')}</option>
+                  <option value="en">{t('app.lang_en')}</option>
+                </select>
+              </div>
+
+              {/* User Dropdown Chip */}
+              <div className="user-dropdown" id="userDropdown" style={{ position: 'relative' }}>
+                <button 
+                  type="button" 
+                  className="user-chip" 
+                  onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                  aria-haspopup="true" 
+                  aria-expanded={userMenuOpen}
+                  title={t('app.account_menu')}
+                >
+                  <div className="avatar">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="" />
+                    ) : (
+                      initialLetter
+                    )}
+                  </div>
+                  <div className="user-meta">
+                    <div className="user-name">{user.nama}</div>
+                    <div className="user-role">{user.role_nama || user.role}</div>
+                  </div>
+                  <span className="user-caret"><AppIcon name="chevron" /></span>
+                </button>
+
+                {userMenuOpen && (
+                  <div 
+                    className="user-menu" 
+                    role="menu"
+                    style={{
+                      display: 'block',
+                      position: 'absolute',
+                      right: 0,
+                      top: '100%',
+                      marginTop: '8px',
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-lg)',
+                      minWidth: '180px',
+                      zIndex: 100,
+                      padding: '6px'
+                    }}
+                  >
+                    <a 
+                      href="/profil-saya" 
+                      role="menuitem"
+                      onClick={(e) => { e.preventDefault(); navigateTo('profile'); setUserMenuOpen(false); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        color: 'var(--text)'
+                      }}
+                    >
+                      <span className="ico"><AppIcon name="user" /></span> {t('app.my_profile')}
+                    </a>
+                    <div className="user-menu-sep" style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }}></div>
+                    <button 
+                      type="button" 
+                      role="menuitem"
+                      onClick={handleLogout}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: 'none',
+                        fontSize: '14px',
+                        color: 'var(--red)',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <span className="ico"><AppIcon name="logout" /></span> {t('app.logout')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
 
         {/* Content View Switching */}
         <main className="content">
@@ -1278,8 +1279,8 @@ export default function App() {
             <>
               <div className="page-toolbar">
                 <div>
-                  <div className="pt-title">Profil Saya</div>
-                  <div className="pt-sub">Kelola informasi profil dan kredensial login Anda</div>
+                  <div className="pt-title">{t('profile.title')}</div>
+                  <div className="pt-sub">{t('profile.subtitle')}</div>
                 </div>
               </div>
 
@@ -1305,7 +1306,7 @@ export default function App() {
               <div 
                 className="pf-avatar-wrap" 
                 onClick={() => avatarInputRef.current?.click()} 
-                title="Ganti foto"
+                title={t('profile.change_photo')}
               >
                 {avatarPreview ? (
                   <img src={avatarPreview} id="avatarPreview" className="pf-avatar" alt="" />
@@ -1331,7 +1332,7 @@ export default function App() {
                     </>
                   )}
                   <span className="sep">&middot;</span>
-                  <AppIcon name="calendar" /> Bergabung {formatDate(user.created_at)}
+                  <AppIcon name="calendar" /> {t('profile.joined')} {formatDate(user.created_at)}
                 </div>
               </div>
             </div>
@@ -1348,8 +1349,8 @@ export default function App() {
                     <AppIcon name="user" />
                   </div>
                   <div>
-                    <div className="st-title">Informasi Akun</div>
-                    <div className="st-sub">Kelola data identitas dan kontak</div>
+                    <div className="st-title">{t('profile.account_info')}</div>
+                    <div className="st-sub">{t('profile.account_info_sub')}</div>
                   </div>
                 </div>
 
@@ -1363,7 +1364,7 @@ export default function App() {
                   />
 
                   <div className="form-group">
-                    <label>Nama Lengkap</label>
+                    <label>{t('profile.fullname')}</label>
                     <input 
                       type="text" 
                       name="nama" 
@@ -1376,7 +1377,7 @@ export default function App() {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Username</label>
+                      <label>{t('profile.username')}</label>
                       <input 
                         type="text" 
                         name="username" 
@@ -1388,7 +1389,7 @@ export default function App() {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Email</label>
+                      <label>{t('profile.email')}</label>
                       <input 
                         type="email" 
                         name="email" 
@@ -1401,7 +1402,7 @@ export default function App() {
                   </div>
 
                   <div className="form-group">
-                    <label>Nomor Telepon</label>
+                    <label>{t('profile.phone')}</label>
                     <input 
                       type="text" 
                       name="telepon" 
@@ -1415,7 +1416,7 @@ export default function App() {
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '16px' }}>
                     <button className="btn" type="submit" disabled={savingProfile}>
-                      <AppIcon name="save" /> {savingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
+                      <AppIcon name="save" /> {savingProfile ? t('profile.saving') : t('profile.save_changes')}
                     </button>
                   </div>
                 </form>
@@ -1428,14 +1429,14 @@ export default function App() {
                     <AppIcon name="logout" />
                   </div>
                   <div>
-                    <div className="st-title">Keamanan</div>
-                    <div className="st-sub">Ganti password akun</div>
+                    <div className="st-title">{t('profile.security')}</div>
+                    <div className="st-sub">{t('profile.security_sub')}</div>
                   </div>
                 </div>
 
                 <form onSubmit={handleChangePassword}>
                   <div className="form-group">
-                    <label>Password Saat Ini</label>
+                    <label>{t('profile.curr_password')}</label>
                     <input 
                       type="password" 
                       name="current_password" 
@@ -1448,7 +1449,7 @@ export default function App() {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Password Baru</label>
+                      <label>{t('profile.new_password')}</label>
                       <input 
                         type="password" 
                         name="new_password" 
@@ -1457,11 +1458,11 @@ export default function App() {
                         onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
                         required 
                         minLength={6} 
-                        placeholder="Min. 6 karakter" 
+                        placeholder={t('profile.min_password_len')} 
                       />
                     </div>
                     <div className="form-group">
-                      <label>Konfirmasi Password</label>
+                      <label>{t('profile.confirm_password')}</label>
                       <input 
                         type="password" 
                         name="confirm_password" 
@@ -1475,7 +1476,7 @@ export default function App() {
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '16px' }}>
                     <button className="btn btn-outline" type="submit" disabled={savingPassword}>
-                      <AppIcon name="save" /> {savingPassword ? 'Menyimpan...' : 'Ganti Password'}
+                      <AppIcon name="save" /> {savingPassword ? t('profile.saving') : t('profile.change_password_btn')}
                     </button>
                   </div>
                 </form>
@@ -1490,7 +1491,7 @@ export default function App() {
                     <AppIcon name="dashboard" />
                   </div>
                   <div>
-                    <div className="st-title">Akses Cepat</div>
+                    <div className="st-title">{t('profile.quick_access')}</div>
                   </div>
                 </div>
 
@@ -1502,8 +1503,8 @@ export default function App() {
                   >
                     <span className="qic"><AppIcon name="dashboard" /></span>
                     <span>
-                      <span className="q-t">Dashboard</span>
-                      <span className="q-s">Ringkasan operasional klinik</span>
+                      <span className="q-t">{t('menu.dashboard')}</span>
+                      <span className="q-s">{t('profile.dash_summary')}</span>
                     </span>
                     <span className="q-go"><AppIcon name="chevron" /></span>
                   </a>
@@ -1515,8 +1516,8 @@ export default function App() {
                   >
                     <span className="qic"><AppIcon name="users" /></span>
                     <span>
-                      <span className="q-t">Pengguna & Role</span>
-                      <span className="q-s">Kelola akun & hak akses sistem</span>
+                      <span className="q-t">{t('menu.users_roles')}</span>
+                      <span className="q-s">{t('profile.users_summary')}</span>
                     </span>
                     <span className="q-go"><AppIcon name="chevron" /></span>
                   </a>
@@ -1528,8 +1529,8 @@ export default function App() {
                   >
                     <span className="qic"><AppIcon name="hospital" /></span>
                     <span>
-                      <span className="q-t">Profil Klinik</span>
-                      <span className="q-s">Identitas & informasi klinik</span>
+                      <span className="q-t">{t('menu.clinic_profile')}</span>
+                      <span className="q-s">{t('profile.clinic_summary')}</span>
                     </span>
                     <span className="q-go"><AppIcon name="chevron" /></span>
                   </a>
@@ -1541,8 +1542,8 @@ export default function App() {
                   >
                     <span className="qic"><AppIcon name="logout" /></span>
                     <span>
-                      <span className="q-t">{locale === 'en' ? 'Logout' : 'Keluar'}</span>
-                      <span className="q-s">{locale === 'en' ? 'Sign out of this account' : 'Keluar dari akun ini'}</span>
+                      <span className="q-t">{t('app.logout')}</span>
+                      <span className="q-s">{t('profile.logout_summary')}</span>
                     </span>
                     <span className="q-go"><AppIcon name="chevron" /></span>
                   </button>
@@ -1555,7 +1556,7 @@ export default function App() {
         </main>
 
         <footer className="footer">
-          &copy; {new Date().getFullYear()} {locale === 'en' ? 'Clinic Management Information System' : 'Sistem Informasi Manajemen Klinik'} &middot; PT Sapta Genki Clinic
+          &copy; {new Date().getFullYear()} {t('app.copyright')} &middot; PT Sapta Genki Clinic
         </footer>
       </div>
     </div>

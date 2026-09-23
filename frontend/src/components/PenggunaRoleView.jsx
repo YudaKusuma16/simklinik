@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
+import { useI18n } from '../i18n';
 
 export default function PenggunaRoleView({ currentUserId }) {
+  const { t, trans, formatRole, formatStatus } = useI18n();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
@@ -44,7 +46,7 @@ export default function PenggunaRoleView({ currentUserId }) {
       const res = await api.get('/users');
       if (res && res.success) setUsers(res.data || []);
     } catch {
-      showAlert('Gagal memuat data pengguna.', 'danger');
+      showAlert(trans('Gagal memuat data pengguna.', 'Failed to load user data.'), 'danger');
     } finally {
       setLoading(false);
     }
@@ -101,32 +103,32 @@ export default function PenggunaRoleView({ currentUserId }) {
       }
 
       if (res && res.success) {
-        showAlert(res.message || 'Data berhasil disimpan.', 'success');
+        showAlert(res.message || trans('Data berhasil disimpan.', 'Data saved successfully.'), 'success');
         setModalOpen(false);
         loadUsers();
       } else {
-        setFormErrors(res?.errors || [res?.message || 'Gagal menyimpan.']);
+        setFormErrors(res?.errors || [res?.message || trans('Gagal menyimpan.', 'Failed to save.')]);
       }
     } catch (err) {
-      setFormErrors([err.message || 'Terjadi kesalahan saat menyimpan.']);
+      setFormErrors([err.message || trans('Terjadi kesalahan saat menyimpan.', 'An error occurred while saving.')]);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`Yakin ingin menghapus pengguna ${user.nama}?`)) return;
+    if (!window.confirm(trans(`Yakin ingin menghapus pengguna ${user.nama}?`, `Are you sure you want to delete user ${user.nama}?`))) return;
 
     try {
       const res = await api.post(`/users/${user.id}`, { _method: 'DELETE' });
       if (res && res.success) {
-        showAlert(res.message || 'Pengguna dihapus.', 'success');
+        showAlert(res.message || trans('Pengguna dihapus.', 'User deleted.'), 'success');
         loadUsers();
       } else {
-        showAlert(res?.message || 'Gagal menghapus pengguna.', 'danger');
+        showAlert(res?.message || trans('Gagal menghapus pengguna.', 'Failed to delete user.'), 'danger');
       }
     } catch (err) {
-      showAlert(err.message || 'Gagal menghapus pengguna.', 'danger');
+      showAlert(err.message || trans('Gagal menghapus pengguna.', 'Failed to delete user.'), 'danger');
     }
   };
 
@@ -146,7 +148,7 @@ export default function PenggunaRoleView({ currentUserId }) {
   const tableColumns = [
     {
       key: 'user_display',
-      label: 'PENGGUNA',
+      label: trans('PENGGUNA', 'USER'),
       sortable: true,
       render: (row) => {
         const isSelf = currentUserId && row.id === currentUserId;
@@ -156,7 +158,7 @@ export default function PenggunaRoleView({ currentUserId }) {
             <div>
               <div className="cu-name">
                 {row.nama}
-                {isSelf && <span className="badge badge-blue" style={{ marginLeft: 6 }}>Anda</span>}
+                {isSelf && <span className="badge badge-blue" style={{ marginLeft: 6 }}>{trans('Anda', 'You')}</span>}
               </div>
               <div className="cu-sub">@{row.username}</div>
             </div>
@@ -166,11 +168,11 @@ export default function PenggunaRoleView({ currentUserId }) {
     },
     {
       key: 'role_nama',
-      label: 'ROLE',
+      label: trans('ROLE', 'ROLE'),
       sortable: true,
       render: (row) => (
         <>
-          <span className="badge badge-gray">{row.role_nama}</span>
+          <span className="badge badge-gray">{formatRole(row.role_nama)}</span>
           {row.role_kode === 'dokter' && row.poli_nama && (
             <small style={{ color: 'var(--muted)', marginLeft: 6 }}>{row.poli_nama}</small>
           )}
@@ -179,23 +181,23 @@ export default function PenggunaRoleView({ currentUserId }) {
     },
     {
       key: 'status',
-      label: 'STATUS',
+      label: trans('STATUS', 'STATUS'),
       sortable: true,
       render: (row) => (
         <span className={`badge ${row.status === 'aktif' ? 'badge-green' : 'badge-red'}`}>
-          {row.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
+          {formatStatus(row.status)}
         </span>
       ),
     },
     {
       key: 'last_login',
-      label: 'LOGIN TERAKHIR',
+      label: trans('LOGIN TERAKHIR', 'LAST LOGIN'),
       sortable: true,
       render: (row) => formatLastLogin(row.last_login),
     },
     {
       key: '_actions',
-      label: 'AKSI',
+      label: trans('AKSI', 'ACTION'),
       sortable: false,
       thClassName: 'no-sort col-actions',
       className: 'cell-actions',
@@ -203,9 +205,9 @@ export default function PenggunaRoleView({ currentUserId }) {
         const isSelf = currentUserId && row.id === currentUserId;
         return (
           <div className="cell-actions-inner">
-            <button type="button" className="btn btn-sm btn-light" onClick={() => openEdit(row)}>Edit</button>
+            <button type="button" className="btn btn-sm btn-light" onClick={() => openEdit(row)}>{trans('Edit', 'Edit')}</button>
             {!isSelf && (
-              <button type="button" className="btn btn-sm btn-red" onClick={() => handleDelete(row)}>Hapus</button>
+              <button type="button" className="btn btn-sm btn-red" onClick={() => handleDelete(row)}>{trans('Hapus', 'Delete')}</button>
             )}
           </div>
         );
@@ -219,13 +221,13 @@ export default function PenggunaRoleView({ currentUserId }) {
       <div className="page-toolbar">
         <div>
           <div className="pt-title">
-            <AppIcon name="users" style={{ marginRight: 8 }} /> Pengguna &amp; Role
+            <AppIcon name="users" style={{ marginRight: 8 }} /> {trans('Pengguna & Role', 'Users & Roles')}
           </div>
-          <div className="pt-sub">{users.length} pengguna terdaftar dalam sistem</div>
+          <div className="pt-sub">{users.length} {trans('pengguna terdaftar dalam sistem', 'users registered in system')}</div>
         </div>
         <div className="pt-actions">
           <button type="button" className="btn" onClick={openCreate}>
-            <AppIcon name="plus" /> Tambah Pengguna
+            <AppIcon name="plus" /> {trans('Tambah Pengguna', 'Add User')}
           </button>
         </div>
       </div>
@@ -236,13 +238,13 @@ export default function PenggunaRoleView({ currentUserId }) {
 
       <div className="table-wrap" style={{ marginTop: 18 }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>Memuat data pengguna...</div>
+          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>{trans('Memuat data pengguna...', 'Loading user data...')}</div>
         ) : (
           <DataTableWrapper
             columns={tableColumns}
             data={users}
             defaultPageSize={25}
-            emptyText="Belum ada pengguna terdaftar."
+            emptyText={trans('Belum ada pengguna terdaftar.', 'No users registered.')}
             rowKey="id"
           />
         )}
@@ -255,9 +257,9 @@ export default function PenggunaRoleView({ currentUserId }) {
             <div className="modal-head">
               <div className="modal-title">
                 <AppIcon name="user" style={{ marginRight: 8 }} />
-                {isEditing ? 'Edit Pengguna' : 'Tambah Pengguna'}
+                {isEditing ? trans('Edit Pengguna', 'Edit User') : trans('Tambah Pengguna', 'Add User')}
               </div>
-              <button type="button" className="modal-close" onClick={() => setModalOpen(false)} aria-label="Tutup">&times;</button>
+              <button type="button" className="modal-close" onClick={() => setModalOpen(false)} aria-label={trans('Tutup', 'Close')}>&times;</button>
             </div>
             <form onSubmit={handleSave} className="modal-body">
               {formErrors.length > 0 && (
@@ -268,7 +270,7 @@ export default function PenggunaRoleView({ currentUserId }) {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Nama Lengkap <span className="req">*</span></label>
+                  <label>{trans('Nama Lengkap', 'Full Name')} <span className="req">*</span></label>
                   <input type="text" className="form-control" value={form.nama} onChange={e => setForm(p => ({ ...p, nama: e.target.value }))} required />
                 </div>
                 <div className="form-group">
@@ -283,7 +285,7 @@ export default function PenggunaRoleView({ currentUserId }) {
                   <input type="email" className="form-control" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
                 </div>
                 <div className="form-group">
-                  <label>No. Telepon</label>
+                  <label>{trans('No. Telepon', 'Phone Number')}</label>
                   <input type="text" className="form-control" value={form.telepon} onChange={e => setForm(p => ({ ...p, telepon: e.target.value }))} />
                 </div>
               </div>
@@ -297,7 +299,7 @@ export default function PenggunaRoleView({ currentUserId }) {
                     onChange={e => setForm(p => ({ ...p, role_id: e.target.value, poli_id: '' }))}
                     required
                   >
-                    <option value="">-- Pilih Role --</option>
+                    <option value="">-- {trans('Pilih Role', 'Select Role')} --</option>
                     {roles.map(r => (
                       <option key={r.id} value={String(r.id)}>{r.nama}</option>
                     ))}
@@ -305,14 +307,14 @@ export default function PenggunaRoleView({ currentUserId }) {
                 </div>
                 {isDokter && (
                   <div className="form-group">
-                    <label>Poli <span className="req">*</span></label>
+                    <label>{trans('Poli', 'Clinic')} <span className="req">*</span></label>
                     <select
                       className="form-control"
                       value={form.poli_id}
                       onChange={e => setForm(p => ({ ...p, poli_id: e.target.value }))}
                       required
                     >
-                      <option value="">-- Pilih Poli --</option>
+                      <option value="">-- {trans('Pilih Poli', 'Select Clinic')} --</option>
                       {poliList.map(p => (
                         <option key={p.id} value={String(p.id)}>{p.nama}</option>
                       ))}
@@ -323,15 +325,15 @@ export default function PenggunaRoleView({ currentUserId }) {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Status</label>
+                  <label>{trans('Status', 'Status')}</label>
                   <select className="form-control" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
-                    <option value="aktif">Aktif</option>
-                    <option value="nonaktif">Nonaktif</option>
+                    <option value="aktif">{trans('Aktif', 'Active')}</option>
+                    <option value="nonaktif">{trans('Nonaktif', 'Inactive')}</option>
                   </select>
                 </div>
                 <div className="form-group">
                   <label>
-                    Password {isEditing ? <small style={{ color: 'var(--muted)', fontWeight: 400 }}>(kosongkan jika tidak diubah)</small> : <span className="req">*</span>}
+                    Password {isEditing ? <small style={{ color: 'var(--muted)', fontWeight: 400 }}>({trans('kosongkan jika tidak diubah', 'leave blank if unchanged')})</small> : <span className="req">*</span>}
                   </label>
                   <input
                     type="password"
@@ -340,15 +342,15 @@ export default function PenggunaRoleView({ currentUserId }) {
                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                     required={!isEditing}
                     minLength={isEditing ? undefined : 5}
-                    placeholder={isEditing ? 'Kosongkan jika tidak diubah' : 'min. 5 karakter'}
+                    placeholder={isEditing ? trans('Kosongkan jika tidak diubah', 'Leave blank if unchanged') : trans('min. 5 karakter', 'min. 5 characters')}
                   />
                 </div>
               </div>
 
               <div className="modal-foot" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-                <button type="button" className="btn btn-light" onClick={() => setModalOpen(false)}>Batal</button>
+                <button type="button" className="btn btn-light" onClick={() => setModalOpen(false)}>{trans('Batal', 'Cancel')}</button>
                 <button type="submit" className="btn" disabled={submitting}>
-                  <AppIcon name="save" /> {submitting ? 'Menyimpan...' : 'Simpan'}
+                  <AppIcon name="save" /> {submitting ? trans('Menyimpan...', 'Saving...') : trans('Simpan', 'Save')}
                 </button>
               </div>
             </form>

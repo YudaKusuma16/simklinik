@@ -6,11 +6,16 @@
 if (! function_exists('app_locale')) {
     function app_locale(): string
     {
+        if (isset($_GET['lang']) && in_array($_GET['lang'], ['id', 'en'], true)) {
+            $_SESSION['locale'] = $_GET['lang'];
+            return $_GET['lang'];
+        }
+
         if (defined('SIM_LEGACY_PROXY') && function_exists('app') && app()->bound('translator')) {
             return app()->getLocale();
         }
 
-        $locale = $_SESSION['locale'] ?? 'id';
+        $locale = $_SESSION['locale'] ?? $_COOKIE['locale'] ?? 'id';
 
         return in_array($locale, ['id', 'en'], true) ? $locale : 'id';
     }
@@ -199,7 +204,7 @@ if (! function_exists('lang_switcher_html')) {
 
         return '<div class="lang-picker">'
             . '<label class="lang-picker-label" for="appLangSelect">' . e(t('app.language')) . '</label>'
-            . '<select id="appLangSelect" class="lang-picker-select" aria-label="' . e(t('app.language')) . '" onchange="if(this.value) window.location.href=this.value">'
+            . '<select id="appLangSelect" class="lang-picker-select" aria-label="' . e(t('app.language')) . '" onchange="if(this.value){var l=this.value.indexOf(\'/en\')!==-1?\'en\':\'id\';document.cookie=\'locale=\'+l+\';path=/;max-age=31536000\';try{localStorage.setItem(\'locale\',l);}catch(e){}window.location.href=this.value;}">'
             . '<option value="' . e($idUrl) . '"' . $idSel . '>' . e(t('app.lang_id')) . '</option>'
             . '<option value="' . e($enUrl) . '"' . $enSel . '>' . e(t('app.lang_en')) . '</option>'
             . '</select></div>';

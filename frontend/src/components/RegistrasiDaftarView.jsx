@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 
 export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
+  const { t, isEn, trans, formatTgl } = useI18n();
   const [selectedPasien, setSelectedPasien] = useState(initialPasien || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -139,11 +141,11 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
     setErrors([]);
 
     if (!selectedPasien) {
-      setErrors(['Pasien belum dipilih.']);
+      setErrors([trans('Pasien belum dipilih.', 'Patient has not been selected.')]);
       return;
     }
     if (!formData.poli_id) {
-      setErrors(['Poli tujuan wajib dipilih.']);
+      setErrors([trans('Poli tujuan wajib dipilih.', 'Target clinic is required.')]);
       return;
     }
 
@@ -174,13 +176,13 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
 
       const res = await api.post('/kunjungan', payload);
       if (res && res.success) {
-        setSuccessMsg(res.message || 'Pendaftaran kunjungan berhasil disimpan.');
+        setSuccessMsg(res.message || trans('Pendaftaran kunjungan berhasil disimpan.', 'Visit registration saved successfully.'));
         setTimeout(() => {
           onNavigate('billing');
         }, 1200);
       }
     } catch (err) {
-      setErrors([err.message || 'Gagal menyimpan pendaftaran kunjungan.']);
+      setErrors([err.message || trans('Gagal menyimpan pendaftaran kunjungan.', 'Failed to save visit registration.')]);
     } finally {
       setSaving(false);
     }
@@ -200,8 +202,8 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
       {/* Page Toolbar matching backend/legacy/modules/registrasi/daftar.php */}
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">Pendaftaran Kunjungan</div>
-          <div className="pt-sub">Pilih pasien, lalu lengkapi tujuan poli & penjamin</div>
+          <div className="pt-title">{t('registrasi_daftar.title')}</div>
+          <div className="pt-sub">{t('registrasi_daftar.sub')}</div>
         </div>
         <div className="pt-actions">
           <button
@@ -210,7 +212,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
             onClick={() => onNavigate('kunjungan')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            <AppIcon name="chevron" /> Kembali ke Daftar
+            <AppIcon name="chevron" /> {trans('Kembali ke Daftar', 'Back to List')}
           </button>
         </div>
       </div>
@@ -234,8 +236,8 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
         <div className="step-head">
           <div className="step-num">1</div>
           <div>
-            <div className="st-title">Pilih Pasien</div>
-            <div className="st-sub">Cari pasien lama atau daftar baru</div>
+            <div className="st-title">{trans('Pilih Pasien', 'Select Patient')}</div>
+            <div className="st-sub">{trans('Cari pasien lama atau daftar baru', 'Search existing patient or register new')}</div>
           </div>
         </div>
 
@@ -246,14 +248,14 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               {selectedPasien.nama}
             </div>
             <div className="patient-meta">
-              No. MR: <b>{selectedPasien.no_mr}</b>
+              {t('common.mr_no')}: <b>{selectedPasien.no_mr}</b>
               <br />
-              {selectedPasien.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} &middot; {selectedPasien.tgl_lahir || '-'}
+              {selectedPasien.jenis_kelamin === 'L' ? trans('Laki-laki', 'Male') : trans('Perempuan', 'Female')} &middot; {formatTgl(selectedPasien.tgl_lahir) || '-'}
               {selectedPasien.nik && <> &middot; NIK: <b>{selectedPasien.nik}</b></>}
               {selectedPasien.alergi && (
                 <>
                   <br />
-                  <span className="badge badge-red">Alergi: {selectedPasien.alergi}</span>
+                  <span className="badge badge-red">{trans('Alergi: ', 'Allergy: ')}{selectedPasien.alergi}</span>
                 </>
               )}
             </div>
@@ -263,7 +265,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               style={{ marginTop: 12 }}
               onClick={() => setSelectedPasien(null)}
             >
-              <AppIcon name="search" /> Ganti Pasien
+              <AppIcon name="search" /> {trans('Ganti Pasien', 'Change Patient')}
             </button>
           </div>
         ) : (
@@ -272,7 +274,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Ketik nama, No. MR, atau NIK untuk mencari..."
+                placeholder={trans('Ketik nama, No. MR, atau NIK untuk mencari...', 'Type name, MR No., or ID to search...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -283,16 +285,16 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
             </form>
 
             {searching ? (
-              <p className="result-empty">Mencari pasien...</p>
+              <p className="result-empty">{trans('Mencari pasien...', 'Searching patient...')}</p>
             ) : hasSearched && searchResults.length === 0 ? (
               <div className="result-empty">
-                <p>Pasien tidak ditemukan.</p>
+                <p>{trans('Pasien tidak ditemukan.', 'Patient not found.')}</p>
                 <button
                   type="button"
                   className="btn btn-sm"
                   onClick={() => onNavigate('pasien_form')}
                 >
-                  <AppIcon name="plus" /> Tambah Pasien Baru
+                  <AppIcon name="plus" /> {trans('Tambah Pasien Baru', 'Add New Patient')}
                 </button>
               </div>
             ) : searchResults.length > 0 ? (
@@ -315,7 +317,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 ))}
               </div>
             ) : (
-              <p className="result-empty">Ketik nama, No. MR, atau NIK untuk mencari pasien lama.</p>
+              <p className="result-empty">{trans('Ketik nama, No. MR, atau NIK untuk mencari pasien lama.', 'Type name, MR No., or ID to search existing patient.')}</p>
             )}
           </div>
         )}
@@ -335,14 +337,14 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           <div className="step-head">
             <div className="step-num">2</div>
             <div>
-              <div className="st-title">Poli, Dokter & Penjamin</div>
-              <div className="st-sub">Detail kunjungan pasien</div>
+              <div className="st-title">{trans('Poli, Dokter & Penjamin', 'Clinic, Doctor & Insurance')}</div>
+              <div className="st-sub">{trans('Detail kunjungan pasien', 'Patient visit details')}</div>
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>Tanggal Kunjungan</label>
+              <label>{trans('Tanggal Kunjungan', 'Visit Date')}</label>
               <input
                 type="date"
                 name="tgl_kunjungan"
@@ -352,7 +354,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               />
             </div>
             <div className="form-group">
-              <label>Poli Tujuan *</label>
+              <label>{trans('Poli / Unit Tujuan', 'Target Clinic / Poli')} <span style={{ color: 'var(--red)' }}>*</span></label>
               <select
                 name="poli_id"
                 className="form-control"
@@ -360,7 +362,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 value={formData.poli_id}
                 onChange={(e) => setFormData({ ...formData, poli_id: e.target.value })}
               >
-                <option value="">--- Pilih Poli ---</option>
+                <option value="">{trans('--- Pilih Poli ---', '--- Select Clinic ---')}</option>
                 {lookups.poli.map((po) => (
                   <option key={po.id} value={po.id}>
                     {po.nama}
@@ -372,14 +374,14 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Dokter</label>
+              <label>{trans('Dokter', 'Doctor')}</label>
               <select
                 name="dokter_id"
                 className="form-control"
                 value={formData.dokter_id}
                 onChange={(e) => setFormData({ ...formData, dokter_id: e.target.value })}
               >
-                <option value="">--- Pilih Dokter (opsional) ---</option>
+                <option value="">{trans('--- Pilih Dokter (opsional) ---', '--- Select Doctor (optional) ---')}</option>
                 {filteredDokter.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.nama}
@@ -388,15 +390,15 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               </select>
             </div>
             <div className="form-group">
-              <label>Jenis Registrasi</label>
+              <label>{trans('Jenis Registrasi', 'Registration Type')}</label>
               <select
                 name="jenis_registrasi"
                 className="form-control"
                 value={formData.jenis_registrasi}
                 onChange={(e) => setFormData({ ...formData, jenis_registrasi: e.target.value })}
               >
-                <option value="rawat_jalan">Rawat Jalan (Outpatient)</option>
-                <option value="rawat_inap">Rawat Inap</option>
+                <option value="rawat_jalan">{trans('Rawat Jalan (Outpatient)', 'Outpatient')}</option>
+                <option value="rawat_inap">{trans('Rawat Inap (Inpatient)', 'Inpatient')}</option>
               </select>
             </div>
           </div>
@@ -404,7 +406,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           {formData.jenis_registrasi === 'rawat_inap' && (
             <div className="form-row">
               <div className="form-group">
-                <label>Lama Rawat (Hari)</label>
+                <label>{trans('Lama Rawat (Hari)', 'Length of Stay (Days)')}</label>
                 <input
                   type="number"
                   min="1"
@@ -414,7 +416,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 />
               </div>
               <div className="form-group">
-                <label>Tanggal Rencana Keluar</label>
+                <label>{trans('Tanggal Rencana Keluar', 'Estimated Discharge Date')}</label>
                 <input
                   type="date"
                   className="form-control"
@@ -427,28 +429,28 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Jenis Penjamin</label>
+              <label>{trans('Jenis Penjamin', 'Insurance Type')}</label>
               <select
                 name="jenis_penjamin"
                 className="form-control"
                 value={formData.jenis_penjamin}
                 onChange={(e) => setFormData({ ...formData, jenis_penjamin: e.target.value })}
               >
-                <option value="umum">Umum (Pribadi)</option>
+                <option value="umum">{trans('Umum (Pribadi)', 'General / Self-pay')}</option>
                 <option value="bpjs">BPJS Kesehatan</option>
-                <option value="asuransi">Asuransi Swasta</option>
-                <option value="corporate">Corporate / Perusahaan</option>
+                <option value="asuransi">{trans('Asuransi Swasta', 'Private Insurance')}</option>
+                <option value="corporate">{trans('Perusahaan / Corporate', 'Corporate')}</option>
               </select>
             </div>
             {formData.jenis_penjamin === 'asuransi' && (
               <div className="form-group">
-                <label>Asuransi Penjamin</label>
+                <label>{trans('Asuransi Penjamin', 'Insurance Provider')}</label>
                 <select
                   className="form-control"
                   value={formData.asuransi_id}
                   onChange={(e) => setFormData({ ...formData, asuransi_id: e.target.value })}
                 >
-                  <option value="">--- Pilih Asuransi ---</option>
+                  <option value="">{trans('--- Pilih Asuransi ---', '--- Select Insurance ---')}</option>
                   {lookups.asuransi.map((a) => (
                     <option key={a.id} value={a.id}>{a.nama}</option>
                   ))}
@@ -457,13 +459,13 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
             )}
             {formData.jenis_penjamin === 'corporate' && (
               <div className="form-group">
-                <label>Perusahaan / Corporate</label>
+                <label>{trans('Perusahaan / Corporate', 'Company / Corporate')}</label>
                 <select
                   className="form-control"
                   value={formData.corporate_id}
                   onChange={(e) => setFormData({ ...formData, corporate_id: e.target.value })}
                 >
-                  <option value="">--- Pilih Perusahaan ---</option>
+                  <option value="">{trans('--- Pilih Perusahaan ---', '--- Select Company ---')}</option>
                   {lookups.corporate.map((c) => (
                     <option key={c.id} value={c.id}>{c.nama}</option>
                   ))}
@@ -473,12 +475,12 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           </div>
 
           <div className="form-group" style={{ marginTop: 6 }}>
-            <label>Keluhan Utama / Catatan Awal</label>
+            <label>{trans('Keluhan Utama / Catatan Awal', 'Chief Complaint / Initial Notes')}</label>
             <textarea
               name="keluhan_awal"
               className="form-control"
               rows="2"
-              placeholder="Contoh: Demam, pusing, batuk sejak 2 hari yang lalu"
+              placeholder={trans('Contoh: Demam, pusing, batuk sejak 2 hari yang lalu', 'e.g. Fever, headache, cough since 2 days ago')}
               value={formData.keluhan_awal}
               onChange={(e) => setFormData({ ...formData, keluhan_awal: e.target.value })}
             />
@@ -490,16 +492,16 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           {/* Medical Service */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>Medical Service</h3>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Medical Service', 'Medical Service')}</h3>
               <button type="button" className="btn btn-sm" onClick={addTindakan}>
-                <AppIcon name="plus" /> Tambah Medical Service
+                <AppIcon name="plus" /> {trans('Tambah Medical Service', 'Add Medical Service')}
               </button>
             </div>
             <table style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Medical Service</th>
-                  <th style={{ width: 100, textAlign: 'center' }}>Qty</th>
+                  <th>{trans('Medical Service', 'Medical Service')}</th>
+                  <th style={{ width: 100, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
                   <th style={{ width: 36 }}></th>
                 </tr>
               </thead>
@@ -507,7 +509,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 {tindakanRows.length === 0 ? (
                   <tr>
                     <td colSpan="3" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
-                      Belum ada tindakan yang dipilih.
+                      {trans('Belum ada tindakan yang dipilih.', 'No procedures selected.')}
                     </td>
                   </tr>
                 ) : (
@@ -547,7 +549,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                           type="button"
                           className="btn btn-sm btn-red"
                           onClick={() => removeTindakan(idx)}
-                          title="Hapus"
+                          title={trans('Hapus', 'Delete')}
                         >
                           <AppIcon name="close" />
                         </button>
@@ -562,16 +564,16 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           {/* Konsultasi */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>Konsultasi</h3>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Konsultasi', 'Consultation')}</h3>
               <button type="button" className="btn btn-sm" onClick={addKonsultasi}>
-                <AppIcon name="plus" /> Tambah Konsultasi
+                <AppIcon name="plus" /> {trans('Tambah Konsultasi', 'Add Consultation')}
               </button>
             </div>
             <table style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Konsultasi</th>
-                  <th style={{ width: 100, textAlign: 'center' }}>Qty</th>
+                  <th>{trans('Konsultasi', 'Consultation')}</th>
+                  <th style={{ width: 100, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
                   <th style={{ width: 36 }}></th>
                 </tr>
               </thead>
@@ -579,7 +581,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 {konsultasiRows.length === 0 ? (
                   <tr>
                     <td colSpan="3" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
-                      Belum ada konsultasi yang dipilih.
+                      {trans('Belum ada konsultasi yang dipilih.', 'No consultations selected.')}
                     </td>
                   </tr>
                 ) : (
@@ -619,7 +621,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                           type="button"
                           className="btn btn-sm btn-red"
                           onClick={() => removeKonsultasi(idx)}
-                          title="Hapus"
+                          title={trans('Hapus', 'Delete')}
                         >
                           <AppIcon name="close" />
                         </button>
@@ -637,17 +639,17 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           {/* Lab */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>Permintaan Lab</h3>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Permintaan Lab', 'Laboratory Request')}</h3>
               <button type="button" className="btn btn-sm" onClick={addLab}>
-                <AppIcon name="plus" /> Tambah Lab
+                <AppIcon name="plus" /> {trans('Tambah Lab', 'Add Lab')}
               </button>
             </div>
             <table style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Pemeriksaan Lab</th>
-                  <th style={{ width: 60, textAlign: 'center' }}>Qty</th>
-                  <th style={{ width: 160 }}>Hasil / Catatan</th>
+                  <th>{trans('Pemeriksaan Lab', 'Lab Examination')}</th>
+                  <th style={{ width: 60, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
+                  <th style={{ width: 160 }}>{trans('Hasil / Catatan', 'Result / Notes')}</th>
                   <th style={{ width: 36 }}></th>
                 </tr>
               </thead>
@@ -655,7 +657,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 {labRows.length === 0 ? (
                   <tr>
                     <td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
-                      Belum ada permintaan lab.
+                      {trans('Belum ada permintaan lab.', 'No lab requests.')}
                     </td>
                   </tr>
                 ) : (
@@ -694,7 +696,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Hasil..."
+                          placeholder={trans('Hasil...', 'Result...')}
                           value={row.hasil}
                           onChange={(e) => {
                             const h = e.target.value;
@@ -703,7 +705,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                         />
                       </td>
                       <td>
-                        <button type="button" className="btn btn-sm btn-red" onClick={() => removeLab(idx)}>
+                        <button type="button" className="btn btn-sm btn-red" onClick={() => removeLab(idx)} title={trans('Hapus', 'Delete')}>
                           <AppIcon name="close" />
                         </button>
                       </td>
@@ -717,17 +719,17 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           {/* Radiologi */}
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 16 }}>Permintaan Radiologi</h3>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Permintaan Radiologi', 'Radiology Request')}</h3>
               <button type="button" className="btn btn-sm" onClick={addRad}>
-                <AppIcon name="plus" /> Tambah Radiologi
+                <AppIcon name="plus" /> {trans('Tambah Radiologi', 'Add Radiology')}
               </button>
             </div>
             <table style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Pemeriksaan Radiologi</th>
-                  <th style={{ width: 60, textAlign: 'center' }}>Qty</th>
-                  <th style={{ width: 160 }}>Hasil / Catatan</th>
+                  <th>{trans('Pemeriksaan Radiologi', 'Radiology Examination')}</th>
+                  <th style={{ width: 60, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
+                  <th style={{ width: 160 }}>{trans('Hasil / Catatan', 'Result / Notes')}</th>
                   <th style={{ width: 36 }}></th>
                 </tr>
               </thead>
@@ -735,7 +737,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 {radRows.length === 0 ? (
                   <tr>
                     <td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
-                      Belum ada permintaan radiologi.
+                      {trans('Belum ada permintaan radiologi.', 'No radiology requests.')}
                     </td>
                   </tr>
                 ) : (
@@ -774,7 +776,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Hasil..."
+                          placeholder={trans('Hasil...', 'Result...')}
                           value={row.hasil}
                           onChange={(e) => {
                             const h = e.target.value;
@@ -783,7 +785,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                         />
                       </td>
                       <td>
-                        <button type="button" className="btn btn-sm btn-red" onClick={() => removeRad(idx)}>
+                        <button type="button" className="btn btn-sm btn-red" onClick={() => removeRad(idx)} title={trans('Hapus', 'Delete')}>
                           <AppIcon name="close" />
                         </button>
                       </td>
@@ -798,18 +800,18 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
         {/* STEP 5: Resep Obat (Farmasi) */}
         <div className="card" style={{ marginTop: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 16 }}>Resep Obat (Farmasi)</h3>
+            <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Resep Obat (Farmasi)', 'Medication Prescription (Pharmacy)')}</h3>
             <button type="button" className="btn btn-sm" onClick={addObat}>
-              <AppIcon name="plus" /> Tambah Obat
+              <AppIcon name="plus" /> {trans('Tambah Obat', 'Add Medication')}
             </button>
           </div>
           <table style={{ width: '100%' }}>
             <thead>
               <tr>
-                <th>Nama Obat</th>
-                <th style={{ width: 80, textAlign: 'center' }}>Qty</th>
-                <th style={{ width: 140 }}>Dosis</th>
-                <th style={{ width: 180 }}>Aturan Pakai</th>
+                <th>{trans('Nama Obat', 'Medicine Name')}</th>
+                <th style={{ width: 80, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
+                <th style={{ width: 140 }}>{trans('Dosis', 'Dosage')}</th>
+                <th style={{ width: 180 }}>{trans('Aturan Pakai', 'Directions / Usage')}</th>
                 <th style={{ width: 36 }}></th>
               </tr>
             </thead>
@@ -817,7 +819,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               {obatRows.length === 0 ? (
                 <tr>
                   <td colSpan="5" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
-                    Belum ada obat yang diresepkan.
+                    {trans('Belum ada obat yang diresepkan.', 'No medications prescribed.')}
                   </td>
                 </tr>
               ) : (
@@ -834,7 +836,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                       >
                         {lookups.obat.map((o) => (
                           <option key={o.id} value={o.id}>
-                            {o.nama} (Stok: {o.stok || 0}) — {formatRupiah(o.harga_jual || o.harga_beli)}
+                            {o.nama} ({trans('Stok', 'Stock')}: {o.stok || 0}) — {formatRupiah(o.harga_jual || o.harga_beli)}
                           </option>
                         ))}
                       </select>
@@ -856,7 +858,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Contoh: 500mg"
+                        placeholder={trans('Contoh: 500mg', 'e.g. 500mg')}
                         value={row.dosis}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -868,7 +870,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Contoh: 3x1 sesudah makan"
+                        placeholder={trans('Contoh: 3x1 sesudah makan', 'e.g. 3x1 after meals')}
                         value={row.aturan_pakai}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -877,7 +879,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                       />
                     </td>
                     <td>
-                      <button type="button" className="btn btn-sm btn-red" onClick={() => removeObat(idx)}>
+                      <button type="button" className="btn btn-sm btn-red" onClick={() => removeObat(idx)} title={trans('Hapus', 'Delete')}>
                         <AppIcon name="close" />
                       </button>
                     </td>
@@ -895,10 +897,10 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
             className="btn btn-light"
             onClick={() => onNavigate('kunjungan')}
           >
-            Batal
+            {t('common.cancel')}
           </button>
           <button type="submit" className="btn" disabled={saving}>
-            <AppIcon name="plus" /> {saving ? 'Menyimpan...' : 'Simpan Pendaftaran Kunjungan'}
+            <AppIcon name="plus" /> {saving ? trans('Menyimpan...', 'Saving...') : trans('Simpan Pendaftaran Kunjungan', 'Save Visit Registration')}
           </button>
         </div>
       </form>

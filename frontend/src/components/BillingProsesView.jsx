@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
+import { useI18n } from '../i18n';
 
 export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeuangan }) {
+  const { t, isEn, trans, formatTgl } = useI18n();
   const [loading, setLoading] = useState(true);
   const [kunjungan, setKunjungan] = useState(null);
   const [billing, setBilling] = useState(null);
@@ -120,15 +122,15 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
   const formatCategoryLabel = (kat) => {
     switch (kat) {
-      case 'tindakan': return 'Tindakan Medis';
-      case 'konsultasi': return 'Konsultasi';
-      case 'laboratorium': return 'Laboratorium';
-      case 'radiologi': return 'Radiologi';
-      case 'diagnostik': return 'Diagnostik';
-      case 'fisioterapi': return 'Fisioterapi';
-      case 'farmasi': return 'Farmasi / Resep';
-      case 'administrasi': return 'Administrasi';
-      default: return kat ? kat.charAt(0).toUpperCase() + kat.slice(1) : 'Layanan';
+      case 'tindakan': return trans('Tindakan Medis', 'Medical Procedure');
+      case 'konsultasi': return trans('Konsultasi', 'Consultation');
+      case 'laboratorium': return trans('Laboratorium', 'Laboratory');
+      case 'radiologi': return trans('Radiologi', 'Radiology');
+      case 'diagnostik': return trans('Diagnostik', 'Diagnostics');
+      case 'fisioterapi': return trans('Fisioterapi', 'Physiotherapy');
+      case 'farmasi': return trans('Farmasi / Resep', 'Pharmacy / Prescription');
+      case 'administrasi': return trans('Administrasi', 'Administration');
+      default: return kat ? kat.charAt(0).toUpperCase() + kat.slice(1) : trans('Layanan', 'Service');
     }
   };
 
@@ -143,7 +145,9 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
   const isFinal = billing && billing.status === 'final';
   const isRawatInap = kunjungan?.jenis_registrasi === 'rawat_inap';
-  const adminDeskripsi = isRawatInap ? 'Biaya Administrasi Rawat Inap' : 'Biaya Administrasi & Registrasi';
+  const adminDeskripsi = isRawatInap 
+    ? trans('Biaya Administrasi Rawat Inap', 'Inpatient Administrative Fee') 
+    : trans('Biaya Administrasi & Registrasi', 'Administration & Registration Fee');
 
   // Cover penjamin calculation
   const coverVal = jenisPenjamin !== 'umum'
@@ -168,13 +172,13 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
       const res = await api.post(`/billing/simpan/${kunjunganId}`, payload);
       if (res && res.success) {
-        showToast('success', res.message || 'Draft billing berhasil disimpan.');
+        showToast('success', res.message || trans('Draft billing berhasil disimpan.', 'Billing draft saved successfully.'));
         await loadData();
       } else {
-        showToast('danger', res?.message || 'Gagal menyimpan draft billing.');
+        showToast('danger', res?.message || trans('Gagal menyimpan draft billing.', 'Failed to save billing draft.'));
       }
     } catch (err) {
-      showToast('danger', err.message || 'Gagal menyimpan draft billing.');
+      showToast('danger', err.message || trans('Gagal menyimpan draft billing.', 'Failed to save billing draft.'));
     } finally {
       setSaving(false);
     }
@@ -184,9 +188,10 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
     setSaving(true);
     try {
       const payload = {
-        aksi: 'finalisasi',
-        administrasi: adminVal,
+        subtotal: svcSubtotal,
+        biaya_admin: adminVal,
         diskon: diskonVal,
+        total: totalTagihan,
         cover_penjamin: jenisPenjamin !== 'umum' ? coverVal : 0,
         jenis_penjamin: jenisPenjamin,
         asuransi_id: jenisPenjamin === 'asuransi' && asuransiId ? Number(asuransiId) : null,
@@ -197,20 +202,19 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
       const res = await api.post(`/billing/simpan/${kunjunganId}`, payload);
       if (res && res.success) {
-        // Alur simklinik-backup: langsung redirect kembali ke index billing dengan pesan sukses
-        onBack(`Billing berhasil difinalisasi (${formatRupiah(totalTagihan)})`);
+        onBack(trans(`Billing berhasil difinalisasi (${formatRupiah(totalTagihan)})`, `Billing finalized successfully (${formatRupiah(totalTagihan)})`));
       } else {
-        showToast('danger', res?.message || 'Gagal memfinalisasi billing.');
+        showToast('danger', res?.message || trans('Gagal memfinalisasi billing.', 'Failed to finalize billing.'));
       }
     } catch (err) {
-      showToast('danger', err.message || 'Gagal memfinalisasi billing.');
+      showToast('danger', err.message || trans('Gagal memfinalisasi billing.', 'Failed to finalize billing.'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleBatalBilling = async () => {
-    if (!window.confirm('Yakin ingin membatalkan tagihan kunjungan ini?')) return;
+    if (!window.confirm(trans('Yakin ingin membatalkan tagihan kunjungan ini?', 'Are you sure you want to cancel this visit bill?'))) return;
     setSaving(true);
     try {
       const res = await api.post(`/kunjungan/${kunjunganId}/batal`, {
@@ -219,12 +223,12 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
       });
 
       if (res && res.success) {
-        onBack('Tagihan kunjungan berhasil dibatalkan.');
+        onBack(trans('Tagihan kunjungan berhasil dibatalkan.', 'Visit bill cancelled successfully.'));
       } else {
-        showToast('danger', res?.message || 'Gagal membatalkan tagihan.');
+        showToast('danger', res?.message || trans('Gagal membatalkan tagihan.', 'Failed to cancel bill.'));
       }
     } catch (err) {
-      showToast('danger', err.message || 'Gagal membatalkan tagihan.');
+      showToast('danger', err.message || trans('Gagal membatalkan tagihan.', 'Failed to cancel bill.'));
     } finally {
       setSaving(false);
     }
@@ -233,7 +237,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
   if (loading) {
     return (
       <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--muted)' }}>
-        Memuat lembar proses billing...
+        {trans('Memuat lembar proses billing...', 'Loading billing sheet...')}
       </div>
     );
   }
@@ -242,10 +246,10 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
     return (
       <div style={{ padding: '20px 0' }}>
         <button type="button" className="btn btn-light btn-sm" onClick={() => onBack()}>
-          <AppIcon name="arrowleft" /> Kembali
+          <AppIcon name="arrowleft" /> {trans('Kembali', 'Back')}
         </button>
         <div className="alert alert-danger" style={{ marginTop: 14 }}>
-          Data kunjungan tidak ditemukan.
+          {trans('Data kunjungan tidak ditemukan.', 'Visit data not found.')}
         </div>
       </div>
     );
@@ -260,7 +264,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
         onClick={() => onBack()}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
       >
-        <AppIcon name="arrowleft" /> Kembali
+        <AppIcon name="arrowleft" /> {trans('Kembali', 'Back')}
       </button>
 
       {/* Patient Header Card persis legacy modules/billing/proses.php */}
@@ -280,7 +284,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
             {kunjungan.pasien_nama || kunjungan.pasien}
           </div>
           <div style={{ color: 'var(--muted)', marginTop: 4 }}>
-            No. MR <b>{kunjungan.no_mr}</b> &middot; {kunjungan.poli_nama || kunjungan.poli} &middot; {kunjungan.dokter_nama || '-'}
+            {trans('No. MR', 'MR No.')} <b>{kunjungan.no_mr}</b> &middot; {kunjungan.poli_nama || kunjungan.poli} &middot; {kunjungan.dokter_nama || '-'}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -289,7 +293,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
           </div>
           {isFinal && (
             <div style={{ marginTop: 6 }}>
-              <span className="badge badge-green">Billing Final</span>
+              <span className="badge badge-green">{trans('Billing Final', 'Final Billing')}</span>
             </div>
           )}
         </div>
@@ -306,13 +310,13 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
       {/* Alert Info Jika Sudah Final persis proses.php */}
       {isFinal && (
         <div className="alert alert-info" style={{ marginTop: 14 }}>
-          Tagihan kunjungan ini sudah difinalisasi menjadi invoice. Anda dapat melanjutkan ke modul Keuangan untuk mencatat pembayaran.
+          {trans('Tagihan kunjungan ini sudah difinalisasi menjadi invoice. Anda dapat melanjutkan ke modul Keuangan untuk mencatat pembayaran.', 'This visit bill has been finalized into an invoice. You may proceed to Finance module to record payment.')}
         </div>
       )}
 
       {/* Section Title "Rincian Layanan" persis proses.php */}
       <div className="section-title" style={{ marginTop: 20 }}>
-        Rincian Layanan
+        {trans('Rincian Layanan', 'Service Details')}
       </div>
 
       {/* Rincian Layanan Table persis proses.php */}
@@ -320,20 +324,20 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
         <table style={{ width: '100%' }}>
           <thead>
             <tr>
-              <th style={{ width: 110 }}>TANGGAL</th>
-              <th>KATEGORI</th>
-              <th style={{ width: 110 }}>KODE</th>
-              <th>DESKRIPSI</th>
-              <th style={{ width: 70 }}>QTY</th>
-              <th style={{ width: 140, textAlign: 'right' }}>TARIF</th>
-              <th style={{ width: 150, textAlign: 'right' }}>SUBTOTAL</th>
+              <th style={{ width: 110 }}>{trans('TANGGAL', 'DATE')}</th>
+              <th>{trans('KATEGORI', 'CATEGORY')}</th>
+              <th style={{ width: 110 }}>{trans('KODE', 'CODE')}</th>
+              <th>{trans('DESKRIPSI', 'DESCRIPTION')}</th>
+              <th style={{ width: 70 }}>{trans('QTY', 'QTY')}</th>
+              <th style={{ width: 140, textAlign: 'right' }}>{trans('TARIF', 'RATE')}</th>
+              <th style={{ width: 150, textAlign: 'right' }}>{trans('SUBTOTAL', 'SUBTOTAL')}</th>
             </tr>
           </thead>
           <tbody>
             {serviceLines.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: 20 }}>
-                  Belum ada layanan untuk kunjungan ini.
+                  {trans('Belum ada layanan untuk kunjungan ini.', 'No services recorded for this visit.')}
                 </td>
               </tr>
             ) : (
@@ -369,14 +373,14 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label style={{ fontWeight: 600, marginBottom: 6, display: 'block' }}>
-              Hasil Diagnostik
+              {trans('Hasil Diagnostik', 'Diagnostic Results')}
             </label>
             <textarea
               name="hasil_diagnostik"
               id="hasil_diagnostik"
               className="form-control"
               rows={3}
-              placeholder="Hasil Diagnostik..."
+              placeholder={trans('Hasil Diagnostik...', 'Diagnostic Results...')}
               value={hasilDiagnostik}
               onChange={(e) => setHasilDiagnostik(e.target.value)}
               disabled={isFinal}
@@ -399,12 +403,12 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
             <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               <AppIcon name="shield" />
             </span>
-            <span>Penjamin &amp; Asuransi</span>
+            <span>{trans('Penjamin & Asuransi', 'Guarantor & Insurance')}</span>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>Jenis Penjamin</label>
+              <label>{trans('Jenis Penjamin', 'Guarantor Type')}</label>
               <select
                 name="jenis_penjamin"
                 id="jenis_penjamin"
@@ -418,8 +422,8 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 }}
                 disabled={isFinal}
               >
-                <option value="umum">Umum</option>
-                <option value="asuransi">Asuransi Swasta</option>
+                <option value="umum">{trans('Umum', 'General')}</option>
+                <option value="asuransi">{trans('Asuransi Swasta', 'Private Insurance')}</option>
                 <option value="corporate">Corporate</option>
                 <option value="ar">AR</option>
               </select>
@@ -427,7 +431,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
             {jenisPenjamin === 'asuransi' && (
               <div className="form-group penjamin-extra" id="box_asuransi">
-                <label>Asuransi</label>
+                <label>{trans('Asuransi', 'Insurance')}</label>
                 <select
                   name="asuransi_id"
                   className="form-control"
@@ -435,7 +439,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                   onChange={(e) => setAsuransiId(e.target.value)}
                   disabled={isFinal}
                 >
-                  <option value="">Pilih Opsi...</option>
+                  <option value="">{trans('Pilih Opsi...', 'Select Option...')}</option>
                   {lookups.asuransi.map((a) => (
                     <option key={a.id} value={a.id}>{a.nama}</option>
                   ))}
@@ -445,7 +449,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
             {jenisPenjamin === 'corporate' && (
               <div className="form-group penjamin-extra" id="box_corporate">
-                <label>Perusahaan</label>
+                <label>{trans('Perusahaan', 'Company')}</label>
                 <select
                   name="corporate_id"
                   className="form-control"
@@ -453,7 +457,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                   onChange={(e) => setCorporateId(e.target.value)}
                   disabled={isFinal}
                 >
-                  <option value="">Pilih Opsi...</option>
+                  <option value="">{trans('Pilih Opsi...', 'Select Option...')}</option>
                   {lookups.corporate.map((c) => (
                     <option key={c.id} value={c.id}>{c.nama}</option>
                   ))}
@@ -464,7 +468,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
           {(jenisPenjamin === 'asuransi' || jenisPenjamin === 'corporate') && (
             <div className="form-group penjamin-extra" id="box_nojaminan" style={{ marginTop: 10 }}>
-              <label>No. Kartu / Jaminan</label>
+              <label>{trans('No. Kartu / Jaminan', 'Card / Guarantee No.')}</label>
               <input
                 type="text"
                 name="no_jaminan"
@@ -485,7 +489,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 disabled={saving}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <AppIcon name="save" /> Simpan
+                <AppIcon name="save" /> {trans('Simpan', 'Save')}
               </button>
             </div>
           )}
@@ -500,7 +504,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
-            <span>Subtotal Layanan</span>
+            <span>{trans('Subtotal Layanan', 'Service Subtotal')}</span>
             <b>{formatRupiah(svcSubtotal)}</b>
           </div>
 
@@ -521,7 +525,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
-            <label style={{ margin: 0 }}>Diskon</label>
+            <label style={{ margin: 0 }}>{trans('Diskon', 'Discount')}</label>
             <input
               type="number"
               min="0"
@@ -561,10 +565,10 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                   <AppIcon name="shield" />
                 </span>
-                <span>Cover Penjamin</span>
+                <span>{trans('Cover Penjamin', 'Guarantor Coverage')}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
-                <label style={{ margin: 0 }}>Ditanggung Penjamin</label>
+                <label style={{ margin: 0 }}>{trans('Ditanggung Penjamin', 'Covered by Guarantor')}</label>
                 <input
                   type="number"
                   min="0"
@@ -579,7 +583,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
-                <span>Ditanggung Pasien</span>
+                <span>{trans('Ditanggung Pasien', 'Patient Responsibility')}</span>
                 <b id="sisaPasienView">{formatRupiah(sisaPasien)}</b>
               </div>
             </div>
@@ -596,7 +600,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
               fontWeight: 700,
             }}
           >
-            <span>TOTAL TAGIHAN</span>
+            <span>{trans('TOTAL TAGIHAN', 'TOTAL BILL')}</span>
             <span id="totalView">{formatRupiah(totalTagihan)}</span>
           </div>
 
@@ -609,7 +613,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 disabled={saving}
                 style={{ flex: 1, justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <AppIcon name="save" /> Simpan Draf
+                <AppIcon name="save" /> {trans('Simpan Draf', 'Save Draft')}
               </button>
               <button
                 type="button"
@@ -618,7 +622,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 disabled={saving}
                 style={{ flex: 1, justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <AppIcon name="check" /> Finalisasi Billing
+                <AppIcon name="check" /> {trans('Finalisasi Billing', 'Finalize Billing')}
               </button>
             </div>
           ) : (
@@ -641,7 +645,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 }
               }}
             >
-              <AppIcon name="keuangan" /> Lanjutkan ke Pembayaran
+              <AppIcon name="keuangan" /> {trans('Lanjutkan ke Pembayaran', 'Proceed to Payment')}
             </button>
           )}
 
@@ -649,12 +653,12 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
           {!isFinal && kunjungan.status !== 'selesai' && (
             <details style={{ marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
               <summary style={{ cursor: 'pointer', color: 'var(--danger)', fontWeight: 600 }}>
-                Batalkan Billing
+                {trans('Batalkan Billing', 'Cancel Billing')}
               </summary>
               <div style={{ marginTop: 12 }}>
                 <div className="form-group">
                   <label>
-                    Kode Pembatalan <span style={{ color: 'red' }}>*</span>
+                    {trans('Kode Pembatalan', 'Cancellation Code')} <span style={{ color: 'red' }}>*</span>
                   </label>
                   <select
                     className="form-control"
@@ -662,7 +666,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                     onChange={(e) => setBatalCodeId(e.target.value)}
                     required
                   >
-                    <option value="">Pilih Alasan Pembatalan...</option>
+                    <option value="">{trans('Pilih Alasan Pembatalan...', 'Select Cancellation Reason...')}</option>
                     {batalCodes.map((kb) => (
                       <option key={kb.id} value={kb.id}>
                         {kb.kode} &mdash; {kb.nama}
@@ -671,11 +675,11 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Catatan Tambahan</label>
+                  <label>{trans('Catatan Tambahan', 'Additional Notes')}</label>
                   <textarea
                     className="form-control"
                     rows={2}
-                    placeholder="Catatan tambahan (opsional)..."
+                    placeholder={trans('Catatan tambahan (opsional)...', 'Additional notes (optional)...')}
                     value={batalAlasan}
                     onChange={(e) => setBatalAlasan(e.target.value)}
                   />
@@ -687,7 +691,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                   disabled={saving || !batalCodeId}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  <AppIcon name="close" /> Batalkan Billing
+                  <AppIcon name="close" /> {trans('Batalkan Billing', 'Cancel Billing')}
                 </button>
               </div>
             </details>
