@@ -259,8 +259,8 @@ export default function App() {
   const handleLocaleChange = setLocale;
 
   // Sidebar sub-menu dropdown states
-  const [masterNavOpen, setMasterNavOpen] = useState(false);
-  const [laporanNavOpen, setLaporanNavOpen] = useState(false);
+  const [masterNavOpen, setMasterNavOpen] = useState(() => initialLoc.view === 'master');
+  const [laporanNavOpen, setLaporanNavOpen] = useState(() => initialLoc.view === 'laporan');
   const [selectedMasterGroup, setSelectedMasterGroup] = useState(() => (initialLoc.view === 'master' && initialLoc.group) ? initialLoc.group : 'SDM & Poli');
   const [selectedMasterSlug, setSelectedMasterSlug] = useState(() => (initialLoc.view === 'master' && initialLoc.slug) ? initialLoc.slug : null);
   const [selectedLaporanGroup, setSelectedLaporanGroup] = useState(() => (initialLoc.view === 'laporan' && initialLoc.group) ? initialLoc.group : 'Operasional');
@@ -430,6 +430,18 @@ export default function App() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userDropdownRef = useRef(null);
+
+  // Close user dropdown menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Set theme on mount and when changed
   useEffect(() => {
@@ -802,7 +814,7 @@ export default function App() {
 
             {/* Data & Stok */}
             <div className="label">{t('menu.groups.data_stok')}</div>
-            <div className={`nav-group ${masterNavOpen || currentView === 'master' ? 'open' : ''}`}>
+            <div className={`nav-group ${masterNavOpen ? 'open' : ''}`}>
               <div className={`nav-parent ${currentView === 'master' ? 'active' : ''}`}>
                 <button 
                   type="button" 
@@ -810,7 +822,7 @@ export default function App() {
                   onClick={(e) => {
                     e.preventDefault();
                     navigateTo('master', null, { g: selectedMasterGroup, slug: selectedMasterSlug });
-                    setMasterNavOpen(true);
+                    setMasterNavOpen(prev => currentView === 'master' ? !prev : true);
                   }} 
                   title={t('menu.master_data')}
                 >
@@ -826,6 +838,7 @@ export default function App() {
                     setMasterNavOpen(prev => !prev);
                   }} 
                   aria-label="Sub-menu"
+                  aria-expanded={masterNavOpen}
                 >
                   <AppIcon name="chevron" />
                 </button>
@@ -917,7 +930,7 @@ export default function App() {
 
             {/* Lainnya */}
             <div className="label">{t('menu.groups.lainnya')}</div>
-            <div className={`nav-group ${laporanNavOpen || currentView === 'laporan' ? 'open' : ''}`}>
+            <div className={`nav-group ${laporanNavOpen ? 'open' : ''}`}>
               <div className={`nav-parent ${currentView === 'laporan' ? 'active' : ''}`}>
                 <button 
                   type="button" 
@@ -925,7 +938,7 @@ export default function App() {
                   onClick={(e) => {
                     e.preventDefault();
                     navigateTo('laporan', null, { g: selectedLaporanGroup, report: selectedLaporanSlug });
-                    setLaporanNavOpen(true);
+                    setLaporanNavOpen(prev => currentView === 'laporan' ? !prev : true);
                   }} 
                   title={t('menu.reports')}
                 >
@@ -941,6 +954,7 @@ export default function App() {
                     setLaporanNavOpen(prev => !prev);
                   }} 
                   aria-label="Sub-menu"
+                  aria-expanded={laporanNavOpen}
                 >
                   <AppIcon name="chevron" />
                 </button>
@@ -1062,11 +1076,15 @@ export default function App() {
               </div>
 
               {/* User Dropdown Chip */}
-              <div className="user-dropdown" id="userDropdown" style={{ position: 'relative' }}>
+              <div 
+                ref={userDropdownRef}
+                className={`user-dropdown ${userMenuOpen ? 'open' : ''}`} 
+                id="userDropdown"
+              >
                 <button 
                   type="button" 
                   className="user-chip" 
-                  onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                  onClick={() => setUserMenuOpen(prev => !prev)} 
                   aria-haspopup="true" 
                   aria-expanded={userMenuOpen}
                   title={t('app.account_menu')}
@@ -1089,58 +1107,33 @@ export default function App() {
                   <div 
                     className="user-menu" 
                     role="menu"
-                    style={{
-                      display: 'block',
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: '8px',
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '12px',
-                      boxShadow: 'var(--shadow-lg)',
-                      minWidth: '180px',
-                      zIndex: 100,
-                      padding: '6px'
-                    }}
                   >
                     <a 
                       href="/profil-saya" 
                       role="menuitem"
-                      onClick={(e) => { e.preventDefault(); navigateTo('profile'); setUserMenuOpen(false); }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        color: 'var(--text)'
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        navigateTo('profile'); 
+                        setUserMenuOpen(false); 
                       }}
+                      title={t('app.my_profile')}
                     >
-                      <span className="ico"><AppIcon name="user" /></span> {t('app.my_profile')}
+                      <span className="ico"><AppIcon name="user" /></span>
+                      <span>{t('app.my_profile')}</span>
                     </a>
-                    <div className="user-menu-sep" style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }}></div>
+                    <div className="user-menu-sep"></div>
                     <button 
                       type="button" 
                       role="menuitem"
-                      onClick={handleLogout}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        background: 'none',
-                        fontSize: '14px',
-                        color: 'var(--red)',
-                        cursor: 'pointer',
-                        textAlign: 'left'
+                      className="user-menu-btn danger"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
                       }}
+                      title={t('app.logout')}
                     >
-                      <span className="ico"><AppIcon name="logout" /></span> {t('app.logout')}
+                      <span className="ico"><AppIcon name="logout" /></span>
+                      <span>{t('app.logout')}</span>
                     </button>
                   </div>
                 )}

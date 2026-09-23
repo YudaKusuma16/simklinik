@@ -75,9 +75,15 @@ h3,h4,h5,h6{font-size:var(--fs-text)}
 .layout.collapsed .sidebar-foot .logout-link .txt{display:none}
 .sidebar-foot form{margin:0;width:100%}
 .sidebar-foot button.logout-link{border:none;background:none;cursor:pointer;width:100%;text-decoration:none;font:inherit}
-.user-menu button.user-menu-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:none;
-  font:inherit;color:inherit;cursor:pointer;text-align:left}
+.user-menu button.user-menu-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;background:none;
+  font:inherit;font-size:14.5px;font-weight:500;border-radius:8px;color:var(--text,inherit);cursor:pointer;text-align:left}
+.user-menu button.user-menu-btn:hover{background:#f1f5f9}
+.user-menu button.user-menu-btn .ico{display:flex}
+.user-menu button.user-menu-btn .ico svg{width:18px;height:18px}
 .user-menu button.user-menu-btn.danger,.user-menu form.danger button{color:var(--danger,#dc2626)}
+.user-menu button.user-menu-btn.danger:hover{background:#fef2f2}
+[data-theme=dark] .user-menu button.user-menu-btn:hover{background:#273548}
+[data-theme=dark] .user-menu button.user-menu-btn.danger:hover{background:#3a2326}
 .sidebar::-webkit-scrollbar{width:6px}
 .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:3px}
 .sidebar .brand{padding:20px 18px;color:#fff;white-space:nowrap;display:flex;gap:13px;align-items:center;
