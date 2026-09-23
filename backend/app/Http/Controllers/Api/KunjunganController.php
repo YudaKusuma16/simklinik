@@ -123,7 +123,11 @@ class KunjunganController extends Controller
     public function lookups(): JsonResponse
     {
         $poli = DB::table('poli')->where('status', 'aktif')->orderBy('nama')->get(['id', 'kode', 'nama']);
-        $dokter = DB::table('dokter')->where('status', 'aktif')->orderBy('nama')->get(['id', 'nama', 'poli_id']);
+        $dokter = DB::table('dokter as d')
+            ->leftJoin('spesialisasi as s', 's.id', '=', 'd.spesialisasi_id')
+            ->where('d.status', 'aktif')
+            ->orderBy('d.nama')
+            ->get(['d.id', 'd.nama', 'd.poli_id', 'd.spesialisasi_id', 's.nama as spesialisasi_nama']);
         $asuransi = DB::table('asuransi')->where('status', 'aktif')->orderBy('nama')->get(['id', 'nama']);
         $corporate = DB::table('corporate')->where('status', 'aktif')->orderBy('nama')->get(['id', 'nama']);
         $kelompok = DB::table('kelompok_pasien')->orderBy('id')->get(['id', 'nama']);

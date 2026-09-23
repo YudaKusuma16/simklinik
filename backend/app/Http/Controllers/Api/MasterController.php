@@ -84,20 +84,37 @@ class MasterController extends Controller
         $rows = $query->get();
 
         // Foreign Key Lookups mapping
-        $fkLookups = [];
+        $fkMap = [];
+        $fkOptions = [];
+
         foreach ($config['fields'] as $col => $f) {
             if ($f['type'] === 'fk') {
                 $fkTable = $f['fk_table'];
                 $fkLabel = $f['fk_label'];
-                $lookups = DB::table($fkTable)->pluck($fkLabel, 'id')->toArray();
-                $fkLookups[$col] = $lookups;
+
+                $items = DB::table($fkTable)
+                    ->select('id', $fkLabel)
+                    ->orderBy($fkLabel, 'asc')
+                    ->get();
+
+                $optionsList = $items->map(function ($item) use ($fkLabel) {
+                    return [
+                        'id' => $item->id,
+                        'nama' => $item->$fkLabel,
+                        'label' => $item->$fkLabel,
+                    ];
+                })->values()->toArray();
+
+                $fkOptions[$fkTable] = $optionsList;
+                $fkOptions[$col] = $optionsList;
+                $fkMap[$col] = $items->pluck($fkLabel, 'id')->toArray();
             }
         }
 
         // Augment rows with foreign key label dan kalkulasi harga
-        $formattedRows = $rows->map(function ($row) use ($fkLookups, $config) {
+        $formattedRows = $rows->map(function ($row) use ($fkMap, $config) {
             $r = (array) $row;
-            foreach ($fkLookups as $col => $map) {
+            foreach ($fkMap as $col => $map) {
                 $fkId = $r[$col] ?? null;
                 $r[$col . '_nama'] = $fkId ? ($map[$fkId] ?? "-") : "-";
             }
@@ -125,7 +142,7 @@ class MasterController extends Controller
             'success' => true,
             'entity' => array_merge($config, ['slug' => $entity]),
             'data' => $formattedRows,
-            'lookups' => $fkLookups,
+            'lookups' => $fkOptions,
         ]);
     }
 
@@ -168,14 +185,15 @@ class MasterController extends Controller
         $data = [];
 
         foreach ($config['fields'] as $col => $f) {
-            if ($f['type'] === 'readonly') {
+            if ($f['type'] === 'readonly' || (! empty($config['code_prefix']) && $col === 'kode' && empty($request->input($col)))) {
                 // Auto generate code if prefix is defined
                 if (! empty($config['code_prefix'])) {
                     $prefix = $config['code_prefix'];
-                    $max = DB::table($config['table'])
+                    $maxNum = DB::table($config['table'])
                         ->where($col, 'LIKE', "{$prefix}%")
-                        ->max($col);
-                    $next = $max ? ((int) substr((string) $max, strlen($prefix)) + 1) : 1;
+                        ->selectRaw('MAX(CAST(SUBSTRING(' . $col . ', ?) AS UNSIGNED)) as max_num', [strlen($prefix) + 1])
+                        ->value('max_num');
+                    $next = ((int) $maxNum) + 1;
                     $data[$col] = $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
                 }
                 continue;

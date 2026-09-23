@@ -24,8 +24,9 @@ return [
         'group' => 'Layanan & Tarif',
         'icon_name' => 'syringe',
         'order' => 'nama',
+        'code_prefix' => 'GCMS',
         'fields' => [
-            'kode'       => ['label' => 'Kode Tindakan', 'type' => 'text', 'required' => true, 'list' => true],
+            'kode'       => ['label' => 'Kode Tindakan', 'type' => 'readonly', 'list' => true],
             'nama'       => ['label' => 'Nama Tindakan', 'type' => 'text', 'required' => true, 'list' => true],
             'status'     => ['label' => 'Status', 'type' => 'enum', 'options' => ['aktif', 'nonaktif'], 'default' => 'aktif', 'list' => true],
             'tarif'      => ['label' => 'Tarif Dasar', 'type' => 'money', 'list' => true],
@@ -39,7 +40,7 @@ return [
         'group' => 'Layanan & Tarif',
         'icon_name' => 'user',
         'order' => 'nama',
-        'code_prefix' => 'KNS-',
+        'code_prefix' => 'GCCN',
         'fields' => [
             'kode'       => ['label' => 'Kode', 'type' => 'readonly', 'list' => true],
             'nama'       => ['label' => 'Nama Konsultasi', 'type' => 'text', 'required' => true, 'list' => true],
@@ -68,7 +69,7 @@ return [
         'group' => 'Layanan & Tarif',
         'icon_name' => 'flask',
         'order' => 'nama',
-        'code_prefix' => 'LAB-',
+        'code_prefix' => 'GCLA',
         'fields' => [
             'kode'          => ['label' => 'Kode', 'type' => 'readonly', 'list' => true],
             'kategori_id'   => ['label' => 'Kategori', 'type' => 'fk', 'fk_table' => 'lab_kategori', 'fk_label' => 'nama', 'list' => true],
@@ -100,7 +101,7 @@ return [
         'group' => 'Layanan & Tarif',
         'icon_name' => 'scan',
         'order' => 'nama',
-        'code_prefix' => 'RAD-',
+        'code_prefix' => 'GCRA',
         'fields' => [
             'kode'        => ['label' => 'Kode', 'type' => 'readonly', 'list' => true],
             'kategori_id' => ['label' => 'Kategori', 'type' => 'fk', 'fk_table' => 'rad_kategori', 'fk_label' => 'nama', 'list' => true],
@@ -130,7 +131,7 @@ return [
         'group' => 'Layanan & Tarif',
         'icon_name' => 'monitor',
         'order' => 'nama',
-        'code_prefix' => 'DIA-',
+        'code_prefix' => 'GCDC',
         'fields' => [
             'kode'        => ['label' => 'Kode', 'type' => 'readonly', 'list' => true],
             'kategori_id' => ['label' => 'Kategori', 'type' => 'fk', 'fk_table' => 'diag_kategori', 'fk_label' => 'nama', 'list' => true],
@@ -160,7 +161,7 @@ return [
         'group' => 'Layanan & Tarif',
         'icon_name' => 'pelayanan',
         'order' => 'nama',
-        'code_prefix' => 'FIS-',
+        'code_prefix' => 'GCPT',
         'fields' => [
             'kode'        => ['label' => 'Kode', 'type' => 'readonly', 'list' => true],
             'kategori_id' => ['label' => 'Kategori', 'type' => 'fk', 'fk_table' => 'fisio_kategori', 'fk_label' => 'nama', 'list' => true],
@@ -190,7 +191,7 @@ return [
         'group' => 'SDM & Poli',
         'icon_name' => 'user',
         'order' => 'nama',
-        'code_prefix' => 'DOC-',
+        'code_prefix' => 'GBKDR',
         'fields' => [
             'kode'            => ['label' => 'Kode Dokter', 'type' => 'readonly', 'list' => true],
             'nama'            => ['label' => 'Nama Dokter', 'type' => 'text', 'required' => true, 'list' => true],
@@ -276,7 +277,7 @@ return [
         'group' => 'Medicine',
         'icon_name' => 'pills',
         'order' => 'nama',
-        'code_prefix' => 'OBT-',
+        'code_prefix' => 'FA',
         'fields' => [
             'kode'         => ['label' => 'Kode Obat', 'type' => 'readonly', 'list' => true],
             'nama'         => ['label' => 'Nama Obat', 'type' => 'text', 'required' => true, 'list' => true],

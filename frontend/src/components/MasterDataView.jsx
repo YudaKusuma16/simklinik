@@ -590,11 +590,24 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
                           required={field.required}
                         >
                           <option value="">-- {trans('Pilih', 'Select')} {field.label} --</option>
-                          {(lookups[field.fk_table] || []).map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.nama || item.label || item.kode || `#${item.id}`}
-                            </option>
-                          ))}
+                          {(() => {
+                            const raw = lookups[field.fk_table] || lookups[key] || [];
+                            if (Array.isArray(raw)) {
+                              return raw.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.nama || item.label || item.kode || `#${item.id}`}
+                                </option>
+                              ));
+                            }
+                            if (raw && typeof raw === 'object') {
+                              return Object.entries(raw).map(([id, val]) => (
+                                <option key={id} value={id}>
+                                  {typeof val === 'object' ? (val.nama || val.label || id) : val}
+                                </option>
+                              ));
+                            }
+                            return null;
+                          })()}
                         </select>
                       ) : field.type === 'textarea' ? (
                         <textarea

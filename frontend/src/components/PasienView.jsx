@@ -736,7 +736,7 @@ export default function PasienView({
                     name="telepon"
                     className="form-control"
                     value={formData.telepon}
-                    placeholder="08..."
+                    placeholder="No. Telepon"
                     onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
                   />
                 </div>
@@ -748,7 +748,7 @@ export default function PasienView({
                     name="email"
                     className="form-control"
                     value={formData.email}
-                    placeholder="nama@email.com"
+                    placeholder="Email"
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
@@ -1262,9 +1262,9 @@ export default function PasienView({
                 <button type="button" className="btn btn-light" onClick={() => setDetailModalOpen(false)}>
                   {trans('Tutup', 'Close')}
                 </button>
-                <button 
-                  type="button" 
-                  className="btn" 
+                <button
+                  type="button"
+                  className="btn"
                   onClick={() => {
                     setDetailModalOpen(false);
                     openEditModal(selectedPasien);

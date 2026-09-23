@@ -189,8 +189,8 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
   };
 
   const filteredDokter = lookups.dokter.filter((d) => {
-    if (!formData.poli_id) return true;
-    return !d.poli_id || Number(d.poli_id) === Number(formData.poli_id);
+    if (!formData.poli_id) return [];
+    return Number(d.poli_id) === Number(formData.poli_id);
   });
 
   const formatRupiah = (num) => {
@@ -360,7 +360,14 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 className="form-control"
                 required
                 value={formData.poli_id}
-                onChange={(e) => setFormData({ ...formData, poli_id: e.target.value })}
+                onChange={(e) => {
+                  const newPoliId = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    poli_id: newPoliId,
+                    dokter_id: '',
+                  }));
+                }}
               >
                 <option value="">{trans('--- Pilih Poli ---', '--- Select Clinic ---')}</option>
                 {lookups.poli.map((po) => (
@@ -380,11 +387,18 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 className="form-control"
                 value={formData.dokter_id}
                 onChange={(e) => setFormData({ ...formData, dokter_id: e.target.value })}
+                disabled={!formData.poli_id}
               >
-                <option value="">{trans('--- Pilih Dokter (opsional) ---', '--- Select Doctor (optional) ---')}</option>
+                <option value="">
+                  {!formData.poli_id
+                    ? trans('--- Pilih Poli terlebih dahulu ---', '--- Select Clinic first ---')
+                    : filteredDokter.length === 0
+                    ? trans('--- Tidak ada dokter di poli ini ---', '--- No doctor available ---')
+                    : trans('--- Pilih Dokter (opsional) ---', '--- Select Doctor (optional) ---')}
+                </option>
                 {filteredDokter.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.nama}
+                    {d.nama}{d.spesialisasi_nama ? ` (${d.spesialisasi_nama})` : ''}
                   </option>
                 ))}
               </select>
