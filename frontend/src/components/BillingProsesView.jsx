@@ -188,10 +188,9 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
     setSaving(true);
     try {
       const payload = {
-        subtotal: svcSubtotal,
-        biaya_admin: adminVal,
+        aksi: 'finalisasi',
+        administrasi: adminVal,
         diskon: diskonVal,
-        total: totalTagihan,
         cover_penjamin: jenisPenjamin !== 'umum' ? coverVal : 0,
         jenis_penjamin: jenisPenjamin,
         asuransi_id: jenisPenjamin === 'asuransi' && asuransiId ? Number(asuransiId) : null,
@@ -257,6 +256,13 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
 
   return (
     <div>
+      {/* Toast Alert Banner */}
+      {toast && (
+        <div className={`alert alert-${toast.type}`} style={{ marginBottom: 14 }}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Tombol Kembali persis legacy */}
       <button
         type="button"
@@ -278,6 +284,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
           flexWrap: 'wrap',
           gap: 12,
         }}
+
       >
         <div>
           <div style={{ fontSize: 'var(--fs-sub)', fontWeight: 700, color: 'var(--text-main)' }}>

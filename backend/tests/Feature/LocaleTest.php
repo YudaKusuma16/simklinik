@@ -33,25 +33,5 @@ class LocaleTest extends TestCase
 
         $response->assertStatus(404);
     }
-
-    public function test_legacy_login_renders_in_english_with_session(): void
-    {
-        $this->withoutExceptionHandling();
-        $response = $this->withSession(['locale' => 'en'])->get('/legacy/auth/login.php');
-        $response->assertStatus(200);
-        $response->assertSee('<html lang="en">', false);
-        $response->assertSee('Clinic Management Information System');
-        $response->assertSee('Sign In');
-    }
-
-    public function test_legacy_dashboard_renders_in_english_with_cookie(): void
-    {
-        $this->withoutExceptionHandling();
-        $user = \App\Models\User::first();
-        $response = $this->actingAs($user)->withUnencryptedCookies(['locale' => 'en'])->get('/legacy/modules/dashboard/index.php');
-        $response->assertStatus(200);
-        $response->assertSee('<html lang="en">', false);
-        $response->assertSee('Medical Records');
-        $response->assertSee('Operations');
-    }
 }
+

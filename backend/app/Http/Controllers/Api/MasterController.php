@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -15,38 +16,7 @@ class MasterController extends Controller
      */
     private function getEntities(): array
     {
-        require_once base_path('legacy/includes/lang.php');
-        require_once base_path('legacy/includes/master_lib.php');
-        require_once base_path('legacy/modules/master/entities.php');
-
-        $all = master_entities();
-
-        foreach ($all as $slug => &$e) {
-            $e['icon_name'] = match ($slug) {
-                'tindakan' => 'syringe',
-                'konsultasi' => 'user',
-                'lab_kategori', 'lab_pemeriksaan' => 'flask',
-                'rad_kategori', 'rad_pemeriksaan' => 'scan',
-                'diag_kategori', 'diag_pemeriksaan' => 'monitor',
-                'fisio_kategori', 'fisio_pemeriksaan' => 'pelayanan',
-                'spesialisasi' => 'award',
-                'dokter' => 'user',
-                'poli' => 'hospital',
-                'jadwal_dokter' => 'calendar',
-                'obat_kategori' => 'tag',
-                'obat_satuan' => 'ruler',
-                'supplier' => 'truck',
-                'obat' => 'pills',
-                'asuransi' => 'shield',
-                'corporate' => 'building',
-                'bank' => 'bank',
-                'kode_pembatalan', 'kode_pembatalan_reg' => 'close',
-                'kelompok_pasien' => 'users',
-                default => 'master',
-            };
-        }
-
-        return $all;
+        return config('master_entities', []);
     }
 
     /**
@@ -55,19 +25,21 @@ class MasterController extends Controller
     public function entities(): JsonResponse
     {
         $entities = $this->getEntities();
-        $result = [];
 
-        foreach ($entities as $slug => $config) {
-            $query = DB::table($config['table']);
-            if (! empty($config['where'])) {
-                $query->whereRaw($config['where']);
+        $result = Cache::remember('master_entities_counts', 300, function () use ($entities) {
+            $res = [];
+            foreach ($entities as $slug => $config) {
+                $query = DB::table($config['table']);
+                if (! empty($config['where'])) {
+                    $query->whereRaw($config['where']);
+                }
+                $res[$slug] = array_merge($config, [
+                    'slug' => $slug,
+                    'count' => $query->count(),
+                ]);
             }
-            $count = $query->count();
-            $result[$slug] = array_merge($config, [
-                'slug' => $slug,
-                'count' => $count,
-            ]);
-        }
+            return $res;
+        });
 
         return response()->json([
             'success' => true,
@@ -227,6 +199,7 @@ class MasterController extends Controller
         }
 
         $insertedId = DB::table($config['table'])->insertGetId($data);
+        Cache::forget('master_entities_counts');
 
         return response()->json([
             'success' => true,
@@ -281,6 +254,7 @@ class MasterController extends Controller
 
         if (! empty($data)) {
             DB::table($config['table'])->where('id', $id)->update($data);
+            Cache::forget('master_entities_counts');
         }
 
         return response()->json([
@@ -304,6 +278,7 @@ class MasterController extends Controller
 
         try {
             DB::table($config['table'])->where('id', $id)->delete();
+            Cache::forget('master_entities_counts');
 
             return response()->json([
                 'success' => true,

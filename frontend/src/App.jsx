@@ -1,21 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { api } from './api/client';
 import AppIcon from './components/AppIcon';
-import LoginView from './components/LoginView';
-import DashboardView from './components/DashboardView';
-import MasterDataView from './components/MasterDataView';
-import PasienView from './components/PasienView';
-import KunjunganView from './components/KunjunganView';
-import PelayananView from './components/PelayananView';
-import RekamMedisView from './components/RekamMedisView';
-import FarmasiView from './components/FarmasiView';
-import BillingView from './components/BillingView';
-import LaporanView from './components/LaporanView';
-import RegistrasiDaftarView from './components/RegistrasiDaftarView';
-import ProfilKlinikView from './components/ProfilKlinikView';
-import PenggunaRoleView from './components/PenggunaRoleView';
-import CetakStrukView from './components/CetakStrukView';
 import { useI18n } from './i18n';
+
+// Lazy loaded views (Code Splitting on Demand)
+const LoginView = lazy(() => import('./components/LoginView'));
+const DashboardView = lazy(() => import('./components/DashboardView'));
+const MasterDataView = lazy(() => import('./components/MasterDataView'));
+const PasienView = lazy(() => import('./components/PasienView'));
+const KunjunganView = lazy(() => import('./components/KunjunganView'));
+const PelayananView = lazy(() => import('./components/PelayananView'));
+const RekamMedisView = lazy(() => import('./components/RekamMedisView'));
+const FarmasiView = lazy(() => import('./components/FarmasiView'));
+const BillingView = lazy(() => import('./components/BillingView'));
+const LaporanView = lazy(() => import('./components/LaporanView'));
+const RegistrasiDaftarView = lazy(() => import('./components/RegistrasiDaftarView'));
+const ProfilKlinikView = lazy(() => import('./components/ProfilKlinikView'));
+const PenggunaRoleView = lazy(() => import('./components/PenggunaRoleView'));
+const CetakStrukView = lazy(() => import('./components/CetakStrukView'));
+
+function ViewLoadingFallback() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '320px', padding: '40px', color: 'var(--muted)' }}>
+      <div className="spinner" style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'viewSpin 0.8s linear infinite', marginBottom: 12 }}></div>
+      <div style={{ fontSize: 13, fontWeight: 500 }}>Memuat halaman...</div>
+      <style>{`
+        @keyframes viewSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export const ROUTES = [
   { view: 'login', path: '/login', altPaths: ['/masuk', '/auth/login', '/legacy/auth/login.php'] },
@@ -721,24 +738,26 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <LoginView
-        locale={locale}
-        setLocale={setLocale}
-        onLoginSuccess={(userData) => {
-          if (userData) {
-            setUser(prev => ({ ...prev, ...userData }));
-            setFormData(prev => ({
-              ...prev,
-              nama: userData.nama || prev.nama,
-              username: userData.username || prev.username,
-              email: userData.email || prev.email,
-              telepon: userData.telepon || prev.telepon,
-            }));
-          }
-          setIsAuthenticated(true);
-          localStorage.setItem('is_auth', 'true');
-        }}
-      />
+      <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f2747', color: '#fff' }}>{t('common.loading_data')}</div>}>
+        <LoginView
+          locale={locale}
+          setLocale={setLocale}
+          onLoginSuccess={(userData) => {
+            if (userData) {
+              setUser(prev => ({ ...prev, ...userData }));
+              setFormData(prev => ({
+                ...prev,
+                nama: userData.nama || prev.nama,
+                username: userData.username || prev.username,
+                email: userData.email || prev.email,
+                telepon: userData.telepon || prev.telepon,
+              }));
+            }
+            setIsAuthenticated(true);
+            localStorage.setItem('is_auth', 'true');
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -748,11 +767,13 @@ export default function App() {
 
   if (isPrintView) {
     return (
-      <CetakStrukView
-        invoiceId={initialLoc.id}
-        docType={initialLoc.subView === 'struk' ? 'RECEIPT' : 'INVOICE'}
-        isCopy={initialLoc.copy}
-      />
+      <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>Memuat dokumen cetak...</div>}>
+        <CetakStrukView
+          invoiceId={initialLoc.id}
+          docType={initialLoc.subView === 'struk' ? 'RECEIPT' : 'INVOICE'}
+          isCopy={initialLoc.copy}
+        />
+      </Suspense>
     );
   }
 
@@ -1182,9 +1203,10 @@ export default function App() {
             </div>
           </header>
 
-        {/* Content View Switching */}
+        {/* Content View Switching with Code Splitting Suspense */}
         <main className="content">
-          {currentView === 'dashboard' ? (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            {currentView === 'dashboard' ? (
             <DashboardView onNavigate={(v) => {
               if (v === 'pasien_form') {
                  setPasienSubView('form');
@@ -1594,6 +1616,7 @@ export default function App() {
           </div>
             </>
           )}
+          </Suspense>
         </main>
 
         <footer className="footer">

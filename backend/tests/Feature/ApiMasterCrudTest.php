@@ -75,4 +75,45 @@ class ApiMasterCrudTest extends TestCase
                 'success' => true,
             ]);
     }
+
+    public function test_master_entities_caching_and_invalidation(): void
+    {
+        $user = User::where('username', 'admin')->first();
+        $this->actingAs($user);
+
+        \Illuminate\Support\Facades\Cache::forget('master_entities_counts');
+        $this->assertFalse(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+
+        // Fetching entities should populate cache
+        $this->getJson('/api/master/entities')->assertStatus(200);
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+
+        // Creating an entity should invalidate cache
+        $res = $this->postJson('/api/master/poli', [
+            'kode' => 'CACHE_TEST',
+            'nama' => 'Poli Cache Test',
+            'status' => 'aktif',
+        ]);
+        $res->assertStatus(200);
+        $this->assertFalse(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+
+        $id = $res->json('id');
+
+        // Populate cache again
+        $this->getJson('/api/master/entities')->assertStatus(200);
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+
+        // Updating entity should invalidate cache
+        $this->putJson("/api/master/poli/{$id}", ['nama' => 'Poli Cache Updated'])->assertStatus(200);
+        $this->assertFalse(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+
+        // Populate cache again
+        $this->getJson('/api/master/entities')->assertStatus(200);
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+
+        // Deleting entity should invalidate cache
+        $this->deleteJson("/api/master/poli/{$id}")->assertStatus(200);
+        $this->assertFalse(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
+    }
 }
+

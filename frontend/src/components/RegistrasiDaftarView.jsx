@@ -797,7 +797,170 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           </div>
         </div>
 
-        {/* STEP 5: Resep Obat (Farmasi) */}
+        {/* STEP 5: Permintaan Diagnostik & Fisioterapi */}
+        <div className="form-row" style={{ marginTop: 14 }}>
+          {/* Diagnostik */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Permintaan Diagnostik', 'Diagnostic Request')}</h3>
+              <button type="button" className="btn btn-sm" onClick={addDiag}>
+                <AppIcon name="plus" /> {trans('Tambah Diagnostik', 'Add Diagnostic')}
+              </button>
+            </div>
+            <table style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>{trans('Pemeriksaan Diagnostik', 'Diagnostic Examination')}</th>
+                  <th style={{ width: 60, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
+                  <th style={{ width: 160 }}>{trans('Hasil / Catatan', 'Result / Notes')}</th>
+                  <th style={{ width: 36 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {diagRows.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
+                      {trans('Belum ada permintaan diagnostik.', 'No diagnostic requests.')}
+                    </td>
+                  </tr>
+                ) : (
+                  diagRows.map((row, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <select
+                          className="form-control"
+                          value={row.diag_id}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDiagRows(prev => prev.map((item, i) => i === idx ? { ...item, diag_id: val } : item));
+                          }}
+                        >
+                          {lookups.diag.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.nama} {d.harga_jual || d.tarif ? `— ${formatRupiah(d.harga_jual || d.tarif)}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="1"
+                          className="form-control"
+                          style={{ width: 50, textAlign: 'center', padding: '6px 2px' }}
+                          value={row.qty}
+                          onChange={(e) => {
+                            const q = Number(e.target.value);
+                            setDiagRows(prev => prev.map((item, i) => i === idx ? { ...item, qty: q } : item));
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={trans('Hasil / catatan...', 'Result / notes...')}
+                          value={row.hasil}
+                          onChange={(e) => {
+                            const h = e.target.value;
+                            setDiagRows(prev => prev.map((item, i) => i === idx ? { ...item, hasil: h } : item));
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <button type="button" className="btn btn-sm btn-red" onClick={() => removeDiag(idx)} title={trans('Hapus', 'Delete')}>
+                          <AppIcon name="close" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Fisioterapi */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Permintaan Fisioterapi', 'Physiotherapy Request')}</h3>
+              <button type="button" className="btn btn-sm" onClick={addFisio}>
+                <AppIcon name="plus" /> {trans('Tambah Fisioterapi', 'Add Physiotherapy')}
+              </button>
+            </div>
+            <table style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>{trans('Pemeriksaan Fisioterapi', 'Physiotherapy Examination')}</th>
+                  <th style={{ width: 60, textAlign: 'center' }}>{trans('Qty', 'Qty')}</th>
+                  <th style={{ width: 160 }}>{trans('Hasil / Catatan', 'Result / Notes')}</th>
+                  <th style={{ width: 36 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {fisioRows.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px' }}>
+                      {trans('Belum ada permintaan fisioterapi.', 'No physiotherapy requests.')}
+                    </td>
+                  </tr>
+                ) : (
+                  fisioRows.map((row, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <select
+                          className="form-control"
+                          value={row.fisio_id}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFisioRows(prev => prev.map((item, i) => i === idx ? { ...item, fisio_id: val } : item));
+                          }}
+                        >
+                          {lookups.fisio.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.nama} {f.harga_jual || f.tarif ? `— ${formatRupiah(f.harga_jual || f.tarif)}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="1"
+                          className="form-control"
+                          style={{ width: 50, textAlign: 'center', padding: '6px 2px' }}
+                          value={row.qty}
+                          onChange={(e) => {
+                            const q = Number(e.target.value);
+                            setFisioRows(prev => prev.map((item, i) => i === idx ? { ...item, qty: q } : item));
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={trans('Hasil / catatan...', 'Result / notes...')}
+                          value={row.hasil}
+                          onChange={(e) => {
+                            const h = e.target.value;
+                            setFisioRows(prev => prev.map((item, i) => i === idx ? { ...item, hasil: h } : item));
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <button type="button" className="btn btn-sm btn-red" onClick={() => removeFisio(idx)} title={trans('Hapus', 'Delete')}>
+                          <AppIcon name="close" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* STEP 6: Resep Obat (Farmasi) */}
         <div className="card" style={{ marginTop: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16 }}>{trans('Resep Obat (Farmasi)', 'Medication Prescription (Pharmacy)')}</h3>

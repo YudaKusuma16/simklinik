@@ -261,7 +261,7 @@ class KunjunganController extends Controller
         $noKunjungan = sprintf('KJ-%s-%04d', $dateStr, $countToday);
 
         $userId = $request->user()?->id;
-        $statusKunjungan = $validated['status'] ?? $request->input('status', 'billing');
+        $statusKunjungan = $validated['status'] ?? $request->input('status', 'menunggu');
 
         $kunjunganId = DB::table('kunjungan')->insertGetId([
             'no_kunjungan' => $noKunjungan,

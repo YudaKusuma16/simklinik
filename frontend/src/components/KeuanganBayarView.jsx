@@ -78,8 +78,9 @@ export default function KeuanganBayarView({ kunjunganId, onBack }) {
     const targetId = invId || invoice?.id || kunjunganId;
     if (!targetId) return;
     const copyParam = isCopy ? '&copy=1' : '';
-    window.open(`/legacy/modules/keuangan/struk.php?invoice_id=${targetId}${copyParam}`, '_blank');
+    window.open(`/keuangan/struk?id=${targetId}${copyParam}`, '_blank');
   };
+
 
   const loadData = async () => {
     setLoading(true);

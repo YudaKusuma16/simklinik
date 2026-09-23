@@ -142,8 +142,9 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
   // Buka Cetak Invoice di Tab Baru
   const handleCetakInvoice = (kunjunganId) => {
     if (!kunjunganId) return;
-    window.open(`/legacy/modules/billing/cetak_invoice.php?kunjungan_id=${kunjunganId}`, '_blank');
+    window.open(`/billing/cetak_invoice?id=${kunjunganId}`, '_blank');
   };
+
 
   // Open Batal Modal
   const openBatalModal = (kunjunganId, label) => {

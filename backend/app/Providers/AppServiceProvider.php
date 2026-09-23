@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Models\Setting;
-use App\Services\MenuService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,13 +34,6 @@ class AppServiceProvider extends ServiceProvider
             $view->with('clinicLogo', $settings['clinic_logo'] ?? '');
             $view->with('currentLocale', app()->getLocale());
         });
-
-        View::composer(['layouts.app', 'components.sidebar'], function ($view) {
-            $user = auth()->user();
-            $menuService = app(MenuService::class);
-
-            $view->with('menuGroups', $menuService->forRole($user?->roleKode()));
-            $view->with('menuService', $menuService);
-        });
     }
 }
+
