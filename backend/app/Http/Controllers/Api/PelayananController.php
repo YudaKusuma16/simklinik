@@ -175,7 +175,22 @@ class PelayananController extends Controller
                 ->get();
         }
 
-        // 5. Riwayat Kunjungan Terdahulu Pasien (selain kunjungan sekarang)
+        // 5. Lab & Radiologi
+        $lab = DB::table('lab_order_detail as lod')
+            ->join('lab_order as lo', 'lo.id', '=', 'lod.lab_order_id')
+            ->join('lab_pemeriksaan as lp', 'lp.id', '=', 'lod.pemeriksaan_id')
+            ->select('lp.nama', 'lod.hasil', 'lod.nilai_rujukan', 'lod.qty')
+            ->where('lo.kunjungan_id', $kunjunganId)
+            ->get();
+
+        $rad = DB::table('rad_order_detail as rod')
+            ->join('rad_order as ro', 'ro.id', '=', 'rod.rad_order_id')
+            ->join('rad_pemeriksaan as rp', 'rp.id', '=', 'rod.pemeriksaan_id')
+            ->select('rp.nama', 'rod.hasil', 'rod.qty')
+            ->where('ro.kunjungan_id', $kunjunganId)
+            ->get();
+
+        // 6. Riwayat Kunjungan Terdahulu Pasien (selain kunjungan sekarang)
         $riwayatTerdahulu = DB::table('kunjungan as k')
             ->leftJoin('poli as po', 'po.id', '=', 'k.poli_id')
             ->leftJoin('dokter as d', 'd.id', '=', 'k.dokter_id')
@@ -204,6 +219,8 @@ class PelayananController extends Controller
             'rekam_medis' => $rm,
             'diagnosa' => $diagnosa,
             'tindakan' => $tindakan,
+            'lab' => $lab,
+            'radiologi' => $rad,
             'resep' => $resep ? [
                 'id' => $resep->id,
                 'status' => $resep->status,

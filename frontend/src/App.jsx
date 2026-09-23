@@ -94,8 +94,20 @@ export function parseLocation() {
     };
   }
 
-  // 2. /rekam-medis/:id or /rekam_medis/:id
-  const matchRekamMedis = pathname.match(/^\/rekam[-_]medis\/(\d+)/);
+  // 2. Rekam Medis: /rekam-medis/detail or /rekam_medis/detail or /rekam-medis/:id
+  const matchRekamMedisDetail = pathname.match(/^\/rekam[-_]medis\/detail(?:\/(\d+))?/);
+  if (matchRekamMedisDetail || pathname.includes('rekam_medis/detail.php')) {
+    return {
+      view: 'rekam_medis',
+      subView: 'detail',
+      id: matchRekamMedisDetail?.[1] || kunjunganId || id,
+      group,
+      jenis,
+      slug,
+      copy,
+    };
+  }
+  const matchRekamMedis = pathname.match(/^\/rekam[-_]medis\/(?:pasien\/)?(\d+)/);
   if (matchRekamMedis) {
     return {
       view: 'rekam_medis',
@@ -204,8 +216,14 @@ export function parseLocation() {
   if (pathname.includes('pelayanan')) {
     return { view: 'pelayanan' };
   }
+  if (pathname.includes('rekam_medis/detail') || pathname.includes('rekam-medis/detail') || pathname.includes('detail.php')) {
+    return { view: 'rekam_medis', subView: 'detail', id: kunjunganId || id };
+  }
+  if (pathname.includes('rekam_medis/pasien') || pathname.includes('rekam-medis/pasien') || pathname.includes('pasien.php')) {
+    return { view: 'rekam_medis', subView: 'pasien', id: params.get('pasien_id') || id };
+  }
   if (pathname.includes('rekam_medis') || pathname.includes('rekam-medis')) {
-    return { view: 'rekam_medis', subView: id ? 'pasien' : null, id };
+    return { view: 'rekam_medis', subView: kunjunganId ? 'detail' : (id ? 'pasien' : null), id: kunjunganId || id };
   }
   if (pathname.includes('pendaftaran') || pathname.includes('registrasi/daftar') || pathname.includes('daftar.php')) {
     return { view: 'registrasi_daftar', id };
@@ -247,7 +265,8 @@ export default function App() {
   const [activeExamKunjunganId, setActiveExamKunjunganId] = useState(() => (initialLoc.view === 'pelayanan' && initialLoc.id) ? initialLoc.id : null);
   const [billingProsesId, setBillingProsesId] = useState(() => (initialLoc.view === 'billing' && initialLoc.subView === 'proses') ? initialLoc.id : null);
   const [keuanganBayarId, setKeuanganBayarId] = useState(() => (initialLoc.view === 'keuangan' && initialLoc.subView === 'bayar') ? initialLoc.id : null);
-  const [rekamMedisPatientId, setRekamMedisPatientId] = useState(() => (initialLoc.view === 'rekam_medis' && (initialLoc.subView === 'pasien' || initialLoc.id)) ? initialLoc.id : null);
+  const [rekamMedisPatientId, setRekamMedisPatientId] = useState(() => (initialLoc.view === 'rekam_medis' && initialLoc.subView === 'pasien') ? initialLoc.id : null);
+  const [rekamMedisKunjunganId, setRekamMedisKunjunganId] = useState(() => (initialLoc.view === 'rekam_medis' && initialLoc.subView === 'detail') ? initialLoc.id : null);
   const [openNewPatientForm, setOpenNewPatientForm] = useState(false);
   const [openDaftarModal, setOpenDaftarModal] = useState(false);
   // Theme state: 'light' | 'dark'
@@ -296,8 +315,10 @@ export default function App() {
         fullUrl = '/pelayanan';
       }
     } else if (view === 'rekam_medis') {
-      if (params.id || (subView === 'pasien' && params.id)) {
-        fullUrl = `/rekam-medis/${params.id}`;
+      if (subView === 'detail' && params.id) {
+        fullUrl = `/rekam-medis/detail?kunjungan_id=${params.id}`;
+      } else if (params.id || (subView === 'pasien' && params.id)) {
+        fullUrl = `/rekam-medis/pasien?pasien_id=${params.id}`;
       } else {
         fullUrl = '/rekam-medis';
       }
@@ -356,7 +377,17 @@ export default function App() {
     if (view === 'pelayanan') setActiveExamKunjunganId(subView === 'periksa' && params.id ? params.id : (params.id || null));
     if (view === 'billing') setBillingProsesId(subView === 'proses' && params.id ? params.id : null);
     if (view === 'keuangan') setKeuanganBayarId(subView === 'bayar' && params.id ? params.id : null);
-    if (view === 'rekam_medis') setRekamMedisPatientId(subView === 'pasien' && params.id ? params.id : (params.id || null));
+    if (view === 'rekam_medis') {
+      if (subView === 'detail') {
+        setRekamMedisKunjunganId(params.id || null);
+      } else if (subView === 'pasien') {
+        setRekamMedisPatientId(params.id || null);
+        setRekamMedisKunjunganId(null);
+      } else {
+        setRekamMedisPatientId(null);
+        setRekamMedisKunjunganId(null);
+      }
+    }
     if (params.g && view === 'master') setSelectedMasterGroup(params.g);
     if (params.slug && view === 'master') setSelectedMasterSlug(params.slug);
     if (params.g && view === 'laporan') setSelectedLaporanGroup(params.g);
@@ -375,7 +406,17 @@ export default function App() {
       if (loc.view === 'pelayanan') setActiveExamKunjunganId(loc.subView === 'periksa' && loc.id ? loc.id : (loc.id || null));
       if (loc.view === 'billing') setBillingProsesId(loc.subView === 'proses' && loc.id ? loc.id : null);
       if (loc.view === 'keuangan') setKeuanganBayarId(loc.subView === 'bayar' && loc.id ? loc.id : null);
-      if (loc.view === 'rekam_medis') setRekamMedisPatientId(loc.subView === 'pasien' && loc.id ? loc.id : (loc.id || null));
+      if (loc.view === 'rekam_medis') {
+        if (loc.subView === 'detail') {
+          setRekamMedisKunjunganId(loc.id || null);
+        } else if (loc.subView === 'pasien') {
+          setRekamMedisPatientId(loc.id || null);
+          setRekamMedisKunjunganId(null);
+        } else {
+          setRekamMedisPatientId(null);
+          setRekamMedisKunjunganId(null);
+        }
+      }
       if (loc.group && loc.view === 'master') setSelectedMasterGroup(loc.group);
       if (loc.slug && loc.view === 'master') setSelectedMasterSlug(loc.slug);
       if (loc.group && loc.view === 'laporan') setSelectedLaporanGroup(loc.group);
@@ -1186,8 +1227,15 @@ export default function App() {
           ) : currentView === 'rekam_medis' ? (
             <RekamMedisView
               initialPasienId={rekamMedisPatientId}
+              initialKunjunganId={rekamMedisKunjunganId}
               onNavigatePatient={(id) => {
+                setRekamMedisPatientId(id);
+                setRekamMedisKunjunganId(null);
                 navigateTo('rekam_medis', id ? 'pasien' : null, id ? { id } : {});
+              }}
+              onNavigateDetail={(id) => {
+                setRekamMedisKunjunganId(id);
+                navigateTo('rekam_medis', id ? 'detail' : (rekamMedisPatientId ? 'pasien' : null), id ? { id } : (rekamMedisPatientId ? { id: rekamMedisPatientId } : {}));
               }}
               onNavigateToExam={(kunjunganId) => {
                 setActiveExamKunjunganId(kunjunganId);

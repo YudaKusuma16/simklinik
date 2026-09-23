@@ -4,8 +4,15 @@ import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 import { useI18n } from '../i18n';
 
-export default function RekamMedisView({ onNavigateToExam, initialPasienId = null, onNavigatePatient = null }) {
+export default function RekamMedisView({ 
+  initialPasienId = null, 
+  initialKunjunganId = null, 
+  onNavigatePatient = null, 
+  onNavigateDetail = null, 
+  onNavigateToExam = null 
+}) {
   const { t, trans, formatTgl, formatStatus, formatGender } = useI18n();
+
   // State for Tier 1: Patient List
   const [pasienList, setPasienList] = useState([]);
   const [loadingPasien, setLoadingPasien] = useState(true);
@@ -18,8 +25,8 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
   const [patientHistory, setPatientHistory] = useState([]);
   const [patientDiagnoses, setPatientDiagnoses] = useState([]);
 
-  // State for Tier 3: SOAP Detail Modal
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  // State for Tier 3: Full Page Medical Record Detail
+  const [activeDetailKunjunganId, setActiveDetailKunjunganId] = useState(() => initialKunjunganId);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [rmeData, setRmeData] = useState(null);
 
@@ -34,6 +41,15 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
       setSelectedPatient(null);
     }
   }, [initialPasienId]);
+
+  useEffect(() => {
+    if (initialKunjunganId) {
+      handleOpenDetail(initialKunjunganId, false);
+    } else {
+      setActiveDetailKunjunganId(null);
+      setRmeData(null);
+    }
+  }, [initialKunjunganId]);
 
   const fetchPasien = async (query = searchQuery) => {
     setLoadingPasien(true);
@@ -78,13 +94,19 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
     }
   };
 
-  const handleOpenDetail = async (kunjunganId) => {
-    setDetailModalOpen(true);
+  const handleOpenDetail = async (kunjunganId, notify = true) => {
+    setActiveDetailKunjunganId(kunjunganId);
     setLoadingDetail(true);
+    if (notify && onNavigateDetail) {
+      onNavigateDetail(kunjunganId);
+    }
     try {
       const res = await api.get(`/rekam-medis/${kunjunganId}`);
       if (res && res.success) {
         setRmeData(res);
+        if (!selectedPatient && res.kunjungan?.pasien_id) {
+          handleSelectPatient(res.kunjungan.pasien_id, false);
+        }
       }
     } catch (err) {
       console.error('Error fetching detail RME:', err);
@@ -124,9 +146,261 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
     batal: 'badge-red',
   };
 
-  // ==========================================
+  // =========================================================================
+  // VIEW 3: Detail Rekam Medis (SOAP) Full Page (matching detail.php)
+  // =========================================================================
+  if (activeDetailKunjunganId) {
+    const kj = rmeData?.kunjungan;
+    const rm = rmeData?.rekam_medis;
+    const diagnosa = rmeData?.diagnosa || [];
+    const tindakan = rmeData?.tindakan || [];
+    const lab = rmeData?.lab || [];
+    const rad = rmeData?.radiologi || [];
+    const resep = rmeData?.resep;
+
+    return (
+      <div className="rekam-medis-detail-view">
+        {/* Top Header Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <button 
+            type="button" 
+            className="btn btn-light btn-sm"
+            onClick={() => {
+              setActiveDetailKunjunganId(null);
+              setRmeData(null);
+              if (onNavigateDetail) onNavigateDetail(null);
+            }}
+          >
+            <AppIcon name="arrowleft" /> {trans('Riwayat Pasien', 'Patient History')}
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-light btn-sm"
+            onClick={() => window.print()}
+          >
+            <AppIcon name="print" /> {trans('Cetak', 'Print')}
+          </button>
+        </div>
+
+        {loadingDetail ? (
+          <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+            {trans('Memuat data rekam medis...', 'Loading medical record...')}
+          </div>
+        ) : !rmeData || !kj ? (
+          <div className="alert alert-warning" style={{ marginTop: 14 }}>
+            {trans('Data rekam medis belum tersedia untuk kunjungan ini.', 'Medical record is not available for this visit.')}
+          </div>
+        ) : (
+          <>
+            {/* Header Identitas Pasien & Kunjungan */}
+            <div className="card" style={{ marginTop: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>
+                    {kj.pasien_nama || kj.pasien || selectedPatient?.nama || '-'}
+                  </div>
+                  <div style={{ color: 'var(--muted)', marginTop: 4 }}>
+                    {trans('No. MR', 'MR No.')} <b>{kj.no_mr || selectedPatient?.no_mr}</b> &middot; {formatGender(kj.pasien_jk || kj.jenis_kelamin || selectedPatient?.jenis_kelamin, true)} &middot; {calculateAge(kj.pasien_tgl_lahir || kj.tgl_lahir || selectedPatient?.tgl_lahir)}
+                  </div>
+                  <div style={{ color: 'var(--muted)', marginTop: 2 }}>
+                    {formatDate(kj.tgl_kunjungan)} &middot; {kj.poli_nama || kj.poli || '-'} &middot; {kj.dokter_nama || kj.dokter || '-'}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span className="badge badge-blue">{kj.no_kunjungan}</span>
+                  {(kj.pasien_alergi || kj.alergi || selectedPatient?.alergi) && (
+                    <div style={{ marginTop: 6 }}>
+                      <span className="badge badge-red">
+                        <AppIcon name="alert" /> {trans('Alergi:', 'Allergy:')} {kj.pasien_alergi || kj.alergi || selectedPatient?.alergi}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {!rm ? (
+              <div className="alert alert-warning" style={{ marginTop: 14 }}>
+                {trans('Pemeriksaan dokter (SOAP) belum diinput pada kunjungan ini.', 'Doctor exam (SOAP) has not been entered for this visit.')}
+              </div>
+            ) : (
+              <>
+                {/* 1. Tanda Vital */}
+                <div className="card" style={{ marginTop: 14 }}>
+                  <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Tanda Vital', 'Vital Signs')}</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, color: 'var(--muted)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, marginBottom: 4 }}>{trans('Tekanan Darah', 'Blood Pressure')}</div>
+                      <b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tekanan_darah || '-'}</b>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, marginBottom: 4 }}>{trans('Suhu', 'Temperature')}</div>
+                      <b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.suhu ? `${rm.suhu} °C` : '- °C'}</b>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, marginBottom: 4 }}>{trans('Nadi', 'Pulse')}</div>
+                      <b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.nadi ? `${rm.nadi} x/mnt` : '- x/mnt'}</b>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, marginBottom: 4 }}>{trans('Berat', 'Weight')}</div>
+                      <b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.berat_badan ? `${rm.berat_badan} kg` : '- kg'}</b>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, marginBottom: 4 }}>{trans('Tinggi', 'Height')}</div>
+                      <b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tinggi_badan ? `${rm.tinggi_badan} cm` : '- cm'}</b>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Detail Rekam Medis (SOAP) */}
+                <div className="card" style={{ marginTop: 14 }}>
+                  <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Detail Rekam Medis (SOAP)', 'Medical Record Detail (SOAP)')}</h3>
+                  <div className="form-row">
+                    <div>
+                      <b>S — Subjective</b>
+                      <p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '6px 0 0' }}>{rm.subjective || '-'}</p>
+                    </div>
+                    <div>
+                      <b>O — Objective</b>
+                      <p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '6px 0 0' }}>{rm.objective || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginTop: 14 }}>
+                    <div>
+                      <b>A — Assessment</b>
+                      <p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '6px 0 0' }}>{rm.assessment || '-'}</p>
+                    </div>
+                    <div>
+                      <b>P — Plan</b>
+                      <p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '6px 0 0' }}>{rm.plan || '-'}</p>
+                    </div>
+                  </div>
+                  {rm.edukasi && (
+                    <div style={{ marginTop: 14 }}>
+                      <b>{trans('Edukasi Pasien', 'Patient Education')}</b>
+                      <p style={{ color: 'var(--muted)', margin: '6px 0 0' }}>{rm.edukasi}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3 & 4. Diagnosa & Medical Service Row */}
+                <div className="form-row" style={{ marginTop: 14 }}>
+                  <div className="card">
+                    <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Diagnosa (ICD-10)', 'Diagnosis (ICD-10)')}</h3>
+                    {diagnosa.length === 0 ? (
+                      <p style={{ color: 'var(--muted)', margin: 0 }}>-</p>
+                    ) : (
+                      diagnosa.map((d, i) => (
+                        <div key={i} style={{ padding: '8px 0', borderBottom: i < diagnosa.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                          <span className={`badge ${d.jenis === 'primer' ? 'badge-blue' : 'badge-gray'}`} style={{ marginRight: 8 }}>
+                            {d.jenis === 'primer' ? trans('Primer', 'Primary') : (d.jenis === 'sekunder' ? trans('Sekunder', 'Secondary') : (d.jenis || trans('Diagnosa', 'Diagnosis')))}
+                          </span>
+                          {d.kode_icd10 && <code>{d.kode_icd10} </code>}
+                          {d.diagnosa}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="card">
+                    <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Medical Service (ICD-9-CM)', 'Medical Service (ICD-9-CM)')}</h3>
+                    {tindakan.length === 0 ? (
+                      <p style={{ color: 'var(--muted)', margin: 0 }}>-</p>
+                    ) : (
+                      tindakan.map((t, i) => (
+                        <div key={i} style={{ padding: '8px 0', borderBottom: i < tindakan.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{t.nama_tindakan || t.tindakan_nama}</span>
+                          <span style={{ color: 'var(--muted)' }}>x{t.qty || 1}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* 4.5. Lab & Radiologi Row */}
+                {(lab.length > 0 || rad.length > 0) && (
+                  <div className="form-row" style={{ marginTop: 14 }}>
+                    <div className="card">
+                      <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Hasil Lab', 'Lab Results')}</h3>
+                      {lab.length === 0 ? (
+                        <p style={{ color: 'var(--muted)', margin: 0 }}>-</p>
+                      ) : (
+                        <table style={{ width: '100%', fontSize: 13 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left', paddingBottom: 6 }}>{trans('Pemeriksaan', 'Examination')}</th>
+                              <th style={{ textAlign: 'left', paddingBottom: 6 }}>{trans('Hasil', 'Result')}</th>
+                              <th style={{ textAlign: 'left', paddingBottom: 6 }}>{trans('Nilai Rujukan', 'Reference Value')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {lab.map((l, idx) => (
+                              <tr key={idx} style={{ borderTop: '1px solid var(--border)' }}>
+                                <td style={{ padding: '6px 0' }}>
+                                  {l.nama} {Number(l.qty) > 1 && <span style={{ color: 'var(--muted)' }}>x{l.qty}</span>}
+                                </td>
+                                <td style={{ padding: '6px 0' }}><b>{l.hasil || '-'}</b></td>
+                                <td style={{ padding: '6px 0', color: 'var(--muted)' }}>{l.nilai_rujukan || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+
+                    <div className="card">
+                      <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Hasil Radiologi', 'Radiology Results')}</h3>
+                      {rad.length === 0 ? (
+                        <p style={{ color: 'var(--muted)', margin: 0 }}>-</p>
+                      ) : (
+                        rad.map((r, idx) => (
+                          <div key={idx} style={{ padding: '8px 0', borderBottom: idx < rad.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                            <b>{r.nama}</b> {Number(r.qty) > 1 && <span style={{ color: 'var(--muted)' }}>x{r.qty}</span>}
+                            <div style={{ color: 'var(--muted)', marginTop: 2 }}>{r.hasil || '-'}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Resep Obat */}
+                {resep && ((resep.items && resep.items.length > 0) || (Array.isArray(resep) && resep.length > 0)) && (
+                  <div className="card" style={{ marginTop: 14 }}>
+                    <h3 style={{ marginBottom: 12, fontSize: 15, fontWeight: 700 }}>{trans('Resep Obat', 'Prescription')}</h3>
+                    <table className="datatable dt-noscroll" style={{ width: '100%', fontSize: 13 }}>
+                      <thead>
+                        <tr>
+                          <th>{trans('Nama Obat', 'Medicine Name')}</th>
+                          <th>Qty</th>
+                          <th>{trans('Dosis', 'Dosage')}</th>
+                          <th>{trans('Aturan Pakai', 'Instructions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(resep.items || resep).map((item, idx) => (
+                          <tr key={idx}>
+                            <td><b>{item.obat_nama || item.nama}</b></td>
+                            <td>{item.qty} {item.satuan_nama || ''}</td>
+                            <td>{item.dosis || '-'}</td>
+                            <td>{item.aturan_pakai || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // =========================================================================
   // VIEW 2: Patient Visit History (pasien.php)
-  // ==========================================
+  // =========================================================================
   if (selectedPatient) {
     return (
       <div className="rekam-medis-pasien">
@@ -242,16 +516,13 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
             </tbody>
           </table>
         </div>
-
-        {/* DETAIL MODAL (detail.php) */}
-        {renderDetailModal()}
       </div>
     );
   }
 
-  // ==========================================
+  // =========================================================================
   // VIEW 1: Patient List (index.php)
-  // ==========================================
+  // =========================================================================
   const rekamMedisColumns = [
     {
       key: 'no_mr',
@@ -326,194 +597,6 @@ export default function RekamMedisView({ onNavigateToExam, initialPasienId = nul
           rowKey="id"
         />
       </div>
-
-      {renderDetailModal()}
     </div>
   );
-
-  // ==========================================
-  // RENDER MODAL DETAIL (detail.php)
-  // ==========================================
-  function renderDetailModal() {
-    if (!detailModalOpen) return null;
-
-    const kj = rmeData?.kunjungan;
-    const rm = rmeData?.rekam_medis;
-    const diagnosa = rmeData?.diagnosa || [];
-    const tindakan = rmeData?.tindakan || [];
-    const resep = rmeData?.resep;
-
-    return (
-      <div className="modal-overlay open" role="dialog" aria-modal="true">
-        <div className="modal-box modal-lg" style={{ maxWidth: 840 }}>
-          <div className="modal-head">
-            <div className="modal-title">
-              {trans('Detail Rekam Medis (RME)', 'Medical Record Details (EMR)')} &middot; {kj?.no_kunjungan || ''}
-            </div>
-            <button
-              type="button"
-              className="modal-close"
-              onClick={() => setDetailModalOpen(false)}
-            >
-              &times;
-            </button>
-          </div>
-
-          <div className="modal-body" style={{ maxHeight: '78vh', overflowY: 'auto' }}>
-            {loadingDetail ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                {trans('Memuat data rekam medis...', 'Loading medical record...')}
-              </div>
-            ) : !rmeData ? (
-              <div className="alert alert-warning">
-                {trans('Data rekam medis belum tersedia untuk kunjungan ini.', 'Medical record is not yet available for this visit.')}
-              </div>
-            ) : (
-              <>
-                {/* Identitas Kunjungan */}
-                <div className="card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 'var(--fs-sub)', fontWeight: 700 }}>{kj.pasien_nama}</div>
-                      <div style={{ color: 'var(--muted)' }}>
-                        {trans('No. MR', 'MR No.')} <b>{kj.no_mr}</b> &middot; {formatGender(kj.pasien_jk, true)} &middot; {calculateAge(kj.pasien_tgl_lahir)}
-                      </div>
-                      <div style={{ color: 'var(--muted)' }}>
-                        {formatDate(kj.tgl_kunjungan)} &middot; {kj.poli_nama} &middot; {kj.dokter_nama || '-'}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="badge badge-blue">{kj.no_kunjungan}</span>
-                      {kj.pasien_alergi && (
-                        <div style={{ marginTop: 6 }}>
-                          <span className="badge badge-red"><AppIcon name="alert" /> {trans('Alergi:', 'Allergy:')} {kj.pasien_alergi}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {!rm ? (
-                  <div className="alert alert-warning" style={{ marginTop: 14 }}>
-                    {trans('Pemeriksaan dokter (SOAP) belum diinput pada kunjungan ini.', 'Doctor exam (SOAP) has not been entered for this visit.')}
-                  </div>
-                ) : (
-                  <>
-                    {/* Vital Sign */}
-                    <div className="card" style={{ marginTop: 14 }}>
-                      <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Tanda Vital (Vital Signs)', 'Vital Signs')}</h3>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, color: 'var(--muted)' }}>
-                        <div>{trans('Tekanan Darah', 'Blood Pressure')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tekanan_darah || '-'}</b></div>
-                        <div>{trans('Suhu Badan', 'Body Temperature')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.suhu ? `${rm.suhu} °C` : '-'}</b></div>
-                        <div>{trans('Nadi', 'Pulse')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.nadi ? `${rm.nadi} x/mnt` : '-'}</b></div>
-                        <div>{trans('Berat Badan', 'Weight')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.berat_badan ? `${rm.berat_badan} kg` : '-'}</b></div>
-                        <div>{trans('Tinggi Badan', 'Height')}<br /><b style={{ color: 'var(--text)', fontSize: 16 }}>{rm.tinggi_badan ? `${rm.tinggi_badan} cm` : '-'}</b></div>
-                      </div>
-                    </div>
-
-                    {/* SOAP */}
-                    <div className="card" style={{ marginTop: 14 }}>
-                      <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Rekam Medis (SOAP)', 'Medical Record (SOAP)')}</h3>
-                      <div className="form-row">
-                        <div><b>{trans('S — Subjective (Keluhan / Anamnesa)', 'S — Subjective (Complaints / Anamnesis)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.subjective || '-'}</p></div>
-                        <div><b>{trans('O — Objective (Pemeriksaan Fisik)', 'O — Objective (Physical Exam)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.objective || '-'}</p></div>
-                      </div>
-                      <div className="form-row" style={{ marginTop: 12 }}>
-                        <div><b>{trans('A — Assessment (Analisa / Diagnosa Kerja)', 'A — Assessment (Working Diagnosis)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.assessment || '-'}</p></div>
-                        <div><b>{trans('P — Plan (Rencana Terapi / Edukasi)', 'P — Plan (Therapy / Education)')}</b><p style={{ color: 'var(--muted)', whiteSpace: 'pre-line', margin: '4px 0 0' }}>{rm.plan || '-'}</p></div>
-                      </div>
-                      {rm.edukasi && (
-                        <div style={{ marginTop: 12 }}>
-                          <b>{trans('Edukasi Pasien', 'Patient Education')}</b>
-                          <p style={{ color: 'var(--muted)', margin: '4px 0 0' }}>{rm.edukasi}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Diagnosa & Tindakan Row */}
-                    <div className="form-row" style={{ marginTop: 14 }}>
-                      <div className="card">
-                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Diagnosa ICD-10', 'ICD-10 Diagnosis')}</h3>
-                        {diagnosa.length === 0 ? (
-                          <p style={{ color: 'var(--muted)', margin: 0 }}>{trans('Tidak ada diagnosa tersimpan.', 'No diagnosis saved.')}</p>
-                        ) : (
-                          diagnosa.map((d, i) => (
-                            <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                              <span className={`badge ${d.jenis === 'primer' ? 'badge-blue' : 'badge-gray'}`} style={{ marginRight: 6 }}>
-                                {d.jenis === 'primer' ? trans('Primer', 'Primary') : (d.jenis === 'sekunder' ? trans('Sekunder', 'Secondary') : (d.jenis || trans('Diagnosa', 'Diagnosis')))}
-                              </span>
-                              {d.kode_icd10 && <code>{d.kode_icd10} </code>}
-                              {d.diagnosa}
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      <div className="card">
-                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Tindakan Medis', 'Medical Procedures')}</h3>
-                        {tindakan.length === 0 ? (
-                          <p style={{ color: 'var(--muted)', margin: 0 }}>{trans('Tidak ada tindakan medis.', 'No procedures recorded.')}</p>
-                        ) : (
-                          tindakan.map((t, i) => (
-                            <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
-                              <span>{t.tindakan_nama}</span>
-                              <b>{t.qty}x</b>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Resep Obat */}
-                    {resep && resep.items && resep.items.length > 0 && (
-                      <div className="card" style={{ marginTop: 14 }}>
-                        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>{trans('Resep Obat', 'Prescription')}</h3>
-                        <table className="datatable" style={{ width: '100%', fontSize: 13 }}>
-                          <thead>
-                            <tr>
-                              <th>{trans('Nama Obat', 'Medicine Name')}</th>
-                              <th>{trans('Jumlah', 'Qty')}</th>
-                              <th>{trans('Dosis', 'Dosage')}</th>
-                              <th>{trans('Aturan Pakai', 'Signa / Instructions')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {resep.items.map((item, idx) => (
-                              <tr key={idx}>
-                                <td><b>{item.obat_nama}</b></td>
-                                <td>{item.qty} {item.satuan_nama || ''}</td>
-                                <td>{item.dosis || '-'}</td>
-                                <td>{item.aturan_pakai || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="modal-foot" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={() => window.print()}
-            >
-              <AppIcon name="print" /> {trans('Cetak Rekam Medis', 'Print Medical Record')}
-            </button>
-            <button
-              type="button"
-              className="btn btn-light"
-              onClick={() => setDetailModalOpen(false)}
-            >
-              {trans('Tutup', 'Close')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 }
