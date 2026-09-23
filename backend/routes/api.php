@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\KunjunganController;
 use App\Http\Controllers\Api\MasterController;
 use App\Http\Controllers\Api\PasienController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\WilayahController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,6 +28,9 @@ Route::match(['get', 'post'], '/locale/{locale}', [\App\Http\Controllers\LocaleC
 
 // Authentication (Public)
 Route::post('/auth/login', [AuthController::class, 'login']);
+
+// Wilayah Indonesia Autocomplete Search (Public / Auth)
+Route::get('/wilayah/search', [WilayahController::class, 'search']);
 
 // Authenticated API Routes
 Route::middleware('auth')->group(function () {

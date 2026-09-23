@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
@@ -65,6 +65,93 @@ export default function PasienView({
   };
 
   const [formData, setFormData] = useState(initialFormData);
+
+  // Wilayah Indonesia Autocomplete State
+  const [wilayahList, setWilayahList] = useState([]);
+  const [wilayahLoading, setWilayahLoading] = useState(false);
+  const [wilayahDropdownOpen, setWilayahDropdownOpen] = useState(false);
+  const [wilayahActiveIndex, setWilayahActiveIndex] = useState(-1);
+  const wilayahRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wilayahRef.current && !wilayahRef.current.contains(e.target)) {
+        setWilayahDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleKelurahanChange = (e) => {
+    const val = e.target.value;
+    setFormData(prev => ({ ...prev, kelurahan: val }));
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    const trimmed = val.trim();
+    if (trimmed.length >= 1) {
+      setWilayahLoading(true);
+      setWilayahDropdownOpen(true);
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          const res = await api.get(`/wilayah/search?q=${encodeURIComponent(trimmed)}`);
+          if (res && res.data) {
+            setWilayahList(res.data);
+          }
+        } catch (err) {
+          console.error('Error fetching wilayah:', err);
+        } finally {
+          setWilayahLoading(false);
+        }
+      }, 220);
+    } else {
+      setWilayahList([]);
+      setWilayahDropdownOpen(false);
+      setWilayahLoading(false);
+    }
+  };
+
+  const handleSelectWilayah = (item) => {
+    setFormData(prev => ({
+      ...prev,
+      kelurahan: item.kelurahan || '',
+      kecamatan: item.kecamatan || '',
+      kota: item.kota || '',
+      provinsi: item.provinsi || '',
+      kode_pos: item.kode_pos || '',
+    }));
+    setWilayahDropdownOpen(false);
+    setWilayahActiveIndex(-1);
+  };
+
+  const handleWilayahKeyDown = (e) => {
+    if (!wilayahDropdownOpen || wilayahList.length === 0) {
+      if (e.key === 'ArrowDown' && formData.kelurahan) {
+        setWilayahDropdownOpen(true);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setWilayahActiveIndex(prev => (prev < wilayahList.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setWilayahActiveIndex(prev => (prev > 0 ? prev - 1 : wilayahList.length - 1));
+    } else if (e.key === 'Enter') {
+      if (wilayahActiveIndex >= 0 && wilayahList[wilayahActiveIndex]) {
+        e.preventDefault();
+        handleSelectWilayah(wilayahList[wilayahActiveIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setWilayahDropdownOpen(false);
+    }
+  };
 
   // Fetch lookups & initial setup
   useEffect(() => {
@@ -481,7 +568,9 @@ export default function PasienView({
                 <div className="step-num acc-green"><AppIcon name="mapPin" /></div>
                 <div><div className="st-title">{trans('Alamat & Kontak', 'Address & Contact')}</div></div>
               </div>
-              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+
+              {/* Grid Baris Alamat Lengkap & 5 Kolom Sejajar: Kelurahan, Kecamatan, Kota, Provinsi, Kode Pos */}
+              <div className="field-grid address-grid-5">
                 <div className="form-group fg-full">
                   <label>{trans('Alamat Lengkap', 'Full Address')}</label>
                   <textarea
@@ -489,21 +578,103 @@ export default function PasienView({
                     className="form-control"
                     rows="2"
                     value={formData.alamat}
+                    placeholder={trans('Nama jalan, RT/RW, nomor rumah...', 'Street name, unit, etc.')}
                     onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>{trans('Kelurahan/Desa', 'Subdistrict / Village')}</label>
-                  <input
-                    type="text"
-                    name="kelurahan"
-                    className="form-control"
-                    value={formData.kelurahan}
-                    onChange={(e) => setFormData({ ...formData, kelurahan: e.target.value })}
-                  />
+                {/* 1. Kelurahan / Desa dengan Autocomplete */}
+                <div className="form-group" ref={wilayahRef} style={{ position: 'relative' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>{trans('Kelurahan/Desa', 'Subdistrict / Village')}</span>
+                    {wilayahLoading && (
+                      <span style={{ fontSize: 11, color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <span className="spinner-mini"></span> {trans('Mencari...', 'Searching...')}
+                      </span>
+                    )}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      name="kelurahan"
+                      id="input-kelurahan-autofill"
+                      className="form-control"
+                      value={formData.kelurahan}
+                      autoComplete="off"
+                      placeholder={trans('Ketik nama kelurahan...', 'Type village name...')}
+                      onChange={handleKelurahanChange}
+                      onFocus={() => {
+                        if (formData.kelurahan && wilayahList.length > 0) {
+                          setWilayahDropdownOpen(true);
+                        }
+                      }}
+                      onKeyDown={handleWilayahKeyDown}
+                    />
+                    {formData.kelurahan && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, kelurahan: '' }));
+                          setWilayahList([]);
+                          setWilayahDropdownOpen(false);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--muted)',
+                          cursor: 'pointer',
+                          padding: '2px 6px',
+                          fontSize: 13,
+                          lineHeight: 1,
+                          borderRadius: 4,
+                        }}
+                        title={trans('Hapus', 'Clear')}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Hasil Pencarian Wilayah */}
+                  {wilayahDropdownOpen && (
+                    <div className="wilayah-dropdown-wrap">
+                      {wilayahLoading && wilayahList.length === 0 && (
+                        <div style={{ padding: '14px 12px', fontSize: 13, color: 'var(--muted)', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          <span className="spinner-mini"></span> {trans('Mencari wilayah di database...', 'Searching areas in database...')}
+                        </div>
+                      )}
+                      {!wilayahLoading && wilayahList.length === 0 && (
+                        <div style={{ padding: '14px 12px', fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
+                          {trans('Wilayah tidak ditemukan.', 'No matching area found.')}
+                        </div>
+                      )}
+                      {wilayahList.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className={`wilayah-item ${wilayahActiveIndex === idx ? 'active' : ''}`}
+                          onClick={() => handleSelectWilayah(item)}
+                          onMouseEnter={() => setWilayahActiveIndex(idx)}
+                        >
+                          <div className="wilayah-item-main">
+                            <span>{item.kelurahan}</span>
+                            {item.kode_pos && (
+                              <span className="wilayah-item-badge">{item.kode_pos}</span>
+                            )}
+                          </div>
+                          <div className="wilayah-item-sub">
+                            Kec. {item.kecamatan}, {item.kota}, {item.provinsi}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
+                {/* 2. Kecamatan */}
                 <div className="form-group">
                   <label>{trans('Kecamatan', 'District')}</label>
                   <input
@@ -511,10 +682,12 @@ export default function PasienView({
                     name="kecamatan"
                     className="form-control"
                     value={formData.kecamatan}
+                    placeholder={trans('Kecamatan', 'District')}
                     onChange={(e) => setFormData({ ...formData, kecamatan: e.target.value })}
                   />
                 </div>
 
+                {/* 3. Kota / Kabupaten */}
                 <div className="form-group">
                   <label>{trans('Kota/Kabupaten', 'City / Regency')}</label>
                   <input
@@ -522,10 +695,12 @@ export default function PasienView({
                     name="kota"
                     className="form-control"
                     value={formData.kota}
+                    placeholder={trans('Kota / Kabupaten', 'City / Regency')}
                     onChange={(e) => setFormData({ ...formData, kota: e.target.value })}
                   />
                 </div>
 
+                {/* 4. Provinsi */}
                 <div className="form-group">
                   <label>{trans('Provinsi', 'Province')}</label>
                   <input
@@ -533,12 +708,12 @@ export default function PasienView({
                     name="provinsi"
                     className="form-control"
                     value={formData.provinsi}
+                    placeholder={trans('Provinsi', 'Province')}
                     onChange={(e) => setFormData({ ...formData, provinsi: e.target.value })}
                   />
                 </div>
-              </div>
 
-              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 10 }}>
+                {/* 5. Kode Pos */}
                 <div className="form-group">
                   <label>{trans('Kode Pos', 'Postal Code')}</label>
                   <input
@@ -546,10 +721,14 @@ export default function PasienView({
                     name="kode_pos"
                     className="form-control"
                     value={formData.kode_pos}
+                    placeholder={trans('Kode Pos', 'Postal Code')}
                     onChange={(e) => setFormData({ ...formData, kode_pos: e.target.value })}
                   />
                 </div>
+              </div>
 
+              {/* Baris Kontak: Telepon & Email */}
+              <div className="field-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginTop: 10 }}>
                 <div className="form-group">
                   <label>{trans('Telepon', 'Phone')}</label>
                   <input
@@ -557,6 +736,7 @@ export default function PasienView({
                     name="telepon"
                     className="form-control"
                     value={formData.telepon}
+                    placeholder="08..."
                     onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
                   />
                 </div>
@@ -568,6 +748,7 @@ export default function PasienView({
                     name="email"
                     className="form-control"
                     value={formData.email}
+                    placeholder="nama@email.com"
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
