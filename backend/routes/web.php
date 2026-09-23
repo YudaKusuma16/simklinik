@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Root: redirect langsung ke Single Page Application (SPA) React
-Route::get('/', fn () => redirect('/app'));
+// Root: halaman default Laravel & Vite
+Route::get('/', fn () => view('welcome'));
 
 // Pengalihan bahasa/locale
 Route::get('/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch'])
