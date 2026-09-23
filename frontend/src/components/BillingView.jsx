@@ -652,6 +652,49 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                             <span>{detailData.kunjungan?.dokter_nama || '-'}</span>
                           </span>
                         </div>
+
+                        {/* Detail Penjamin / Asuransi */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              background: detailData.kunjungan?.jenis_penjamin && detailData.kunjungan?.jenis_penjamin !== 'umum' ? '#ffffff' : 'rgba(255, 255, 255, 0.18)',
+                              color: detailData.kunjungan?.jenis_penjamin && detailData.kunjungan?.jenis_penjamin !== 'umum' ? '#1d4ed8' : '#ffffff',
+                              padding: '2px 10px',
+                              borderRadius: 999,
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              boxShadow: detailData.kunjungan?.jenis_penjamin && detailData.kunjungan?.jenis_penjamin !== 'umum' ? '0 2px 4px rgba(0,0,0,0.08)' : 'none',
+                            }}
+                          >
+                            <AppIcon name="shield" style={{ fontSize: '0.82rem' }} />
+                            <span>
+                              {detailData.kunjungan?.jenis_penjamin === 'bpjs'
+                                ? 'BPJS Kesehatan'
+                                : detailData.kunjungan?.jenis_penjamin === 'asuransi'
+                                ? `Asuransi: ${detailData.kunjungan?.asuransi_nama || 'Swasta'}`
+                                : detailData.kunjungan?.jenis_penjamin === 'corporate'
+                                ? `Corporate: ${detailData.kunjungan?.corporate_nama || 'Perusahaan'}`
+                                : detailData.kunjungan?.jenis_penjamin === 'ar'
+                                ? 'AR (Piutang)'
+                                : trans('Umum (Pribadi)', 'General / Self-pay')}
+                            </span>
+                          </span>
+
+                          {detailData.kunjungan?.no_jaminan && (
+                            <span style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.95)', background: 'rgba(0,0,0,0.15)', padding: '2px 8px', borderRadius: 6 }}>
+                              {trans('No. Jaminan/Polis', 'Guarantee/Policy No.')}: <strong style={{ color: '#ffffff' }}>{detailData.kunjungan.no_jaminan}</strong>
+                            </span>
+                          )}
+
+                          {detailData.cover_penjamin > 0 && (
+                            <span style={{ fontSize: '0.78rem', color: '#ffffff', background: 'rgba(34, 197, 94, 0.45)', border: '1px solid rgba(255,255,255,0.4)', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
+                              {trans('Cover', 'Cover')}: {formatRupiah(detailData.cover_penjamin)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -815,13 +858,13 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                       <span>{trans('Subtotal Layanan', 'Service Subtotal')}</span>
                       <b style={{ color: '#1e293b' }}>{formatRupiah(detailData.svc_subtotal ?? detailData.subtotal)}</b>
                     </div>
-                    {(detailData.administrasi > 0 || detailData.kunjungan?.jenis_registrasi === 'rawat_inap') && (
+                    {detailData.administrasi > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '0.88rem', color: '#64748b' }}>
                         <span>
                           {trans('Biaya Administrasi', 'Administration Fee')}
                           {detailData.kunjungan?.jenis_registrasi === 'rawat_inap' ? ' (Rawat Inap)' : ''}
                         </span>
-                        <b style={{ color: '#1e293b' }}>{formatRupiah(detailData.administrasi || 0)}</b>
+                        <b style={{ color: '#1e293b' }}>{formatRupiah(detailData.administrasi)}</b>
                       </div>
                     )}
                     {detailData.diskon > 0 && (
@@ -837,6 +880,7 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                         alignItems: 'center',
                         padding: '14px 0 2px 0',
                         marginTop: 8,
+                        borderTop: '1px solid #e2e8f0',
                       }}
                     >
                       <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', letterSpacing: '0.5px' }}>
@@ -846,6 +890,19 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                         {formatRupiah(detailData.total)}
                       </span>
                     </div>
+
+                    {detailData.cover_penjamin > 0 && (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 2px 0', fontSize: '0.88rem', color: '#16a34a', borderTop: '1px dashed #cbd5e1', marginTop: 8 }}>
+                          <span>{trans('Tanggungan Penjamin / Asuransi', 'Guarantor / Insurance Coverage')}</span>
+                          <b>-{formatRupiah(detailData.cover_penjamin)}</b>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', fontSize: '0.92rem' }}>
+                          <span style={{ fontWeight: 700, color: '#1e293b' }}>{trans('Sisa Tagihan Pasien', 'Patient Balance')}</span>
+                          <b style={{ color: '#2563eb', fontSize: '1.1rem' }}>{formatRupiah(Math.max(0, (detailData.total || 0) - detailData.cover_penjamin))}</b>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Modal Action Buttons Footer matching screenshot */}

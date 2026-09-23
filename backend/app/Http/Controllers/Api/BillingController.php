@@ -449,13 +449,7 @@ class BillingController extends Controller
                 ->where('kategori', 'administrasi')
                 ->value('subtotal') : null;
 
-            if ($admTersimpan !== null) {
-                $administrasi = (float) $admTersimpan;
-            } elseif ($kj->jenis_registrasi === 'rawat_inap') {
-                $administrasi = round(0.40 * $svcOnly);
-            } else {
-                $administrasi = 0;
-            }
+            $administrasi = ($admTersimpan !== null) ? (float) $admTersimpan : 0;
 
             $subtotal = $svcOnly + $administrasi;
             $diskon = (float) ($billing?->diskon ?? 0);
@@ -524,13 +518,7 @@ class BillingController extends Controller
         $svcLines = $this->collectBillingLines($kunjunganId);
         $svcSubtotal = array_sum(array_column($svcLines, 'subtotal'));
 
-        if ($rawAdmin > 0) {
-            $biayaAdmin = $rawAdmin;
-        } elseif ($kj->jenis_registrasi === 'rawat_inap') {
-            $biayaAdmin = round(0.40 * $svcSubtotal);
-        } else {
-            $biayaAdmin = 0;
-        }
+        $biayaAdmin = $rawAdmin;
 
         $diskon = max(0, (float) ($validated['diskon'] ?? 0));
         $subtotal = $svcSubtotal + $biayaAdmin;

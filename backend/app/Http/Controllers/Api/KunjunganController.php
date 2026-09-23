@@ -499,21 +499,23 @@ class KunjunganController extends Controller
                 }
             }
 
-            // Inisialisasi Draft Billing & Rincian Administrasi
-            $biayaAdmin = ($jenisRegistrasi === 'rawat_inap') ? 25000 : 10000;
+            // Inisialisasi Draft Billing & Rincian Administrasi (Default Biaya Administrasi = 0)
+            $biayaAdmin = 0;
             $svcSubtotal = 0;
             $billingDetails = [];
 
-            // 1. Administrasi & Registrasi
-            $billingDetails[] = [
-                'tgl_layanan' => $tglLayanan,
-                'kategori' => 'administrasi',
-                'item_code' => 'GBKAD0001',
-                'deskripsi' => 'Biaya Administrasi & Registrasi',
-                'qty' => 1,
-                'tarif' => $biayaAdmin,
-                'subtotal' => $biayaAdmin,
-            ];
+            // 1. Administrasi & Registrasi (hanya jika biayaAdmin > 0)
+            if ($biayaAdmin > 0) {
+                $billingDetails[] = [
+                    'tgl_layanan' => $tglLayanan,
+                    'kategori' => 'administrasi',
+                    'item_code' => 'GBKAD0001',
+                    'deskripsi' => 'Biaya Administrasi & Registrasi',
+                    'qty' => 1,
+                    'tarif' => $biayaAdmin,
+                    'subtotal' => $biayaAdmin,
+                ];
+            }
 
             // 2. Tindakan & Konsultasi
             if (isset($rmId)) {

@@ -3,8 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 export const TRANSLATIONS = {
   id: {
     app: {
-      name: 'SIM Klinik',
-      clinic_name: 'PT Sapta Genki Clinic',
+      name: 'SIM RS',
+      clinic_name: 'PT Rumah Sakit',
       language: 'Bahasa',
       lang_id: 'Indonesia',
       lang_en: 'English',
@@ -47,7 +47,7 @@ export const TRANSLATIONS = {
       operational: 'Operasional',
       financial: 'Keuangan',
       support: 'Penunjang',
-      clinic_profile: 'Profil Klinik',
+      clinic_profile: 'Profil Rumah Sakit',
       users_roles: 'Pengguna & Role',
     },
     datatable: {
@@ -172,7 +172,7 @@ export const TRANSLATIONS = {
       username_placeholder: 'Masukkan username',
       password_placeholder: 'Masukkan kata sandi',
       show_hide_pwd: 'Lihat/sembunyikan password',
-      managed_by: 'Dikelola oleh PT Sapta Genki Clinic',
+      managed_by: 'Dikelola oleh PT Rumah Sakit',
       err_empty: 'Username dan password wajib diisi.',
       err_failed: 'Username atau password salah.',
     },
@@ -381,8 +381,8 @@ export const TRANSLATIONS = {
   },
   en: {
     app: {
-      name: 'SIM Klinik',
-      clinic_name: 'PT Sapta Genki Clinic',
+      name: 'SIM RS',
+      clinic_name: 'PT Rumah Sakit',
       language: 'Language',
       lang_id: 'Indonesia',
       lang_en: 'English',
@@ -425,7 +425,7 @@ export const TRANSLATIONS = {
       operational: 'Operational',
       financial: 'Financial',
       support: 'Support',
-      clinic_profile: 'Clinic Profile',
+      clinic_profile: 'Hospital Profile',
       users_roles: 'Users & Roles',
     },
     datatable: {
@@ -550,7 +550,7 @@ export const TRANSLATIONS = {
       username_placeholder: 'Enter username',
       password_placeholder: 'Enter password',
       show_hide_pwd: 'Show/hide password',
-      managed_by: 'Managed by PT Sapta Genki Clinic',
+      managed_by: 'Managed by PT Rumah Sakit',
       err_empty: 'Username and password are required.',
       err_failed: 'Invalid username or password.',
     },

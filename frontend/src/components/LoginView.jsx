@@ -30,7 +30,7 @@ export default function LoginView({ onLoginSuccess, locale, setLocale }) {
       ? 'SIM Klinik delivers an integrated clinic management system for patient registration, examinations, pharmacy, and payments — fast, accurate, and professional.'
       : 'SIM Klinik menghadirkan sistem manajemen klinik terintegrasi untuk registrasi pasien, pemeriksaan, farmasi, hingga pembayaran secara cepat, akurat, dan profesional.',
     secure: isEn ? 'Secure Access Active' : 'Akses Aman Aktif',
-    clinicName: 'PT Sapta Genki Clinic',
+    clinicName: 'PT Rumah Sakit',
     clinicUnit: 'Unit Bayukarta — Karawang',
     welcome: isEn ? 'Welcome' : 'Selamat Datang',
     welcomeSub: isEn ? (
@@ -44,7 +44,7 @@ export default function LoginView({ onLoginSuccess, locale, setLocale }) {
     passwordPh: isEn ? 'Enter password' : 'Masukkan password',
     submit: isEn ? 'Sign In' : 'Login ke Sistem',
     submitting: isEn ? 'Signing in...' : 'Masuk...',
-    managedBy: isEn ? 'Managed by PT Sapta Genki Clinic' : 'Dikelola oleh PT Sapta Genki Clinic',
+    managedBy: isEn ? 'Managed by PT Rumah Sakit' : 'Dikelola oleh PT Rumah Sakit',
     langLabel: isEn ? 'Language' : 'Bahasa',
   };
 

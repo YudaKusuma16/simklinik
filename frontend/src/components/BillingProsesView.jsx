@@ -71,12 +71,10 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
           .filter((l) => l.kategori !== 'administrasi')
           .reduce((sum, l) => sum + Number(l.subtotal || 0), 0);
 
-        // Biaya administrasi: jika ada tersimpan gunakan itu, jika rawat inap 40% dari svc, rawat jalan 0
+        // Biaya administrasi: jika ada tersimpan gunakan itu, jika tidak ada default 0
         let defaultAdmin = 0;
         if (res.administrasi !== undefined && res.administrasi !== null) {
           defaultAdmin = Number(res.administrasi);
-        } else if (isRawatInap) {
-          defaultAdmin = Math.round(0.4 * svcOnly);
         }
 
         setAdministrasi(defaultAdmin);
@@ -430,6 +428,7 @@ export default function BillingProsesView({ kunjunganId, onBack, onNavigateToKeu
                 disabled={isFinal}
               >
                 <option value="umum">{trans('Umum', 'General')}</option>
+                <option value="bpjs">BPJS Kesehatan</option>
                 <option value="asuransi">{trans('Asuransi Swasta', 'Private Insurance')}</option>
                 <option value="corporate">Corporate</option>
                 <option value="ar">AR</option>

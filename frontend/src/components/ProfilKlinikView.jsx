@@ -77,7 +77,7 @@ export default function ProfilKlinikView() {
 
       const res = await api.postForm('/settings/clinic', formData);
       if (res && res.success) {
-        showAlert(trans('Profil klinik berhasil disimpan.', 'Clinic profile saved successfully.'), 'success');
+        showAlert(trans('Profil rumah sakit berhasil disimpan.', 'Hospital profile saved successfully.'), 'success');
         if (res.data) setData(res.data);
         setLogoFile(null);
       } else {
@@ -90,7 +90,7 @@ export default function ProfilKlinikView() {
     }
   };
 
-  const clinicDisplayName = data.clinic_name || 'PT Sapta Genki Clinic';
+  const clinicDisplayName = data.clinic_name || 'PT Rumah Sakit';
   const clinicUnit = data.clinic_unit || '';
   const clinicAddress = data.clinic_address || '';
 
@@ -99,13 +99,13 @@ export default function ProfilKlinikView() {
       {/* Page Toolbar matching legacy modules/pengaturan/profil.php */}
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">{trans('Profil Klinik', 'Clinic Profile')}</div>
+          <div className="pt-title">{trans('Profil Rumah Sakit', 'Hospital Profile')}</div>
           <div className="pt-sub">{trans('Identitas ini tampil di struk pembayaran, kartu antrian, dan header aplikasi.', 'This identity appears on payment receipts, queue cards, and application headers.')}</div>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>{trans('Memuat data klinik...', 'Loading clinic data...')}</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>{trans('Memuat data rumah sakit...', 'Loading hospital data...')}</div>
       ) : (
         <form onSubmit={handleSave} encType="multipart/form-data">
           <input
@@ -137,7 +137,7 @@ export default function ProfilKlinikView() {
                 style={{ cursor: 'pointer' }}
               >
                 {logoPreview ? (
-                  <img src={logoPreview} className="pf-avatar pf-logo" alt="Logo Klinik" />
+                  <img src={logoPreview} className="pf-avatar pf-logo" alt="Logo Rumah Sakit" />
                 ) : (
                   <span
                     className="pf-avatar pf-avatar-initial pf-logo"
@@ -170,20 +170,20 @@ export default function ProfilKlinikView() {
                 <AppIcon name="hospital" />
               </div>
               <div>
-                <div className="st-title">{trans('Identitas Klinik', 'Clinic Identity')}</div>
+                <div className="st-title">{trans('Identitas Rumah Sakit', 'Hospital Identity')}</div>
                 <div className="st-sub">{trans('Nama, unit, alamat & logo', 'Name, unit, address & logo')}</div>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label>{trans('Nama Klinik', 'Clinic Name')}</label>
+                <label>{trans('Nama Rumah Sakit', 'Hospital Name')}</label>
                 <input
                   type="text"
                   name="clinic_name"
                   className="form-control"
                   value={data.clinic_name}
-                  placeholder="contoh: PT Sapta Genki Clinic"
+                  placeholder="contoh: PT Rumah Sakit"
                   onChange={(e) => setData(prev => ({ ...prev, clinic_name: e.target.value }))}
                 />
               </div>
@@ -205,7 +205,7 @@ export default function ProfilKlinikView() {
                 name="clinic_address"
                 className="form-control"
                 rows={3}
-                placeholder={trans('Alamat lengkap klinik', 'Complete clinic address')}
+                placeholder={trans('Alamat lengkap rumah sakit', 'Complete hospital address')}
                 value={data.clinic_address}
                 onChange={(e) => setData(prev => ({ ...prev, clinic_address: e.target.value }))}
               />

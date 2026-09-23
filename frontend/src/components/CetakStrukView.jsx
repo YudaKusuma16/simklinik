@@ -141,8 +141,20 @@ export default function CetakStrukView({ invoiceId, docType = 'RECEIPT', isCopy 
   const totalTagihan = Number(invoice.total || billing?.total || 0);
   const diskon = Number(billing?.diskon || 0);
   const adminFee = Number(billing?.biaya_admin || 0);
+  const coverPenjamin = Number(billing?.cover_penjamin || 0);
   const terbayar = Number(invoice.terbayar || 0);
+  const netPayable = coverPenjamin > 0 ? Math.max(0, totalTagihan - coverPenjamin) : totalTagihan;
   const sisa = Math.max(0, totalTagihan - terbayar);
+
+  const formatGuarantorName = () => {
+    if (!invoice) return 'UMUM (PRIBADI)';
+    const jp = (invoice.jenis_penjamin || 'umum').toLowerCase();
+    if (jp === 'bpjs') return 'BPJS KESEHATAN';
+    if (jp === 'asuransi') return `ASURANSI - ${(invoice.asuransi_nama || 'SWASTA').toUpperCase()}`;
+    if (jp === 'corporate') return `CORPORATE - ${(invoice.corporate_nama || 'PERUSAHAAN').toUpperCase()}`;
+    if (jp === 'ar') return 'A/R PATIENT';
+    return 'UMUM (PRIBADI)';
+  };
 
   const paymentDate = invoice.tanggal || new Date().toISOString();
   const printDate = new Date().toISOString();
@@ -409,7 +421,7 @@ export default function CetakStrukView({ invoiceId, docType = 'RECEIPT', isCopy 
         <div className="head">
           <div className="clinic">
             <AppIcon name="hospital" style={{ fontSize: 20 }} />
-            PT Sapta Genki Clinic
+            PT Rumah Sakit
           </div>
           <div className="unit">Unit Bayakarta — Karawang</div>
           <div className="address">Karawang, Jawa Barat</div>
@@ -431,6 +443,18 @@ export default function CetakStrukView({ invoiceId, docType = 'RECEIPT', isCopy 
                   {invoice.dokter_nama ? invoice.dokter_nama.toUpperCase() : 'NO CONSULTATION'}
                 </td>
               </tr>
+              <tr>
+                <td className="k">Guarantor</td>
+                <td style={{ fontWeight: invoice.jenis_penjamin && invoice.jenis_penjamin !== 'umum' ? 700 : 400 }}>
+                  : {formatGuarantorName()}
+                </td>
+              </tr>
+              {invoice.no_jaminan && (
+                <tr>
+                  <td className="k">Policy / No. Jaminan</td>
+                  <td>: <strong>{invoice.no_jaminan}</strong></td>
+                </tr>
+              )}
               <tr>
                 <td className="k">No. MR</td>
                 <td>: {invoice.no_mr}</td>
@@ -525,16 +549,23 @@ export default function CetakStrukView({ invoiceId, docType = 'RECEIPT', isCopy 
             <span className="cur">: Rp</span>
             <span className="val">{formatRupiah(diskon)}</span>
           </div>
+          {coverPenjamin > 0 && (
+            <div>
+              <span>COVER GUARANTOR</span>
+              <span className="cur">: Rp</span>
+              <span className="val">{formatRupiah(coverPenjamin)}</span>
+            </div>
+          )}
           <div className="net">
             <span>NET PAYABLE</span>
             <span className="cur">Rp</span>
-            <span className="val">{formatRupiah(totalTagihan)}</span>
+            <span className="val">{formatRupiah(netPayable)}</span>
           </div>
         </div>
 
         {/* Says */}
         <div className="says">
-          <b>Says :</b> {numberToWordsEn(totalTagihan)}
+          <b>Says :</b> {numberToWordsEn(netPayable)}
         </div>
 
         {/* Payments / Penjamin */}
@@ -542,14 +573,18 @@ export default function CetakStrukView({ invoiceId, docType = 'RECEIPT', isCopy 
           {pembayaran.length > 0 ? (
             pembayaran.map((p, idx) => (
               <div key={idx} className="payline">
-                <span>{p.metode ? p.metode.toUpperCase() : 'TUNAI'}</span>
+                <span>{p.metode ? p.metode.toUpperCase() : 'TUNAI'}{p.keterangan ? ` (${p.keterangan})` : ''}</span>
                 <span>{formatRupiah(p.jumlah)}</span>
               </div>
             ))
           ) : (
             <div className="payline">
-              <span>{invoice.jenis_penjamin !== 'umum' ? `TANGGUNGAN ${invoice.jenis_penjamin.toUpperCase()}` : 'GBK - A/R PATIENT'}</span>
-              <span>{formatRupiah(totalTagihan)}</span>
+              <span>
+                {invoice.jenis_penjamin && invoice.jenis_penjamin !== 'umum'
+                  ? `TANGGUNGAN ${formatGuarantorName()}${invoice.no_jaminan ? ` [${invoice.no_jaminan}]` : ''}`
+                  : 'GBK - A/R PATIENT'}
+              </span>
+              <span>{formatRupiah(coverPenjamin > 0 ? coverPenjamin : totalTagihan)}</span>
             </div>
           )}
         </div>
@@ -557,7 +592,7 @@ export default function CetakStrukView({ invoiceId, docType = 'RECEIPT', isCopy 
         {/* Bank info */}
         <div className="bank">
           <div><b>Bank :</b></div>
-          <div>Beneficiary Name : PT Sapta Genki Clinic</div>
+          <div>Beneficiary Name : PT Rumah Sakit</div>
           <div>
             {bank ? `1. ${bank.nama_bank} ${bank.cabang ? bank.cabang + ' ' : ''}(IDR) A/c No : ${bank.no_rekening}` : '1. BCA KCP Panata Yuda (IDR) A/c No : 7045368149'}
           </div>

@@ -1620,7 +1620,7 @@ export default function App() {
         </main>
 
         <footer className="footer">
-          &copy; {new Date().getFullYear()} {t('app.copyright')} &middot; PT Sapta Genki Clinic
+          &copy; {new Date().getFullYear()} {t('app.copyright')} &middot; PT Rumah Sakit
         </footer>
       </div>
     </div>

@@ -189,17 +189,32 @@ class MasterController extends Controller
                 // Auto generate code if prefix is defined
                 if (! empty($config['code_prefix'])) {
                     $prefix = $config['code_prefix'];
-                    $maxNum = DB::table($config['table'])
-                        ->where($col, 'LIKE', "{$prefix}%")
+                    $pad = $config['code_pad'] ?? 4;
+                    $codeQuery = DB::table($config['table'])
+                        ->where($col, 'LIKE', "{$prefix}%");
+                    if (! empty($config['where'])) {
+                        $codeQuery->whereRaw($config['where']);
+                    }
+                    $maxNum = $codeQuery
                         ->selectRaw('MAX(CAST(SUBSTRING(' . $col . ', ?) AS UNSIGNED)) as max_num', [strlen($prefix) + 1])
                         ->value('max_num');
                     $next = ((int) $maxNum) + 1;
-                    $data[$col] = $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+                    $data[$col] = $prefix . str_pad((string) $next, $pad, '0', STR_PAD_LEFT);
                 }
                 continue;
             }
 
             $val = $request->input($col);
+
+            // Jika ada code_prefix dan kode diisi manual, pastikan prefix tetap ada
+            if (! empty($config['code_prefix']) && $col === 'kode' && $val !== null && trim((string) $val) !== '') {
+                $prefix = $config['code_prefix'];
+                $trimmed = trim((string) $val);
+                if (! str_starts_with($trimmed, $prefix)) {
+                    $trimmed = $prefix . $trimmed;
+                }
+                $val = $trimmed;
+            }
 
             if (! empty($f['required']) && ($val === null || trim((string) $val) === '')) {
                 return response()->json([

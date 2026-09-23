@@ -47,6 +47,6 @@ class SettingController extends Controller
             $data[$k] = $row ? $row->v : '';
         }
 
-        return response()->json(['success' => true, 'message' => 'Profil klinik berhasil disimpan.', 'data' => $data]);
+        return response()->json(['success' => true, 'message' => 'Profil rumah sakit berhasil disimpan.', 'data' => $data]);
     }
 }

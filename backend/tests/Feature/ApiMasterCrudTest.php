@@ -115,5 +115,42 @@ class ApiMasterCrudTest extends TestCase
         $this->deleteJson("/api/master/poli/{$id}")->assertStatus(200);
         $this->assertFalse(\Illuminate\Support\Facades\Cache::has('master_entities_counts'));
     }
+
+    public function test_kode_pembatalan_reg_creates_with_correct_prefix_and_filtering(): void
+    {
+        $user = User::where('username', 'admin')->first();
+        $this->actingAs($user);
+
+        // 1. Create Kode Pembatalan Registrasi without providing manual kode
+        $createRes = $this->postJson('/api/master/kode_pembatalan_reg', [
+            'nama' => 'Pasien Berubah Pikiran',
+            'keterangan' => 'Registrasi dibatalkan sendiri oleh pasien',
+            'status' => 'aktif',
+        ]);
+
+        $createRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $id = $createRes->json('id');
+
+        // Check the newly created row in database
+        $row = \Illuminate\Support\Facades\DB::table('kode_pembatalan')->where('id', $id)->first();
+        $this->assertNotNull($row);
+        $this->assertStringStartsWith('BTL-REG', $row->kode);
+
+        // 2. Fetch list for kode_pembatalan_reg -> should include this row
+        $listReg = $this->getJson('/api/master/kode_pembatalan_reg')->assertStatus(200)->json('data');
+        $this->assertTrue(collect($listReg)->pluck('id')->contains($id));
+
+        // 3. Fetch list for kode_pembatalan (billing) -> should NOT include this row
+        $listBilling = $this->getJson('/api/master/kode_pembatalan')->assertStatus(200)->json('data');
+        $this->assertFalse(collect($listBilling)->pluck('id')->contains($id));
+
+        // Clean up
+        $this->deleteJson("/api/master/kode_pembatalan_reg/{$id}")->assertStatus(200);
+    }
 }
+
 
