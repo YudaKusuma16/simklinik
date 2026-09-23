@@ -109,14 +109,47 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
     return 'Rp ' + Number(num).toLocaleString('id-ID');
   };
 
-  const formatTglId = (dateStr) => {
-    if (!dateStr) return '';
+  const formatTglDmy = (dateStr) => {
+    if (!dateStr) return '-';
     try {
       const d = new Date(dateStr);
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
     } catch {
       return dateStr;
+    }
+  };
+
+  const formatCategoryName = (kat) => {
+    switch (kat?.toLowerCase()) {
+      case 'tindakan':
+      case 'medical_service':
+      case 'medical service':
+        return 'Medical Service';
+      case 'konsultasi':
+        return 'Konsultasi';
+      case 'laboratorium':
+      case 'lab':
+        return 'Laboratorium';
+      case 'radiologi':
+      case 'rad':
+        return 'Radiologi';
+      case 'diagnostik':
+      case 'diag':
+        return 'Diagnostik';
+      case 'fisioterapi':
+      case 'fisio':
+        return 'Fisioterapi';
+      case 'farmasi':
+      case 'obat':
+        return 'Farmasi';
+      case 'administrasi':
+        return 'Administrasi';
+      default:
+        return kat ? kat.charAt(0).toUpperCase() + kat.slice(1) : '-';
     }
   };
 
@@ -534,9 +567,11 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
       {/* MODAL DETAIL TAGIHAN (READ-ONLY) */}
       {detailModalOpen && (
         <div className="modal-overlay open" style={{ display: 'flex' }} onClick={() => setDetailModalOpen(false)}>
-          <div className="modal-box modal-lg" role="dialog" aria-modal="true" style={{ maxWidth: 840 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <div className="modal-title">{trans('Rincian Tagihan Layanan', 'Service Billing Details')}</div>
+          <div className="modal-box modal-lg" role="dialog" aria-modal="true" style={{ maxWidth: 880, borderRadius: '16px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head" style={{ borderBottom: 'none', padding: '18px 24px 10px 24px' }}>
+              <div className="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+                {trans('Detail Tagihan', 'Billing Details')}
+              </div>
               <button
                 type="button"
                 className="modal-close"
@@ -546,86 +581,324 @@ export default function BillingView({ initialTab = 'billing', initialProsesId = 
                 &times;
               </button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ padding: '10px 24px 24px 24px' }}>
               {loadingDetail ? (
-                <div style={{ textAlign: 'center', padding: 30, color: 'var(--muted)' }}>{trans('Memuat rincian tagihan...', 'Loading billing details...')}</div>
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>
+                  {trans('Memuat rincian tagihan...', 'Loading billing details...')}
+                </div>
               ) : !detailData ? (
-                <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>{trans('Data tagihan tidak ditemukan.', 'Billing data not found.')}</div>
+                <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 30 }}>
+                  {trans('Data tagihan tidak ditemukan.', 'Billing data not found.')}
+                </div>
               ) : (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                        {detailData.kunjungan?.pasien_nama || detailData.kunjungan?.pasien}
+                  {/* Blue Gradient Patient Banner Card matching Screenshot */}
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)',
+                      borderRadius: '16px',
+                      padding: '20px 24px',
+                      color: '#ffffff',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      boxShadow: '0 8px 20px -4px rgba(37, 99, 235, 0.25)',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    {/* Left: Icon & Patient Information */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div
+                        style={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: 12,
+                          background: 'rgba(255, 255, 255, 0.18)',
+                          border: '1px solid rgba(255, 255, 255, 0.28)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 24,
+                          color: '#ffffff',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <AppIcon name="idcard" />
                       </div>
-                      <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-                        {trans('No. MR', 'MR No.')}: <b>{detailData.kunjungan?.no_mr}</b> &middot; {trans('Poli', 'Clinic')}: {detailData.kunjungan?.poli_nama || detailData.kunjungan?.poli} &middot; {trans('Dokter', 'Doctor')}: {detailData.kunjungan?.dokter_nama || '-'}
+                      <div>
+                        <div style={{ fontSize: '1.35rem', fontWeight: 700, lineHeight: 1.2, marginBottom: 5 }}>
+                          {detailData.kunjungan?.pasien_nama || detailData.kunjungan?.pasien || '-'}
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 14,
+                            fontSize: '0.84rem',
+                            color: 'rgba(255, 255, 255, 0.92)',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <AppIcon name="user" style={{ fontSize: '0.88rem' }} />
+                            <span>{trans('No. MR', 'MR No.')} <strong style={{ color: '#ffffff' }}>{detailData.kunjungan?.no_mr || '-'}</strong></span>
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <AppIcon name="hospital" style={{ fontSize: '0.88rem' }} />
+                            <span>{detailData.kunjungan?.poli_nama || detailData.kunjungan?.poli || '-'}</span>
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <AppIcon name="pelayanan" style={{ fontSize: '0.88rem' }} />
+                            <span>{detailData.kunjungan?.dokter_nama || '-'}</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="badge badge-blue">No. {detailData.kunjungan?.no_kunjungan}</span>
+
+                    {/* Right: No Kunjungan & Status Badges */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                      <div
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.18)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          borderRadius: 999,
+                          padding: '3px 14px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          color: '#ffffff',
+                          letterSpacing: '0.3px',
+                        }}
+                      >
+                        No. {detailData.kunjungan?.no_kunjungan}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <div
+                          style={{
+                            background: '#ffffff',
+                            color: '#2563eb',
+                            fontWeight: 700,
+                            borderRadius: 999,
+                            padding: '3px 14px',
+                            fontSize: '0.76rem',
+                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.06)',
+                          }}
+                        >
+                          {getStatusLabel(detailData.kunjungan?.status || 'pembayaran')}
+                        </div>
+                        <div
+                          style={{
+                            background: '#22c55e',
+                            color: '#ffffff',
+                            fontWeight: 700,
+                            borderRadius: 999,
+                            padding: '3px 14px',
+                            fontSize: '0.76rem',
+                            boxShadow: '0 2px 5px rgba(34, 197, 94, 0.3)',
+                          }}
+                        >
+                          {detailData.billing?.status === 'final' || detailData.kunjungan?.status === 'selesai' ? 'Final' : 'Draft'}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="table-wrap">
-                    <table style={{ width: '100%' }}>
+                  {/* Section Title */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontSize: '0.98rem',
+                      fontWeight: 700,
+                      color: '#1e293b',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <AppIcon name="ticket" style={{ color: '#2563eb' }} />
+                    <span>{trans('Rincian Layanan', 'Service Details')}</span>
+                  </div>
+
+                  {/* Service Details Table */}
+                  <div className="table-wrap" style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr>
-                          <th>{trans('KATEGORI', 'CATEGORY')}</th>
-                          <th>{trans('KODE', 'CODE')}</th>
-                          <th>{trans('DESKRIPSI', 'DESCRIPTION')}</th>
-                          <th style={{ width: 60, textAlign: 'center' }}>QTY</th>
-                          <th style={{ textAlign: 'right' }}>{trans('TARIF', 'RATE')}</th>
-                          <th style={{ textAlign: 'right' }}>SUBTOTAL</th>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                            {trans('TANGGAL', 'DATE')}
+                          </th>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                            {trans('KATEGORI', 'CATEGORY')}
+                          </th>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                            {trans('KODE', 'CODE')}
+                          </th>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                            {trans('DESKRIPSI', 'DESCRIPTION')}
+                          </th>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', width: 60, textAlign: 'center' }}>
+                            QTY
+                          </th>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', textAlign: 'right' }}>
+                            {trans('TARIF', 'RATE')}
+                          </th>
+                          <th style={{ padding: '10px 14px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', textAlign: 'right' }}>
+                            SUBTOTAL
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(detailData.lines || []).map((l, i) => (
-                          <tr key={i}>
-                            <td><span className="badge badge-gray">{l.kategori}</span></td>
-                            <td><code>{l.item_code || '-'}</code></td>
-                            <td>{l.deskripsi}</td>
-                            <td style={{ textAlign: 'center' }}>{l.qty}</td>
-                            <td style={{ textAlign: 'right' }}>{formatRupiah(l.tarif)}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatRupiah(l.subtotal)}</td>
+                        {(detailData.lines || []).length === 0 ? (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: '24px' }}>
+                              {trans('Belum ada rincian layanan.', 'No service details available.')}
+                            </td>
                           </tr>
-                        ))}
+                        ) : (
+                          (detailData.lines || []).map((l, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#475569' }}>
+                                {formatTglDmy(l.tgl_layanan || detailData.kunjungan?.tgl_kunjungan)}
+                              </td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '3px 12px',
+                                    background: '#e2e8f0',
+                                    color: '#475569',
+                                    borderRadius: 999,
+                                    fontSize: '0.78rem',
+                                    fontWeight: 500,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {formatCategoryName(l.kategori)}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <code style={{ color: '#2563eb', background: 'none', fontWeight: 600, fontSize: '0.82rem' }}>
+                                  {l.item_code || '-'}
+                                </code>
+                              </td>
+                              <td style={{ padding: '12px 14px', fontSize: '0.88rem', color: '#1e293b' }}>
+                                {l.deskripsi}
+                              </td>
+                              <td style={{ padding: '12px 14px', textAlign: 'center', fontSize: '0.88rem', color: '#1e293b' }}>
+                                {l.qty}
+                              </td>
+                              <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '0.88rem', color: '#475569' }}>
+                                {formatRupiah(l.tarif)}
+                              </td>
+                              <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                                {formatRupiah(l.subtotal)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
 
-                  <div style={{ maxWidth: 360, marginLeft: 'auto', marginTop: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                      <span>Subtotal:</span>
-                      <b>{formatRupiah(detailData.subtotal)}</b>
+                  {/* Summary Box */}
+                  <div
+                    style={{
+                      maxWidth: 380,
+                      marginLeft: 'auto',
+                      marginTop: 18,
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '16px 22px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '0.88rem', color: '#64748b' }}>
+                      <span>{trans('Subtotal Layanan', 'Service Subtotal')}</span>
+                      <b style={{ color: '#1e293b' }}>{formatRupiah(detailData.svc_subtotal ?? detailData.subtotal)}</b>
                     </div>
-                    {detailData.diskon > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: 'var(--danger)' }}>
-                        <span>{trans('Diskon', 'Discount')}:</span>
-                        <span>-{formatRupiah(detailData.diskon)}</span>
+                    {(detailData.administrasi > 0 || detailData.kunjungan?.jenis_registrasi === 'rawat_inap') && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '0.88rem', color: '#64748b' }}>
+                        <span>
+                          {trans('Biaya Administrasi', 'Administration Fee')}
+                          {detailData.kunjungan?.jenis_registrasi === 'rawat_inap' ? ' (Rawat Inap)' : ''}
+                        </span>
+                        <b style={{ color: '#1e293b' }}>{formatRupiah(detailData.administrasi || 0)}</b>
                       </div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid var(--border)', fontSize: '1.1rem', fontWeight: 700 }}>
-                      <span>Total:</span>
-                      <span>{formatRupiah(detailData.total)}</span>
+                    {detailData.diskon > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '0.88rem', color: 'var(--red, #ef4444)' }}>
+                        <span>{trans('Diskon', 'Discount')}</span>
+                        <b>-{formatRupiah(detailData.diskon)}</b>
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '14px 0 2px 0',
+                        marginTop: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', letterSpacing: '0.5px' }}>
+                        {trans('TOTAL TAGIHAN', 'TOTAL INVOICE')}
+                      </span>
+                      <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1d4ed8' }}>
+                        {formatRupiah(detailData.total)}
+                      </span>
                     </div>
+                  </div>
+
+                  {/* Modal Action Buttons Footer matching screenshot */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+                    <button
+                      type="button"
+                      className="btn btn-light"
+                      style={{
+                        padding: '8px 18px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontWeight: 600,
+                        color: '#334155',
+                      }}
+                      onClick={() => setDetailModalOpen(false)}
+                    >
+                      <AppIcon name="close" style={{ fontSize: '0.85rem' }} />
+                      {trans('Tutup', 'Close')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{
+                        padding: '8px 20px',
+                        borderRadius: '8px',
+                        background: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        color: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                      }}
+                      onClick={() => {
+                        const kid = detailData.kunjungan?.id;
+                        setDetailModalOpen(false);
+                        if (kid) {
+                          setActiveBayarKunjunganId(kid);
+                          if (onNavigateSubView) {
+                            onNavigateSubView('bayar', kid);
+                          }
+                        }
+                      }}
+                    >
+                      <AppIcon name="money" style={{ fontSize: '1rem' }} />
+                      {trans('Ke Pembayaran', 'Proceed to Payment')}
+                    </button>
                   </div>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-                <button type="button" className="btn btn-light" onClick={() => setDetailModalOpen(false)}>
-                  {trans('Tutup', 'Close')}
-                </button>
-                {detailData && detailData.kunjungan?.id && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => handleCetakInvoice(detailData.kunjungan.id)}
-                  >
-                    <AppIcon name="print" /> {trans('Cetak Invoice', 'Print Invoice')}
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>

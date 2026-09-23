@@ -29,6 +29,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
   // Form fields
   const [formData, setFormData] = useState({
     tgl_kunjungan: new Date().toISOString().split('T')[0],
+    tgl_layanan: new Date().toISOString().split('T')[0],
     poli_id: '',
     dokter_id: '',
     jenis_registrasi: 'rawat_jalan',
@@ -41,14 +42,61 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
     keluhan_awal: '',
   });
 
-  // Service rows
-  const [tindakanRows, setTindakanRows] = useState([]);
-  const [konsultasiRows, setKonsultasiRows] = useState([]);
-  const [labRows, setLabRows] = useState([]);
-  const [radRows, setRadRows] = useState([]);
-  const [diagRows, setDiagRows] = useState([]);
-  const [fisioRows, setFisioRows] = useState([]);
-  const [obatRows, setObatRows] = useState([]);
+  // Services per date key (e.g. { "2026-09-23": { tindakan: [...], konsultasi: [...], lab: [...], rad: [...], diag: [...], fisio: [...], obat: [...] } })
+  const [servicesByDate, setServicesByDate] = useState({});
+
+  const activeDate = formData.jenis_registrasi === 'rawat_inap'
+    ? (formData.tgl_layanan || formData.tgl_kunjungan)
+    : formData.tgl_kunjungan;
+
+  const currentServices = servicesByDate[activeDate] || {
+    tindakan: [],
+    konsultasi: [],
+    lab: [],
+    rad: [],
+    diag: [],
+    fisio: [],
+    obat: [],
+  };
+
+  const tindakanRows = currentServices.tindakan || [];
+  const konsultasiRows = currentServices.konsultasi || [];
+  const labRows = currentServices.lab || [];
+  const radRows = currentServices.rad || [];
+  const diagRows = currentServices.diag || [];
+  const fisioRows = currentServices.fisio || [];
+  const obatRows = currentServices.obat || [];
+
+  const updateServicesForActiveDate = (field, updater) => {
+    setServicesByDate(prev => {
+      const existingDateGroup = prev[activeDate] || {
+        tindakan: [],
+        konsultasi: [],
+        lab: [],
+        rad: [],
+        diag: [],
+        fisio: [],
+        obat: [],
+      };
+      const existingFieldRows = existingDateGroup[field] || [];
+      const updatedFieldRows = typeof updater === 'function' ? updater(existingFieldRows) : updater;
+      return {
+        ...prev,
+        [activeDate]: {
+          ...existingDateGroup,
+          [field]: updatedFieldRows,
+        },
+      };
+    });
+  };
+
+  const setTindakanRows = (valOrFn) => updateServicesForActiveDate('tindakan', valOrFn);
+  const setKonsultasiRows = (valOrFn) => updateServicesForActiveDate('konsultasi', valOrFn);
+  const setLabRows = (valOrFn) => updateServicesForActiveDate('lab', valOrFn);
+  const setRadRows = (valOrFn) => updateServicesForActiveDate('rad', valOrFn);
+  const setDiagRows = (valOrFn) => updateServicesForActiveDate('diag', valOrFn);
+  const setFisioRows = (valOrFn) => updateServicesForActiveDate('fisio', valOrFn);
+  const setObatRows = (valOrFn) => updateServicesForActiveDate('obat', valOrFn);
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState([]);
@@ -151,27 +199,60 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
 
     setSaving(true);
     try {
+      let allTindakan = [];
+      let allKonsultasi = [];
+      let allLab = [];
+      let allRad = [];
+      let allDiag = [];
+      let allFisio = [];
+      let allObat = [];
+
+      if (formData.jenis_registrasi === 'rawat_inap') {
+        const allDateKeys = Array.from(new Set([...Object.keys(servicesByDate), activeDate]));
+        allDateKeys.forEach((dateKey) => {
+          const group = servicesByDate[dateKey];
+          if (!group) return;
+          (group.tindakan || []).filter(r => r.tindakan_id).forEach(r => allTindakan.push({ ...r, tgl_layanan: dateKey }));
+          (group.konsultasi || []).filter(r => r.konsultasi_id).forEach(r => allKonsultasi.push({ ...r, tgl_layanan: dateKey }));
+          (group.lab || []).filter(r => r.lab_id).forEach(r => allLab.push({ ...r, tgl_layanan: dateKey }));
+          (group.rad || []).filter(r => r.rad_id).forEach(r => allRad.push({ ...r, tgl_layanan: dateKey }));
+          (group.diag || []).filter(r => r.diag_id).forEach(r => allDiag.push({ ...r, tgl_layanan: dateKey }));
+          (group.fisio || []).filter(r => r.fisio_id).forEach(r => allFisio.push({ ...r, tgl_layanan: dateKey }));
+          (group.obat || []).filter(r => r.obat_id).forEach(r => allObat.push({ ...r, tgl_layanan: dateKey }));
+        });
+      } else {
+        const group = servicesByDate[formData.tgl_kunjungan] || servicesByDate[activeDate] || currentServices;
+        (group.tindakan || []).filter(r => r.tindakan_id).forEach(r => allTindakan.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.konsultasi || []).filter(r => r.konsultasi_id).forEach(r => allKonsultasi.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.lab || []).filter(r => r.lab_id).forEach(r => allLab.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.rad || []).filter(r => r.rad_id).forEach(r => allRad.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.diag || []).filter(r => r.diag_id).forEach(r => allDiag.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.fisio || []).filter(r => r.fisio_id).forEach(r => allFisio.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.obat || []).filter(r => r.obat_id).forEach(r => allObat.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+      }
+
       const payload = {
         pasien_id: selectedPasien.id,
         poli_id: Number(formData.poli_id),
         dokter_id: formData.dokter_id ? Number(formData.dokter_id) : null,
         jenis_registrasi: formData.jenis_registrasi,
         tgl_kunjungan: formData.tgl_kunjungan,
-        lama_rawat: formData.jenis_registrasi === 'rawat_inap' ? Number(formData.lama_rawat) : 1,
-        tgl_keluar: formData.jenis_registrasi === 'rawat_inap' ? formData.tgl_keluar : null,
+        tgl_layanan: formData.jenis_registrasi === 'rawat_inap' ? (formData.tgl_layanan || formData.tgl_kunjungan) : formData.tgl_kunjungan,
+        lama_rawat: 1,
+        tgl_keluar: null,
         jenis_penjamin: formData.jenis_penjamin,
         asuransi_id: formData.jenis_penjamin === 'asuransi' && formData.asuransi_id ? Number(formData.asuransi_id) : null,
         corporate_id: formData.jenis_penjamin === 'corporate' && formData.corporate_id ? Number(formData.corporate_id) : null,
         no_jaminan: formData.no_jaminan || null,
         keluhan_awal: formData.keluhan_awal || null,
         status: 'billing',
-        tindakan: tindakanRows.filter(r => r.tindakan_id),
-        konsultasi: konsultasiRows.filter(r => r.konsultasi_id),
-        lab: labRows.filter(r => r.lab_id),
-        rad: radRows.filter(r => r.rad_id),
-        diag: diagRows.filter(r => r.diag_id),
-        fisio: fisioRows.filter(r => r.fisio_id),
-        obat: obatRows.filter(r => r.obat_id),
+        tindakan: allTindakan,
+        konsultasi: allKonsultasi,
+        lab: allLab,
+        rad: allRad,
+        diag: allDiag,
+        fisio: allFisio,
+        obat: allObat,
       };
 
       const res = await api.post('/kunjungan', payload);
@@ -334,12 +415,29 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
       >
         {/* STEP 2: Poli, Dokter & Penjamin */}
         <div className="card" style={{ marginTop: 14 }}>
-          <div className="step-head">
-            <div className="step-num">2</div>
-            <div>
-              <div className="st-title">{trans('Poli, Dokter & Penjamin', 'Clinic, Doctor & Insurance')}</div>
-              <div className="st-sub">{trans('Detail kunjungan pasien', 'Patient visit details')}</div>
+          <div className="step-head" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+              <div className="step-num">2</div>
+              <div>
+                <div className="st-title">{trans('Poli, Dokter & Penjamin', 'Clinic, Doctor & Insurance')}</div>
+                <div className="st-sub">{trans('Detail kunjungan pasien', 'Patient visit details')}</div>
+              </div>
             </div>
+            {formData.jenis_registrasi === 'rawat_inap' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+                <label style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--text-secondary, #475569)', whiteSpace: 'nowrap' }}>
+                  {trans('Tanggal Layanan:', 'Service Date:')}
+                </label>
+                <input
+                  type="date"
+                  name="tgl_layanan"
+                  className="form-control"
+                  style={{ width: 'auto', padding: '6px 12px', fontSize: 'var(--fs-sm)' }}
+                  value={formData.tgl_layanan || formData.tgl_kunjungan}
+                  onChange={(e) => setFormData({ ...formData, tgl_layanan: e.target.value })}
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-row">
@@ -416,30 +514,6 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
               </select>
             </div>
           </div>
-
-          {formData.jenis_registrasi === 'rawat_inap' && (
-            <div className="form-row">
-              <div className="form-group">
-                <label>{trans('Lama Rawat (Hari)', 'Length of Stay (Days)')}</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="form-control"
-                  value={formData.lama_rawat}
-                  onChange={(e) => setFormData({ ...formData, lama_rawat: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label>{trans('Tanggal Rencana Keluar', 'Estimated Discharge Date')}</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={formData.tgl_keluar}
-                  onChange={(e) => setFormData({ ...formData, tgl_keluar: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
 
           <div className="form-row">
             <div className="form-group">

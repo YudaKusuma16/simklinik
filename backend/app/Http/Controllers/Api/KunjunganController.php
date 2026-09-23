@@ -233,6 +233,7 @@ class KunjunganController extends Controller
             'dokter_id' => ['nullable', 'integer', 'exists:dokter,id'],
             'jenis_registrasi' => ['nullable', 'in:rawat_jalan,rawat_inap'],
             'tgl_kunjungan' => ['nullable', 'date'],
+            'tgl_layanan' => ['nullable', 'date'],
             'lama_rawat' => ['nullable', 'integer', 'min:1'],
             'tgl_keluar' => ['nullable', 'date'],
             'jenis_penjamin' => ['nullable', 'in:umum,bpjs,asuransi,corporate,ar'],
@@ -244,6 +245,7 @@ class KunjunganController extends Controller
         ]);
 
         $tglKunjungan = $validated['tgl_kunjungan'] ?? date('Y-m-d');
+        $tglLayanan = $validated['tgl_layanan'] ?? $tglKunjungan;
         $jenisRegistrasi = $validated['jenis_registrasi'] ?? 'rawat_jalan';
         $lamaRawat = (int) ($validated['lama_rawat'] ?? 1);
         $tglKeluar = null;
@@ -303,6 +305,7 @@ class KunjunganController extends Controller
                 foreach ($tindakanList as $t) {
                     $tid = (int)($t['tindakan_id'] ?? 0);
                     $qty = max(1, (int)($t['qty'] ?? 1));
+                    $itemTgl = $t['tgl_layanan'] ?? $tglLayanan;
                     if ($tid) {
                         $m = DB::table('tindakan')->where('id', $tid)->first();
                         if ($m) {
@@ -310,7 +313,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
                             DB::table('rm_tindakan')->insert([
                                 'rekam_medis_id' => $rmId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'tindakan_id' => $tid,
                                 'nama_tindakan' => $m->nama,
                                 'qty' => $qty,
@@ -323,6 +326,7 @@ class KunjunganController extends Controller
                 foreach ($konsultasiList as $k) {
                     $kid = (int)($k['konsultasi_id'] ?? 0);
                     $qty = max(1, (int)($k['qty'] ?? 1));
+                    $itemTgl = $k['tgl_layanan'] ?? $tglLayanan;
                     if ($kid) {
                         $m = DB::table('konsultasi')->where('id', $kid)->first();
                         if ($m) {
@@ -330,7 +334,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
                             DB::table('rm_tindakan')->insert([
                                 'rekam_medis_id' => $rmId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'konsultasi_id' => $kid,
                                 'nama_tindakan' => $m->nama,
                                 'qty' => $qty,
@@ -347,11 +351,12 @@ class KunjunganController extends Controller
                 $labOrderId = DB::table('lab_order')->insertGetId([
                     'kunjungan_id' => $kunjunganId,
                     'status' => 'permintaan',
-                    'tanggal' => $tglKunjungan,
+                    'tanggal' => $tglLayanan,
                 ]);
                 foreach ($labList as $l) {
                     $pid = (int)($l['lab_id'] ?? ($l['pemeriksaan_id'] ?? 0));
                     $qty = max(1, (int)($l['qty'] ?? 1));
+                    $itemTgl = $l['tgl_layanan'] ?? $tglLayanan;
                     if ($pid) {
                         $m = DB::table('lab_pemeriksaan')->where('id', $pid)->first();
                         if ($m) {
@@ -359,7 +364,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
                             DB::table('lab_order_detail')->insert([
                                 'lab_order_id' => $labOrderId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'pemeriksaan_id' => $pid,
                                 'hasil' => $l['hasil'] ?? null,
                                 'nilai_rujukan' => $m->nilai_rujukan ?? null,
@@ -377,11 +382,12 @@ class KunjunganController extends Controller
                 $radOrderId = DB::table('rad_order')->insertGetId([
                     'kunjungan_id' => $kunjunganId,
                     'status' => 'permintaan',
-                    'tanggal' => $tglKunjungan,
+                    'tanggal' => $tglLayanan,
                 ]);
                 foreach ($radList as $r) {
                     $pid = (int)($r['rad_id'] ?? ($r['pemeriksaan_id'] ?? 0));
                     $qty = max(1, (int)($r['qty'] ?? 1));
+                    $itemTgl = $r['tgl_layanan'] ?? $tglLayanan;
                     if ($pid) {
                         $m = DB::table('rad_pemeriksaan')->where('id', $pid)->first();
                         if ($m) {
@@ -389,7 +395,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
                             DB::table('rad_order_detail')->insert([
                                 'rad_order_id' => $radOrderId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'pemeriksaan_id' => $pid,
                                 'hasil' => $r['hasil'] ?? null,
                                 'tarif' => $tarif,
@@ -406,11 +412,12 @@ class KunjunganController extends Controller
                 $diagOrderId = DB::table('diag_order')->insertGetId([
                     'kunjungan_id' => $kunjunganId,
                     'status' => 'permintaan',
-                    'tanggal' => $tglKunjungan,
+                    'tanggal' => $tglLayanan,
                 ]);
                 foreach ($diagList as $d) {
                     $pid = (int)($d['diag_id'] ?? ($d['pemeriksaan_id'] ?? 0));
                     $qty = max(1, (int)($d['qty'] ?? 1));
+                    $itemTgl = $d['tgl_layanan'] ?? $tglLayanan;
                     if ($pid) {
                         $m = DB::table('diag_pemeriksaan')->where('id', $pid)->first();
                         if ($m) {
@@ -418,7 +425,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
                             DB::table('diag_order_detail')->insert([
                                 'diag_order_id' => $diagOrderId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'pemeriksaan_id' => $pid,
                                 'hasil' => $d['hasil'] ?? null,
                                 'tarif' => $tarif,
@@ -435,11 +442,12 @@ class KunjunganController extends Controller
                 $fisioOrderId = DB::table('fisio_order')->insertGetId([
                     'kunjungan_id' => $kunjunganId,
                     'status' => 'permintaan',
-                    'tanggal' => $tglKunjungan,
+                    'tanggal' => $tglLayanan,
                 ]);
                 foreach ($fisioList as $f) {
                     $pid = (int)($f['fisio_id'] ?? ($f['pemeriksaan_id'] ?? 0));
                     $qty = max(1, (int)($f['qty'] ?? 1));
+                    $itemTgl = $f['tgl_layanan'] ?? $tglLayanan;
                     if ($pid) {
                         $m = DB::table('fisio_pemeriksaan')->where('id', $pid)->first();
                         if ($m) {
@@ -447,7 +455,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
                             DB::table('fisio_order_detail')->insert([
                                 'fisio_order_id' => $fisioOrderId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'pemeriksaan_id' => $pid,
                                 'hasil' => $f['hasil'] ?? null,
                                 'tarif' => $tarif,
@@ -465,11 +473,12 @@ class KunjunganController extends Controller
                     'kunjungan_id' => $kunjunganId,
                     'dokter_id' => $validated['dokter_id'] ?? null,
                     'status' => 'baru',
-                    'tanggal' => $tglKunjungan,
+                    'tanggal' => $tglLayanan,
                 ]);
                 foreach ($obatList as $o) {
                     $oid = (int)($o['obat_id'] ?? 0);
                     $qty = max(1, (int)($o['qty'] ?? 1));
+                    $itemTgl = $o['tgl_layanan'] ?? $tglLayanan;
                     if ($oid) {
                         $m = DB::table('obat')->where('id', $oid)->first();
                         if ($m) {
@@ -477,7 +486,7 @@ class KunjunganController extends Controller
                             $tarif = $hj > 0 ? $hj : round(((float)$m->harga_beli) * 1.40, 2);
                             DB::table('resep_detail')->insert([
                                 'resep_id' => $resepId,
-                                'tgl_layanan' => $tglKunjungan,
+                                'tgl_layanan' => $itemTgl,
                                 'obat_id' => $oid,
                                 'qty' => $qty,
                                 'dosis' => $o['dosis'] ?? null,
@@ -497,7 +506,7 @@ class KunjunganController extends Controller
 
             // 1. Administrasi & Registrasi
             $billingDetails[] = [
-                'tgl_layanan' => $tglKunjungan,
+                'tgl_layanan' => $tglLayanan,
                 'kategori' => 'administrasi',
                 'item_code' => 'GBKAD0001',
                 'deskripsi' => 'Biaya Administrasi & Registrasi',
@@ -773,17 +782,18 @@ class KunjunganController extends Controller
                 'batal_by' => $userId,
             ]);
 
-            // Bersihkan data billing & invoice yang belum terbayar jika ada
-            $billingId = DB::table('billing')->where('kunjungan_id', $id)->value('id');
-            if ($billingId) {
-                DB::table('billing_detail')->where('billing_id', $billingId)->delete();
-                DB::table('billing')->where('id', $billingId)->delete();
-            }
-
+            // 1. Bersihkan pembayaran & invoice terlebih dahulu (karena invoice referensikan billing_id)
             $invoiceId = DB::table('invoice')->where('kunjungan_id', $id)->value('id');
             if ($invoiceId) {
                 DB::table('pembayaran')->where('invoice_id', $invoiceId)->delete();
                 DB::table('invoice')->where('id', $invoiceId)->delete();
+            }
+
+            // 2. Bersihkan billing_detail & billing
+            $billingId = DB::table('billing')->where('kunjungan_id', $id)->value('id');
+            if ($billingId) {
+                DB::table('billing_detail')->where('billing_id', $billingId)->delete();
+                DB::table('billing')->where('id', $billingId)->delete();
             }
 
             DB::commit();
