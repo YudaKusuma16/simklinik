@@ -10,6 +10,7 @@ vendor
 .env.backup
 .phpunit.result.cache
 phpunit.xml
+public/storage
 storage/*.key
 storage/logs/*.log
 storage/framework/cache/data/*
