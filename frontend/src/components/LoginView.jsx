@@ -13,7 +13,7 @@ export default function LoginView({ onLoginSuccess, locale, setLocale }) {
 
   useEffect(() => {
     document.body.classList.add('login-page');
-    document.title = 'Login · SIM Klinik';
+    document.title = 'Login · SIM RS';
     return () => {
       document.body.classList.remove('login-page');
     };
@@ -27,16 +27,16 @@ export default function LoginView({ onLoginSuccess, locale, setLocale }) {
       <>Pelayanan Klinik yang<br />Cepat, Aman, dan<br />Terintegrasi</>
     ),
     sub: isEn
-      ? 'SIM Klinik delivers an integrated clinic management system for patient registration, examinations, pharmacy, and payments — fast, accurate, and professional.'
-      : 'SIM Klinik menghadirkan sistem manajemen klinik terintegrasi untuk registrasi pasien, pemeriksaan, farmasi, hingga pembayaran secara cepat, akurat, dan profesional.',
+      ? 'SIM RS delivers an integrated hospital management system for patient registration, examinations, pharmacy, and payments — fast, accurate, and professional.'
+      : 'SIM RS menghadirkan sistem manajemen rumah sakit terintegrasi untuk registrasi pasien, pemeriksaan, farmasi, hingga pembayaran secara cepat, akurat, dan profesional.',
     secure: isEn ? 'Secure Access Active' : 'Akses Aman Aktif',
     clinicName: 'PT Rumah Sakit',
     clinicUnit: 'Unit Bayukarta — Karawang',
     welcome: isEn ? 'Welcome' : 'Selamat Datang',
     welcomeSub: isEn ? (
-      <>Please sign in to access SIM Klinik<br />securely and professionally.</>
+      <>Please sign in to access SIM RS<br />securely and professionally.</>
     ) : (
-      <>Silakan login untuk mengakses SIM Klinik<br />secara aman dan profesional.</>
+      <>Silakan login untuk mengakses SIM RS<br />secara aman dan profesional.</>
     ),
     usernameLabel: 'Username',
     usernamePh: isEn ? 'Enter username' : 'Masukkan username',
@@ -198,7 +198,7 @@ export default function LoginView({ onLoginSuccess, locale, setLocale }) {
           </form>
 
           <div className="lc-foot">
-            &copy; {new Date().getFullYear()} <b>SIM Klinik</b><br />
+            &copy; {new Date().getFullYear()} <b>SIM RS</b><br />
             {t.managedBy}
           </div>
         </div>

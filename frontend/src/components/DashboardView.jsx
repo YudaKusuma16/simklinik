@@ -110,7 +110,7 @@ export default function DashboardView({ onNavigate }) {
         </div>
       </div>
 
-      {/* table-wrap with DataTableWrapper matching DataTables in simklinik-backup */}
+      {/* table-wrap with DataTableWrapper matching DataTables in simrs-backup */}
       <div className="table-wrap">
         {loading ? (
           <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>

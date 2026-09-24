@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useI18n } from '../i18n';
 
 /**
- * Reusable DataTableWrapper component replicating jQuery DataTables in simklinik-backup.
+ * Reusable DataTableWrapper component replicating jQuery DataTables in simrs-backup.
  * Generates identical markup:
  * - .dataTables_wrapper
  * - .dt-top-row (.dataTables_length + customControls + .dataTables_filter)
@@ -152,12 +152,12 @@ export default function DataTableWrapper({
                     <span className="sort-icon">
                       {isSorted ? (
                         sortConfig.direction === 'asc' ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, display: 'block' }}><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, display: 'block' }}><path d="M12 19V5M5 12l7-7 7 7" /></svg>
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, display: 'block' }}><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, display: 'block' }}><path d="M12 5v14M5 12l7 7 7-7" /></svg>
                         )
                       ) : (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, display: 'block' }}><path d="M7 4v16M7 4l-4 4M7 4l4 4M17 20V4M17 20l4-4M17 20l-4-4"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, display: 'block' }}><path d="M7 4v16M7 4l-4 4M7 4l4 4M17 20V4M17 20l4-4M17 20l-4-4" /></svg>
                       )}
                     </span>
                   </button>
@@ -271,12 +271,10 @@ export default function DataTableWrapper({
         {totalRecords === 0
           ? effectiveEmptyText
           : isEn
-            ? `Showing ${startRecord} to ${endRecord} of ${totalRecords} entries${
-                searchTerm ? ` (filtered from ${data.length} total entries)` : ''
-              }`
-            : `Menampilkan ${startRecord}–${endRecord} dari ${totalRecords} data${
-                searchTerm ? ` (disaring dari ${data.length} total data)` : ''
-              }`}
+            ? `Showing ${startRecord} to ${endRecord} of ${totalRecords} entries${searchTerm ? ` (filtered from ${data.length} total entries)` : ''
+            }`
+            : `Menampilkan ${startRecord}–${endRecord} dari ${totalRecords} data${searchTerm ? ` (disaring dari ${data.length} total data)` : ''
+            }`}
       </div>
 
       <div className="dataTables_paginate">

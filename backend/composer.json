@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "simklinik/app",
+    "name": "simrs/app",
     "type": "project",
-    "description": "SIM Klinik — Sistem Informasi Manajemen Klinik.",
+    "description": "SIM RS — Sistem Informasi Manajemen Rumah Sakit.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {

@@ -1,7 +1,7 @@
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.18-MariaDB, for debian-linux-gnu (x86_64)
 --
--- Host: localhost    Database: sim_klinik
+-- Host: localhost    Database: sim_rs
 -- ------------------------------------------------------
 -- Server version	10.11.18-MariaDB-ubu2204
 

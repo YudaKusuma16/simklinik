@@ -381,7 +381,7 @@ export default function MasterDataView({ initialGroup, initialSlug = null, onNav
   if (loadingEntities && Object.keys(entities).length === 0) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>
-        {trans('Memuat Master Data SIM Klinik...', 'Loading SIM Clinic Master Data...')}
+        {trans('Memuat Master Data SIM RS...', 'Loading SIM RS Master Data...')}
       </div>
     );
   }

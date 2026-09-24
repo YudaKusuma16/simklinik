@@ -3,8 +3,14 @@ import { api } from '../api/client';
 import AppIcon from './AppIcon';
 import { useI18n } from '../i18n';
 
-export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
+export default function RegistrasiDaftarView({ initialPasien, onNavigate, editKunjunganId: editIdProp }) {
   const { t, isEn, trans, formatTgl } = useI18n();
+  const queryParams = new URLSearchParams(window.location.search);
+  const editKunjunganId = editIdProp || queryParams.get('edit_kunjungan_id') || queryParams.get('edit_id') || null;
+  const isEditMode = Boolean(editKunjunganId);
+
+  const [loadingEdit, setLoadingEdit] = useState(isEditMode);
+  const [editKunjunganData, setEditKunjunganData] = useState(null);
   const [selectedPasien, setSelectedPasien] = useState(initialPasien || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -26,6 +32,23 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
     obat: [],
   });
 
+  // Normalize dates to YYYY-MM-DD
+  const normalizeDate = (d) => {
+    if (!d) return '';
+    const str = String(d).trim();
+    return str.length >= 10 ? str.substring(0, 10) : str;
+  };
+
+  const formatDisplayDate = (dStr) => {
+    if (!dStr) return '-';
+    const s = normalizeDate(dStr);
+    const parts = s.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return formatTgl ? formatTgl(s) : s;
+  };
+
   // Form fields
   const [formData, setFormData] = useState({
     tgl_kunjungan: new Date().toISOString().split('T')[0],
@@ -46,8 +69,8 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
   const [servicesByDate, setServicesByDate] = useState({});
 
   const activeDate = formData.jenis_registrasi === 'rawat_inap'
-    ? (formData.tgl_layanan || formData.tgl_kunjungan)
-    : formData.tgl_kunjungan;
+    ? (normalizeDate(formData.tgl_layanan) || normalizeDate(formData.tgl_kunjungan) || new Date().toISOString().split('T')[0])
+    : (normalizeDate(formData.tgl_kunjungan) || new Date().toISOString().split('T')[0]);
 
   const currentServices = servicesByDate[activeDate] || {
     tindakan: [],
@@ -66,6 +89,20 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
   const diagRows = currentServices.diag || [];
   const fisioRows = currentServices.fisio || [];
   const obatRows = currentServices.obat || [];
+
+  const countServicesOnDate = (dateKey) => {
+    const group = servicesByDate[dateKey];
+    if (!group) return 0;
+    return (group.tindakan?.length || 0) +
+      (group.konsultasi?.length || 0) +
+      (group.lab?.length || 0) +
+      (group.rad?.length || 0) +
+      (group.diag?.length || 0) +
+      (group.fisio?.length || 0) +
+      (group.obat?.length || 0);
+  };
+
+  const datesWithServices = Object.keys(servicesByDate).filter(dateKey => countServicesOnDate(dateKey) > 0).sort();
 
   const updateServicesForActiveDate = (field, updater) => {
     setServicesByDate(prev => {
@@ -105,6 +142,149 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
   useEffect(() => {
     fetchLookups();
   }, []);
+
+  useEffect(() => {
+    if (editKunjunganId) {
+      loadKunjunganForEdit(editKunjunganId);
+    }
+  }, [editKunjunganId]);
+
+  const loadKunjunganForEdit = async (id) => {
+    setLoadingEdit(true);
+    setErrors([]);
+    try {
+      const res = await api.get(`/kunjungan/${id}`);
+      if (res && res.data) {
+        const d = res.data;
+        setEditKunjunganData(d);
+
+        if (d.status === 'pembayaran' || d.invoice_id) {
+          setErrors([trans('Data kunjungan ini sudah berstatus pembayaran (invoice sudah dibuat) sehingga tidak dapat diedit lagi.', 'This visit is in payment status (invoice already generated) and cannot be edited.')]);
+        } else if (d.status !== 'billing') {
+          setErrors([trans(`Data kunjungan berstatus '${d.status}'. Data hanya dapat diedit jika status masih billing dan invoice belum dibuat.`, `Visit is in '${d.status}' status. It can only be edited when status is billing and invoice is not created.`)]);
+        }
+
+        if (d.pasien) {
+          setSelectedPasien(d.pasien);
+        } else if (d.pasien_id) {
+          setSelectedPasien({
+            id: d.pasien_id,
+            nama: d.pasien_nama,
+            no_mr: d.no_mr,
+            nik: d.pasien_nik,
+            telepon: d.pasien_telepon,
+            jenis_kelamin: d.pasien_jk,
+            tgl_lahir: d.pasien_tgl_lahir,
+          });
+        }
+
+        const visitDate = normalizeDate(d.tgl_kunjungan) || new Date().toISOString().split('T')[0];
+        const defaultServiceDate = normalizeDate(d.tgl_layanan) || visitDate;
+
+        setFormData({
+          tgl_kunjungan: visitDate,
+          tgl_layanan: defaultServiceDate,
+          poli_id: d.poli_id ? String(d.poli_id) : '',
+          dokter_id: d.dokter_id ? String(d.dokter_id) : '',
+          jenis_registrasi: d.jenis_registrasi || 'rawat_jalan',
+          lama_rawat: d.lama_rawat || 1,
+          tgl_keluar: normalizeDate(d.tgl_keluar) || '',
+          jenis_penjamin: d.jenis_penjamin || 'umum',
+          asuransi_id: d.asuransi_id ? String(d.asuransi_id) : '',
+          corporate_id: d.corporate_id ? String(d.corporate_id) : '',
+          no_jaminan: d.no_jaminan || '',
+          keluhan_awal: d.keluhan_awal || '',
+        });
+
+        const newServicesByDate = {};
+
+        const ensureGroup = (dateKey) => {
+          const normKey = normalizeDate(dateKey) || visitDate;
+          if (!newServicesByDate[normKey]) {
+            newServicesByDate[normKey] = {
+              tindakan: [],
+              konsultasi: [],
+              lab: [],
+              rad: [],
+              diag: [],
+              fisio: [],
+              obat: [],
+            };
+          }
+          return newServicesByDate[normKey];
+        };
+
+        (d.tindakan || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).tindakan.push({
+            tindakan_id: item.tindakan_id ? String(item.tindakan_id) : '',
+            qty: item.qty || 1,
+          });
+        });
+
+        (d.konsultasi || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).konsultasi.push({
+            konsultasi_id: item.konsultasi_id ? String(item.konsultasi_id) : '',
+            qty: item.qty || 1,
+          });
+        });
+
+        (d.lab || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).lab.push({
+            lab_id: item.lab_id || item.pemeriksaan_id ? String(item.lab_id || item.pemeriksaan_id) : '',
+            qty: item.qty || 1,
+            hasil: item.hasil || '',
+          });
+        });
+
+        (d.rad || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).rad.push({
+            rad_id: item.rad_id || item.pemeriksaan_id ? String(item.rad_id || item.pemeriksaan_id) : '',
+            qty: item.qty || 1,
+            hasil: item.hasil || '',
+          });
+        });
+
+        (d.diag || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).diag.push({
+            diag_id: item.diag_id || item.pemeriksaan_id ? String(item.diag_id || item.pemeriksaan_id) : '',
+            qty: item.qty || 1,
+            hasil: item.hasil || '',
+          });
+        });
+
+        (d.fisio || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).fisio.push({
+            fisio_id: item.fisio_id || item.pemeriksaan_id ? String(item.fisio_id || item.pemeriksaan_id) : '',
+            qty: item.qty || 1,
+            hasil: item.hasil || '',
+          });
+        });
+
+        (d.obat || []).forEach(item => {
+          const dateKey = normalizeDate(item.tgl_layanan) || visitDate;
+          ensureGroup(dateKey).obat.push({
+            obat_id: item.obat_id ? String(item.obat_id) : '',
+            qty: item.qty || 1,
+            dosis: item.dosis || '',
+            aturan_pakai: item.aturan_pakai || '',
+          });
+        });
+
+        setServicesByDate(newServicesByDate);
+      }
+    } catch (err) {
+      console.error('Failed to load visit for edit:', err);
+      setErrors([err.message || trans('Gagal memuat data kunjungan untuk diedit.', 'Failed to load visit data for edit.')]);
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
 
   const fetchLookups = async () => {
     try {
@@ -184,9 +364,16 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
   const removeObat = (idx) => setObatRows(prev => prev.filter((_, i) => i !== idx));
 
   // Submit visit
+  const isEditable = !isEditMode || (editKunjunganData && editKunjunganData.status === 'billing' && !editKunjunganData.invoice_id && editKunjunganData.can_edit !== false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors([]);
+
+    if (isEditMode && !isEditable) {
+      setErrors([trans('Data kunjungan tidak dapat diedit karena sudah dalam proses pembayaran (invoice sudah dibuat).', 'Visit cannot be edited because it is in payment status (invoice already created).')]);
+      return;
+    }
 
     if (!selectedPasien) {
       setErrors([trans('Pasien belum dipilih.', 'Patient has not been selected.')]);
@@ -208,26 +395,26 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
       let allObat = [];
 
       if (formData.jenis_registrasi === 'rawat_inap') {
-        const allDateKeys = Array.from(new Set([...Object.keys(servicesByDate), activeDate]));
+        const allDateKeys = Array.from(new Set([...Object.keys(servicesByDate), activeDate])).filter(Boolean);
         allDateKeys.forEach((dateKey) => {
           const group = servicesByDate[dateKey];
           if (!group) return;
           (group.tindakan || []).filter(r => r.tindakan_id).forEach(r => allTindakan.push({ ...r, tgl_layanan: dateKey }));
           (group.konsultasi || []).filter(r => r.konsultasi_id).forEach(r => allKonsultasi.push({ ...r, tgl_layanan: dateKey }));
-          (group.lab || []).filter(r => r.lab_id).forEach(r => allLab.push({ ...r, tgl_layanan: dateKey }));
-          (group.rad || []).filter(r => r.rad_id).forEach(r => allRad.push({ ...r, tgl_layanan: dateKey }));
-          (group.diag || []).filter(r => r.diag_id).forEach(r => allDiag.push({ ...r, tgl_layanan: dateKey }));
-          (group.fisio || []).filter(r => r.fisio_id).forEach(r => allFisio.push({ ...r, tgl_layanan: dateKey }));
+          (group.lab || []).filter(r => r.lab_id || r.pemeriksaan_id).forEach(r => allLab.push({ ...r, lab_id: r.lab_id || r.pemeriksaan_id, tgl_layanan: dateKey }));
+          (group.rad || []).filter(r => r.rad_id || r.pemeriksaan_id).forEach(r => allRad.push({ ...r, rad_id: r.rad_id || r.pemeriksaan_id, tgl_layanan: dateKey }));
+          (group.diag || []).filter(r => r.diag_id || r.pemeriksaan_id).forEach(r => allDiag.push({ ...r, diag_id: r.diag_id || r.pemeriksaan_id, tgl_layanan: dateKey }));
+          (group.fisio || []).filter(r => r.fisio_id || r.pemeriksaan_id).forEach(r => allFisio.push({ ...r, fisio_id: r.fisio_id || r.pemeriksaan_id, tgl_layanan: dateKey }));
           (group.obat || []).filter(r => r.obat_id).forEach(r => allObat.push({ ...r, tgl_layanan: dateKey }));
         });
       } else {
         const group = servicesByDate[formData.tgl_kunjungan] || servicesByDate[activeDate] || currentServices;
         (group.tindakan || []).filter(r => r.tindakan_id).forEach(r => allTindakan.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
         (group.konsultasi || []).filter(r => r.konsultasi_id).forEach(r => allKonsultasi.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
-        (group.lab || []).filter(r => r.lab_id).forEach(r => allLab.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
-        (group.rad || []).filter(r => r.rad_id).forEach(r => allRad.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
-        (group.diag || []).filter(r => r.diag_id).forEach(r => allDiag.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
-        (group.fisio || []).filter(r => r.fisio_id).forEach(r => allFisio.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
+        (group.lab || []).filter(r => r.lab_id || r.pemeriksaan_id).forEach(r => allLab.push({ ...r, lab_id: r.lab_id || r.pemeriksaan_id, tgl_layanan: formData.tgl_kunjungan }));
+        (group.rad || []).filter(r => r.rad_id || r.pemeriksaan_id).forEach(r => allRad.push({ ...r, rad_id: r.rad_id || r.pemeriksaan_id, tgl_layanan: formData.tgl_kunjungan }));
+        (group.diag || []).filter(r => r.diag_id || r.pemeriksaan_id).forEach(r => allDiag.push({ ...r, diag_id: r.diag_id || r.pemeriksaan_id, tgl_layanan: formData.tgl_kunjungan }));
+        (group.fisio || []).filter(r => r.fisio_id || r.pemeriksaan_id).forEach(r => allFisio.push({ ...r, fisio_id: r.fisio_id || r.pemeriksaan_id, tgl_layanan: formData.tgl_kunjungan }));
         (group.obat || []).filter(r => r.obat_id).forEach(r => allObat.push({ ...r, tgl_layanan: formData.tgl_kunjungan }));
       }
 
@@ -255,15 +442,25 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
         obat: allObat,
       };
 
-      const res = await api.post('/kunjungan', payload);
-      if (res && res.success) {
-        setSuccessMsg(res.message || trans('Pendaftaran kunjungan berhasil disimpan.', 'Visit registration saved successfully.'));
-        setTimeout(() => {
-          onNavigate('billing');
-        }, 1200);
+      if (isEditMode) {
+        const res = await api.put(`/kunjungan/${editKunjunganId}`, payload);
+        if (res && res.success) {
+          setSuccessMsg(res.message || trans('Perubahan data kunjungan berhasil disimpan.', 'Visit data updated successfully.'));
+          setTimeout(() => {
+            onNavigate('kunjungan');
+          }, 1200);
+        }
+      } else {
+        const res = await api.post('/kunjungan', payload);
+        if (res && res.success) {
+          setSuccessMsg(res.message || trans('Pendaftaran kunjungan berhasil disimpan.', 'Visit registration saved successfully.'));
+          setTimeout(() => {
+            onNavigate('billing');
+          }, 1200);
+        }
       }
     } catch (err) {
-      setErrors([err.message || trans('Gagal menyimpan pendaftaran kunjungan.', 'Failed to save visit registration.')]);
+      setErrors([err.message || (isEditMode ? trans('Gagal memperbarui data kunjungan.', 'Failed to update visit registration.') : trans('Gagal menyimpan pendaftaran kunjungan.', 'Failed to save visit registration.'))]);
     } finally {
       setSaving(false);
     }
@@ -278,13 +475,36 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
     return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
   };
 
+  if (loadingEdit) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '320px', padding: '40px', color: 'var(--muted)' }}>
+        <div className="spinner" style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'viewSpin 0.8s linear infinite', marginBottom: 12 }}></div>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>{trans('Memuat data kunjungan untuk diedit...', 'Loading visit data for editing...')}</div>
+        <style>{`
+          @keyframes viewSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Page Toolbar matching backend/legacy/modules/registrasi/daftar.php */}
       <div className="page-toolbar">
         <div>
-          <div className="pt-title">{t('registrasi_daftar.title')}</div>
-          <div className="pt-sub">{t('registrasi_daftar.sub')}</div>
+          <div className="pt-title">
+            {isEditMode
+              ? trans('Edit Registrasi Kunjungan', 'Edit Visit Registration')
+              : t('registrasi_daftar.title')}
+          </div>
+          <div className="pt-sub">
+            {isEditMode && editKunjunganData?.no_kunjungan
+              ? `${trans('No. Kunjungan', 'Visit No')}: ${editKunjunganData.no_kunjungan}${editKunjunganData.kode_antrean ? ' · ' + editKunjunganData.kode_antrean : ''}`
+              : t('registrasi_daftar.sub')}
+          </div>
         </div>
         <div className="pt-actions">
           <button
@@ -297,6 +517,15 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           </button>
         </div>
       </div>
+
+      {isEditMode && !isEditable && (
+        <div className="alert alert-warning" style={{ marginTop: 14 }}>
+          <strong>{trans('Perhatian: ', 'Attention: ')}</strong>
+          {editKunjunganData?.status === 'pembayaran' || editKunjunganData?.invoice_id
+            ? trans('Data kunjungan ini sudah berstatus pembayaran (invoice sudah dibuat) sehingga data tidak dapat diedit.', 'This visit is in payment status (invoice already generated) and cannot be edited.')
+            : trans(`Data kunjungan ini berstatus '${editKunjunganData?.status}'. Data hanya dapat diedit jika statusnya masih billing (invoice belum dibuat).`, `This visit is in '${editKunjunganData?.status}' status. It can only be edited when status is billing (invoice not created).`)}
+        </div>
+      )}
 
       {errors.length > 0 && (
         <div className="alert alert-danger" style={{ marginTop: 14 }}>
@@ -340,14 +569,16 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                 </>
               )}
             </div>
-            <button
-              type="button"
-              className="btn btn-sm btn-light"
-              style={{ marginTop: 12 }}
-              onClick={() => setSelectedPasien(null)}
-            >
-              <AppIcon name="search" /> {trans('Ganti Pasien', 'Change Patient')}
-            </button>
+            {isEditable && (
+              <button
+                type="button"
+                className="btn btn-sm btn-light"
+                style={{ marginTop: 12 }}
+                onClick={() => setSelectedPasien(null)}
+              >
+                <AppIcon name="search" /> {trans('Ganti Pasien', 'Change Patient')}
+              </button>
+            )}
           </div>
         ) : (
           <div>
@@ -404,12 +635,12 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
         )}
       </div>
 
-      {/* FORM: Poli, Dokter & Layanan (Disabled visually if no patient) */}
+      {/* FORM: Poli, Dokter & Layanan (Disabled visually if no patient or cannot edit) */}
       <form
         onSubmit={handleSubmit}
         style={{
-          opacity: selectedPasien ? 1 : 0.45,
-          pointerEvents: selectedPasien ? 'auto' : 'none',
+          opacity: (!selectedPasien || !isEditable) ? 0.55 : 1,
+          pointerEvents: (!selectedPasien || !isEditable) ? 'none' : 'auto',
           transition: 'opacity .2s',
         }}
       >
@@ -434,7 +665,7 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                   className="form-control"
                   style={{ width: 'auto', padding: '6px 12px', fontSize: 'var(--fs-sm)' }}
                   value={formData.tgl_layanan || formData.tgl_kunjungan}
-                  onChange={(e) => setFormData({ ...formData, tgl_layanan: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tgl_layanan: e.target.value }))}
                 />
               </div>
             )}
@@ -491,8 +722,8 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
                   {!formData.poli_id
                     ? trans('--- Pilih Poli terlebih dahulu ---', '--- Select Clinic first ---')
                     : filteredDokter.length === 0
-                    ? trans('--- Tidak ada dokter di poli ini ---', '--- No doctor available ---')
-                    : trans('--- Pilih Dokter (opsional) ---', '--- Select Doctor (optional) ---')}
+                      ? trans('--- Tidak ada dokter di poli ini ---', '--- No doctor available ---')
+                      : trans('--- Pilih Dokter ---', '--- Select Doctor ---')}
                 </option>
                 {filteredDokter.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -1150,9 +1381,21 @@ export default function RegistrasiDaftarView({ initialPasien, onNavigate }) {
           >
             {t('common.cancel')}
           </button>
-          <button type="submit" className="btn" disabled={saving}>
-            <AppIcon name="plus" /> {saving ? trans('Menyimpan...', 'Saving...') : trans('Simpan Pendaftaran Kunjungan', 'Save Visit Registration')}
-          </button>
+          {isEditMode && !isEditable ? (
+            <button
+              type="button"
+              className="btn btn-red"
+              disabled
+              style={{ opacity: 0.75, cursor: 'not-allowed' }}
+              title={trans('Data tidak dapat diubah karena invoice sudah dibuat / status bukan billing.', 'Data cannot be edited because invoice exists / status is not billing.')}
+            >
+              <AppIcon name="alert" /> {trans('Tidak Dapat Diedit (Invoice Sudah Dibuat)', 'Cannot be Edited (Invoice Exists)')}
+            </button>
+          ) : (
+            <button type="submit" className="btn" disabled={saving}>
+              <AppIcon name={isEditMode ? "save" : "plus"} /> {saving ? trans('Menyimpan...', 'Saving...') : (isEditMode ? trans('Simpan Perubahan Kunjungan', 'Update Visit Registration') : trans('Simpan Pendaftaran Kunjungan', 'Save Visit Registration'))}
+            </button>
+          )}
         </div>
       </form>
     </div>

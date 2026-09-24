@@ -1,4 +1,4 @@
--- Skema SIM Klinik (dipakai oleh migration Laravel)
+-- Skema SIM RS (dipakai oleh migration Laravel)
 
 CREATE TABLE roles (
   id          INT AUTO_INCREMENT PRIMARY KEY,

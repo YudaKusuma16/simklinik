@@ -1,8 +1,8 @@
-# SIM Klinik (Sistem Informasi Manajemen Klinik)
+# SIM RS (Sistem Informasi Manajemen Rumah Sakit)
 
 ## Fitur & Modul Utama
 
-SIM Klinik mencakup seluruh alur pelayanan klinik dari pendaftaran hingga kasir dan pelaporan:
+SIM RS mencakup seluruh alur pelayanan klinik dari pendaftaran hingga kasir dan pelaporan:
 
 1. **Registrasi & Antrean Pasien** (`modules/registrasi/`)
    - Pendaftaran pasien baru & lama (penomoran No. Rekam Medis otomatis).
@@ -64,7 +64,7 @@ Sebelum menjalankan aplikasi, pastikan perangkat Anda telah terpasang:
 
 ### 1. Masuk ke Direktori Projek
 ```bash
-cd simklinik
+cd simrs
 ```
 
 ### 2. Pasang Dependensi Backend & Frontend
@@ -86,11 +86,11 @@ Buka file `.env` dan sesuaikan kredensial database MySQL Anda:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=sim_klinik_db
+DB_DATABASE=sim_rs_db
 DB_USERNAME=root
 DB_PASSWORD=
 ```
-> **Catatan:** Pastikan database `sim_klinik_db` sudah dibuat di MySQL Anda (`CREATE DATABASE sim_klinik_db;`).
+> **Catatan:** Pastikan database `sim_rs_db` sudah dibuat di MySQL Anda (`CREATE DATABASE sim_rs_db;`).
 
 ### 4. Generate Application Key
 ```bash
@@ -125,7 +125,7 @@ Perintah ini secara otomatis menjalankan:
 4. **Pail Log Viewer** untuk memantau log secara real-time
 
 ### Opsi 2: Menjalankan Secara Terpisah (Dua Terminal)
-Buka 2 tab terminal di folder `simklinik`:
+Buka 2 tab terminal di folder `simrs`:
 
 - **Terminal 1 (Server Laravel)**:
   ```bash
@@ -144,7 +144,7 @@ Buka 2 tab terminal di folder `simklinik`:
 ## Struktur Folder
 
 ```
-simklinik/
+simrs/
 ├── app/                  # Logika aplikasi Laravel (Controllers, Models, Middleware, Services)
 ├── config/               # File konfigurasi aplikasi Laravel (database, view, auth, dll)
 ├── database/

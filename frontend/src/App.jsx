@@ -92,6 +92,7 @@ export function parseLocation() {
   const jenis = params.get('jenis');
   const invoiceId = params.get('invoice_id');
   const kunjunganId = params.get('kunjungan_id');
+  const editKunjunganId = params.get('edit_kunjungan_id') || params.get('edit_id') || null;
   let id = params.get('id') || invoiceId || kunjunganId || params.get('pasien_id');
   let slug = params.get('slug') || params.get('entity') || params.get('report');
   const copy = params.get('copy') === '1' || params.get('copy') === 'true';
@@ -183,6 +184,7 @@ export function parseLocation() {
         id: id || null,
         slug: slug || null,
         copy: copy || false,
+        editKunjunganId: r.view === 'registrasi_daftar' ? editKunjunganId : null,
       };
     }
   }
@@ -243,7 +245,7 @@ export function parseLocation() {
     return { view: 'rekam_medis', subView: kunjunganId ? 'detail' : (id ? 'pasien' : null), id: kunjunganId || id };
   }
   if (pathname.includes('pendaftaran') || pathname.includes('registrasi/daftar') || pathname.includes('daftar.php')) {
-    return { view: 'registrasi_daftar', id };
+    return { view: 'registrasi_daftar', id, editKunjunganId };
   }
   if (pathname.includes('kunjungan') || pathname.includes('registrasi')) {
     return { view: 'kunjungan' };
@@ -279,6 +281,7 @@ export default function App() {
   const [pasienSubView, setPasienSubView] = useState(() => (initialLoc.view === 'pasien' && initialLoc.subView === 'form') ? 'form' : 'list');
   const [pasienEditId, setPasienEditId] = useState(() => (initialLoc.view === 'pasien' && initialLoc.id) ? initialLoc.id : null);
   const [selectedPasienForVisit, setSelectedPasienForVisit] = useState(null);
+  const [editKunjunganId, setEditKunjunganId] = useState(() => (initialLoc.view === 'registrasi_daftar' && initialLoc.editKunjunganId) ? initialLoc.editKunjunganId : null);
   const [activeExamKunjunganId, setActiveExamKunjunganId] = useState(() => (initialLoc.view === 'pelayanan' && initialLoc.id) ? initialLoc.id : null);
   const [billingProsesId, setBillingProsesId] = useState(() => (initialLoc.view === 'billing' && initialLoc.subView === 'proses') ? initialLoc.id : null);
   const [keuanganBayarId, setKeuanganBayarId] = useState(() => (initialLoc.view === 'keuangan' && initialLoc.subView === 'bayar') ? initialLoc.id : null);
@@ -286,8 +289,6 @@ export default function App() {
   const [rekamMedisKunjunganId, setRekamMedisKunjunganId] = useState(() => (initialLoc.view === 'rekam_medis' && initialLoc.subView === 'detail') ? initialLoc.id : null);
   const [openNewPatientForm, setOpenNewPatientForm] = useState(false);
   const [openDaftarModal, setOpenDaftarModal] = useState(false);
-  // Theme state: 'light' | 'dark'
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('sidebar') === 'collapsed');
 
   // Language from unified i18n context
@@ -311,9 +312,10 @@ export default function App() {
       fullUrl = '/dashboard';
     } else if (view === 'registrasi_daftar') {
       fullUrl = '/pendaftaran';
-      if (params.pasien_id) {
-        fullUrl += `?pasien_id=${params.pasien_id}`;
-      }
+      const q = [];
+      if (params.pasien_id) q.push(`pasien_id=${params.pasien_id}`);
+      if (params.edit_kunjungan_id) q.push(`edit_kunjungan_id=${params.edit_kunjungan_id}`);
+      if (q.length > 0) fullUrl += `?${q.join('&')}`;
     } else if (view === 'pasien') {
       if (subView === 'form') {
         fullUrl = '/pasien/baru';
@@ -387,6 +389,9 @@ export default function App() {
 
     setCurrentView(view);
     if (subView) setFarmasiSubView(subView);
+    if (view === 'registrasi_daftar') {
+      setEditKunjunganId(params.edit_kunjungan_id || null);
+    }
     if (view === 'pasien') {
       setPasienSubView(subView === 'form' ? 'form' : 'list');
       setPasienEditId(params.id || null);
@@ -416,6 +421,9 @@ export default function App() {
       const loc = parseLocation();
       setCurrentView(loc.view);
       if (loc.subView) setFarmasiSubView(loc.subView);
+      if (loc.view === 'registrasi_daftar') {
+        setEditKunjunganId(loc.editKunjunganId || null);
+      }
       if (loc.view === 'pasien') {
         setPasienSubView(loc.subView === 'form' ? 'form' : 'list');
         setPasienEditId(loc.id || null);
@@ -501,11 +509,11 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Set theme on mount and when changed
+  // Pastikan tema selalu mode terang (default) dan bersihkan residu tema gelap
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('theme');
+  }, []);
 
   // Check auth & load master counts on mount
   useEffect(() => {
@@ -620,9 +628,7 @@ export default function App() {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-  };
+
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
@@ -1224,14 +1230,16 @@ export default function App() {
             }} />
           ) : currentView === 'registrasi_daftar' ? (
             <RegistrasiDaftarView
+              key={'reg-' + (editKunjunganId ? `edit-${editKunjunganId}` : (selectedPasienForVisit ? `pasien-${selectedPasienForVisit.id}` : 'new'))}
+              editKunjunganId={editKunjunganId}
               initialPasien={selectedPasienForVisit}
-              onNavigate={(v) => {
+              onNavigate={(v, sub, p) => {
                 if (v === 'pasien_form') {
                   setPasienSubView('form');
                   setOpenNewPatientForm(true);
                   navigateTo('pasien', 'form');
                 } else {
-                  navigateTo(v);
+                  navigateTo(v, sub, p);
                 }
               }}
             />
@@ -1266,10 +1274,16 @@ export default function App() {
             />
           ) : currentView === 'kunjungan' ? (
             <KunjunganView
-              onNavigate={(v) => navigateTo(v)}
+              onNavigate={(v, sub, p) => navigateTo(v, sub, p)}
               onNavigateToDaftar={() => {
                 setSelectedPasienForVisit(null);
+                setEditKunjunganId(null);
                 navigateTo('registrasi_daftar');
+              }}
+              onNavigateToEdit={(kId) => {
+                setSelectedPasienForVisit(null);
+                setEditKunjunganId(kId);
+                navigateTo('registrasi_daftar', null, { edit_kunjungan_id: kId });
               }}
             />
           ) : currentView === 'pasien' ? (

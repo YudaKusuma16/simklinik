@@ -158,7 +158,7 @@ class BillingController extends Controller
 
     /**
      * Mengumpulkan rincian seluruh item tagihan layanan (konsultasi, tindakan, lab, radiologi, diagnostik, fisio, obat)
-     * Mengikuti kalkulasi persis di simklinik-backup/legacy/includes/billing_lib.php
+     * Mengikuti kalkulasi persis di simrs-backup/legacy/includes/billing_lib.php
      */
     private function collectBillingLines(int $kunjunganId): array
     {

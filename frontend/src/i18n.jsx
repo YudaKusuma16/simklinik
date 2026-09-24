@@ -16,8 +16,6 @@ export const TRANSLATIONS = {
       logout_confirm: 'Keluar dari aplikasi?',
       copyright: 'Sistem Informasi Manajemen Klinik',
       account_menu: 'Menu akun',
-      light_mode: 'Mode Terang',
-      dark_mode: 'Mode Gelap',
     },
     menu: {
       groups: {
@@ -165,10 +163,10 @@ export const TRANSLATIONS = {
       logging_in: 'Memverifikasi...',
       badge: 'Sistem Informasi Manajemen Klinik',
       headline: 'Pelayanan Klinik<br>Cepat, Aman &amp;<br>Terintegrasi',
-      description: 'SIM Klinik menghadirkan sistem tata kelola klinik terpadu untuk registrasi pasien, pemeriksaan medis, farmasi, hingga pembayaran secara cepat, akurat, dan profesional.',
+      description: 'SIM RS menghadirkan sistem tata kelola rumah sakit terpadu untuk registrasi pasien, pemeriksaan medis, farmasi, hingga pembayaran secara cepat, akurat, dan profesional.',
       secure_badge: 'Akses Keamanan Aktif',
       welcome: 'Selamat Datang',
-      welcome_sub: 'Silakan masuk untuk mengakses SIM Klinik<br>secara aman dan profesional.',
+      welcome_sub: 'Silakan masuk untuk mengakses SIM RS<br>secara aman dan profesional.',
       username_placeholder: 'Masukkan username',
       password_placeholder: 'Masukkan kata sandi',
       show_hide_pwd: 'Lihat/sembunyikan password',
@@ -394,8 +392,6 @@ export const TRANSLATIONS = {
       logout_confirm: 'Leave the application?',
       copyright: 'Clinic Management Information System',
       account_menu: 'Account menu',
-      light_mode: 'Light Mode',
-      dark_mode: 'Dark Mode',
     },
     menu: {
       groups: {
@@ -543,10 +539,10 @@ export const TRANSLATIONS = {
       logging_in: 'Verifying...',
       badge: 'Clinic Management Information System',
       headline: 'Fast, Secure &amp;<br>Integrated Clinic<br>Services',
-      description: 'SIM Klinik delivers an integrated clinic management system for patient registration, examinations, pharmacy, and payments — fast, accurate, and professional.',
+      description: 'SIM RS delivers an integrated hospital management system for patient registration, examinations, pharmacy, and payments — fast, accurate, and professional.',
       secure_badge: 'Secure Access Active',
       welcome: 'Welcome',
-      welcome_sub: 'Please sign in to access SIM Klinik<br>securely and professionally.',
+      welcome_sub: 'Please sign in to access SIM RS<br>securely and professionally.',
       username_placeholder: 'Enter username',
       password_placeholder: 'Enter password',
       show_hide_pwd: 'Show/hide password',

@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
-            SimKlinikMasterSeeder::class,
+            SimRSMasterSeeder::class,
             UserSeeder::class,
             DiagnostikFisioterapiSeeder::class,
             WilayahIndonesiaSeeder::class,

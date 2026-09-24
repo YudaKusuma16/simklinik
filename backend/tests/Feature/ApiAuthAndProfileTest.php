@@ -63,7 +63,7 @@ class ApiAuthAndProfileTest extends TestCase
 
         // Update profile
         $updateResponse = $this->postJson('/api/profile', [
-            'nama' => 'Administrator SIM Klinik',
+            'nama' => 'Administrator SIM RS',
             'username' => 'admin',
             'email' => 'admin@klinik.local',
             'telepon' => '08123456789',
@@ -73,7 +73,7 @@ class ApiAuthAndProfileTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'nama' => 'Administrator SIM Klinik',
+                    'nama' => 'Administrator SIM RS',
                 ],
             ]);
 

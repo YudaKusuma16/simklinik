@@ -4,7 +4,7 @@ import AppIcon from './AppIcon';
 import DataTableWrapper from './DataTableWrapper';
 import { useI18n } from '../i18n';
 
-export default function KunjunganView({ onNavigate, onNavigateToDaftar }) {
+export default function KunjunganView({ onNavigate, onNavigateToDaftar, onNavigateToEdit }) {
   const { t, isEn, trans, formatTgl } = useI18n();
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
@@ -95,6 +95,14 @@ export default function KunjunganView({ onNavigate, onNavigateToDaftar }) {
       alert(err.message || trans('Gagal membatalkan kunjungan.', 'Failed to cancel visit.'));
     } finally {
       setSubmittingBatal(false);
+    }
+  };
+
+  const handleEditKunjungan = (kunjunganId) => {
+    if (onNavigateToEdit) {
+      onNavigateToEdit(kunjunganId);
+    } else if (onNavigate) {
+      onNavigate('registrasi_daftar', null, { edit_kunjungan_id: kunjunganId });
     }
   };
 
@@ -216,6 +224,16 @@ export default function KunjunganView({ onNavigate, onNavigateToDaftar }) {
       className: 'cell-actions',
       render: (r) => (
         <div className="cell-actions-inner">
+          {r.status === 'billing' && !r.invoice_id && (
+            <button
+              type="button"
+              className="btn btn-sm btn-light btn-icon"
+              onClick={() => handleEditKunjungan(r.id)}
+              title={trans('Edit Registrasi', 'Edit Registration')}
+            >
+              <AppIcon name="pencil" />
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-sm btn-light btn-icon"

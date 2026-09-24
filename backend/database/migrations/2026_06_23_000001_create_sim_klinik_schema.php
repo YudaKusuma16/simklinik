@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        $path = database_path('schema/sim_klinik.sql');
+        $path = database_path('schema/sim_rs.sql');
         $sql = file_get_contents($path);
 
         foreach ($this->splitStatements($sql) as $statement) {

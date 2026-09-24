@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class SimKlinikMasterSeeder extends Seeder
+class SimRSMasterSeeder extends Seeder
 {
     public function run(): void
     {
@@ -26,8 +26,8 @@ class SimKlinikMasterSeeder extends Seeder
             [
                 'nama_bank' => 'BCA',
                 'no_rekening' => '7045368149',
-                'atas_nama' => 'PT Sapta Genki Clinic',
-                'cabang' => 'KCP Panata Yuda',
+                'atas_nama' => 'PT Rumah Sakit',
+                'cabang' => 'KCP Tangerang',
                 'status' => 'aktif',
             ],
         ]);
@@ -103,9 +103,9 @@ class SimKlinikMasterSeeder extends Seeder
         ]);
 
         DB::table('setting')->insert([
-            ['k' => 'clinic_name', 'v' => 'PT Sapta Genki Clinic'],
-            ['k' => 'clinic_unit', 'v' => 'Unit Bayukarta — Karawang'],
-            ['k' => 'clinic_address', 'v' => 'Karawang, Jawa Barat'],
+            ['k' => 'clinic_name', 'v' => 'PT Rumah Sakit'],
+            ['k' => 'clinic_unit', 'v' => 'Unit Tangerang'],
+            ['k' => 'clinic_address', 'v' => 'Tangerang, Banten'],
         ]);
     }
 }

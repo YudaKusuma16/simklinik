@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $configured = env('FRONTEND_PATH', '../simklinik-frontend');
+        $configured = env('FRONTEND_PATH', '../simrs-frontend');
         $frontendPath = str_starts_with((string) $configured, DIRECTORY_SEPARATOR)
             ? $configured
             : base_path($configured);
@@ -28,9 +28,9 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             $settings = Setting::allKeyed();
 
-            $view->with('clinicName', $settings['clinic_name'] ?? config('sim-klinik.clinic_name'));
-            $view->with('clinicUnit', $settings['clinic_unit'] ?? config('sim-klinik.clinic_unit'));
-            $view->with('clinicAddress', $settings['clinic_address'] ?? config('sim-klinik.clinic_address'));
+            $view->with('clinicName', $settings['clinic_name'] ?? config('sim-rs.clinic_name'));
+            $view->with('clinicUnit', $settings['clinic_unit'] ?? config('sim-rs.clinic_unit'));
+            $view->with('clinicAddress', $settings['clinic_address'] ?? config('sim-rs.clinic_address'));
             $view->with('clinicLogo', $settings['clinic_logo'] ?? '');
             $view->with('currentLocale', app()->getLocale());
         });

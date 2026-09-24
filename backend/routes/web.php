@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes — SIM Klinik
+| Web Routes — SIM RS
 |--------------------------------------------------------------------------
 |
 | Pintu gerbang utama menyajikan React 19 Single Page Application (SPA).

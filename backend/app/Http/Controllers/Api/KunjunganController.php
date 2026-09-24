@@ -26,6 +26,7 @@ class KunjunganController extends Controller
             ->leftJoin('dokter as d', 'd.id', '=', 'k.dokter_id')
             ->leftJoin('asuransi as a', 'a.id', '=', 'k.asuransi_id')
             ->leftJoin('corporate as c', 'c.id', '=', 'k.corporate_id')
+            ->leftJoin('invoice as inv', 'inv.kunjungan_id', '=', 'k.id')
             ->select(
                 'k.*',
                 'p.no_mr',
@@ -37,7 +38,9 @@ class KunjunganController extends Controller
                 'po.nama as poli_nama',
                 'd.nama as dokter_nama',
                 'a.nama as asuransi_nama',
-                'c.nama as corporate_nama'
+                'c.nama as corporate_nama',
+                'inv.id as invoice_id',
+                'inv.no_invoice'
             );
 
         if (! empty($tgl)) {
@@ -206,9 +209,150 @@ class KunjunganController extends Controller
             return response()->json(['success' => false, 'message' => 'Kunjungan tidak ditemukan.'], 404);
         }
 
+        $pasien = DB::table('pasien')->where('id', $kj->pasien_id)->first();
+
+        // 1. Tindakan & Konsultasi dari rekam_medis -> rm_tindakan
+        $rmIds = DB::table('rekam_medis')->where('kunjungan_id', $id)->pluck('id');
+        $tindakan = [];
+        $konsultasi = [];
+        if ($rmIds->isNotEmpty()) {
+            $rmRows = DB::table('rm_tindakan')->whereIn('rekam_medis_id', $rmIds)->get();
+            foreach ($rmRows as $r) {
+                if (!empty($r->tindakan_id)) {
+                    $tindakan[] = [
+                        'id' => $r->id,
+                        'tindakan_id' => $r->tindakan_id,
+                        'nama_tindakan' => $r->nama_tindakan,
+                        'qty' => (int) $r->qty,
+                        'tarif' => (float) $r->tarif,
+                        'subtotal' => (float) $r->subtotal,
+                        'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                    ];
+                }
+                if (!empty($r->konsultasi_id)) {
+                    $konsultasi[] = [
+                        'id' => $r->id,
+                        'konsultasi_id' => $r->konsultasi_id,
+                        'nama_tindakan' => $r->nama_tindakan,
+                        'qty' => (int) $r->qty,
+                        'tarif' => (float) $r->tarif,
+                        'subtotal' => (float) $r->subtotal,
+                        'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                    ];
+                }
+            }
+        }
+
+        // 2. Laboratorium dari lab_order -> lab_order_detail
+        $labOrderIds = DB::table('lab_order')->where('kunjungan_id', $id)->pluck('id');
+        $lab = [];
+        if ($labOrderIds->isNotEmpty()) {
+            $labRows = DB::table('lab_order_detail')->whereIn('lab_order_id', $labOrderIds)->get();
+            foreach ($labRows as $r) {
+                $lab[] = [
+                    'id' => $r->id,
+                    'lab_id' => $r->pemeriksaan_id,
+                    'pemeriksaan_id' => $r->pemeriksaan_id,
+                    'qty' => (int) $r->qty,
+                    'tarif' => (float) $r->tarif,
+                    'hasil' => $r->hasil,
+                    'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                ];
+            }
+        }
+
+        // 3. Radiologi dari rad_order -> rad_order_detail
+        $radOrderIds = DB::table('rad_order')->where('kunjungan_id', $id)->pluck('id');
+        $rad = [];
+        if ($radOrderIds->isNotEmpty()) {
+            $radRows = DB::table('rad_order_detail')->whereIn('rad_order_id', $radOrderIds)->get();
+            foreach ($radRows as $r) {
+                $rad[] = [
+                    'id' => $r->id,
+                    'rad_id' => $r->pemeriksaan_id,
+                    'pemeriksaan_id' => $r->pemeriksaan_id,
+                    'qty' => (int) $r->qty,
+                    'tarif' => (float) $r->tarif,
+                    'hasil' => $r->hasil,
+                    'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                ];
+            }
+        }
+
+        // 4. Diagnostik dari diag_order -> diag_order_detail
+        $diagOrderIds = DB::table('diag_order')->where('kunjungan_id', $id)->pluck('id');
+        $diag = [];
+        if ($diagOrderIds->isNotEmpty()) {
+            $diagRows = DB::table('diag_order_detail')->whereIn('diag_order_id', $diagOrderIds)->get();
+            foreach ($diagRows as $r) {
+                $diag[] = [
+                    'id' => $r->id,
+                    'diag_id' => $r->pemeriksaan_id,
+                    'pemeriksaan_id' => $r->pemeriksaan_id,
+                    'qty' => (int) $r->qty,
+                    'tarif' => (float) $r->tarif,
+                    'hasil' => $r->hasil,
+                    'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                ];
+            }
+        }
+
+        // 5. Fisioterapi dari fisio_order -> fisio_order_detail
+        $fisioOrderIds = DB::table('fisio_order')->where('kunjungan_id', $id)->pluck('id');
+        $fisio = [];
+        if ($fisioOrderIds->isNotEmpty()) {
+            $fisioRows = DB::table('fisio_order_detail')->whereIn('fisio_order_id', $fisioOrderIds)->get();
+            foreach ($fisioRows as $r) {
+                $fisio[] = [
+                    'id' => $r->id,
+                    'fisio_id' => $r->pemeriksaan_id,
+                    'pemeriksaan_id' => $r->pemeriksaan_id,
+                    'qty' => (int) $r->qty,
+                    'tarif' => (float) $r->tarif,
+                    'hasil' => $r->hasil,
+                    'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                ];
+            }
+        }
+
+        // 6. Resep / Obat dari resep -> resep_detail
+        $resepIds = DB::table('resep')->where('kunjungan_id', $id)->pluck('id');
+        $obat = [];
+        if ($resepIds->isNotEmpty()) {
+            $resepRows = DB::table('resep_detail')->whereIn('resep_id', $resepIds)->get();
+            foreach ($resepRows as $r) {
+                $obat[] = [
+                    'id' => $r->id,
+                    'obat_id' => $r->obat_id,
+                    'qty' => (int) $r->qty,
+                    'dosis' => $r->dosis,
+                    'aturan_pakai' => $r->aturan_pakai,
+                    'harga' => (float) $r->harga,
+                    'subtotal' => (float) $r->subtotal,
+                    'tgl_layanan' => $r->tgl_layanan ?: $kj->tgl_kunjungan,
+                ];
+            }
+        }
+
+        $invoice = DB::table('invoice')->where('kunjungan_id', $id)->first();
+
+        $data = (array) $kj;
+        $data['pasien'] = $pasien ? (array) $pasien : null;
+        $data['tindakan'] = $tindakan;
+        $data['konsultasi'] = $konsultasi;
+        $data['lab'] = $lab;
+        $data['rad'] = $rad;
+        $data['diag'] = $diag;
+        $data['fisio'] = $fisio;
+        $data['obat'] = $obat;
+        $data['invoice'] = $invoice;
+        $data['invoice_id'] = $invoice?->id;
+        $data['no_invoice'] = $invoice?->no_invoice;
+        $data['can_edit'] = ($kj->status === 'billing') && ! $invoice;
+
         return response()->json([
             'success' => true,
-            'data' => (array) $kj,
+            'data' => $data,
         ]);
     }
 
@@ -683,15 +827,38 @@ class KunjunganController extends Controller
             return response()->json(['success' => false, 'message' => 'Kunjungan tidak ditemukan.'], 404);
         }
 
-        if (in_array($kunjungan->status, ['pembayaran', 'selesai', 'batal'], true)) {
-            return response()->json(['success' => false, 'message' => 'Kunjungan yang sudah selesai atau batal tidak dapat diubah.'], 422);
+        $hasInvoice = DB::table('invoice')->where('kunjungan_id', $id)->exists();
+        if ($kunjungan->status === 'pembayaran' || $hasInvoice) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kunjungan tidak dapat diedit karena sudah dalam proses pembayaran (invoice sudah dibuat).'
+            ], 422);
+        }
+
+        if ($kunjungan->status !== 'billing') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kunjungan hanya dapat diedit jika statusnya masih billing (invoice belum dibuat).'
+            ], 422);
+        }
+
+        if (! $request->has('poli_id') && $request->has('poliklinik_id')) {
+            $request->merge(['poli_id' => $request->input('poliklinik_id')]);
+        }
+        if (! $request->has('keluhan_awal') && $request->has('keluhan_utama')) {
+            $request->merge(['keluhan_awal' => $request->input('keluhan_utama')]);
+        }
+        if (! $request->has('jenis_penjamin') && $request->has('penjamin')) {
+            $request->merge(['jenis_penjamin' => strtolower($request->input('penjamin'))]);
         }
 
         $validated = $request->validate([
+            'pasien_id' => ['nullable', 'integer', 'exists:pasien,id'],
             'poli_id' => ['required', 'integer', 'exists:poli,id'],
             'dokter_id' => ['nullable', 'integer', 'exists:dokter,id'],
             'jenis_registrasi' => ['nullable', 'in:rawat_jalan,rawat_inap'],
             'tgl_kunjungan' => ['nullable', 'date'],
+            'tgl_layanan' => ['nullable', 'date'],
             'lama_rawat' => ['nullable', 'integer', 'min:1'],
             'tgl_keluar' => ['nullable', 'date'],
             'jenis_penjamin' => ['nullable', 'in:umum,bpjs,asuransi,corporate,ar'],
@@ -701,19 +868,444 @@ class KunjunganController extends Controller
             'keluhan_awal' => ['nullable', 'string', 'max:255'],
         ]);
 
-        DB::table('kunjungan')->where('id', $id)->update(array_filter([
+        $tglKunjungan = $validated['tgl_kunjungan'] ?? $kunjungan->tgl_kunjungan;
+        $tglLayanan = $validated['tgl_layanan'] ?? $tglKunjungan;
+        $jenisRegistrasi = $validated['jenis_registrasi'] ?? $kunjungan->jenis_registrasi;
+        $lamaRawat = (int) ($validated['lama_rawat'] ?? ($kunjungan->lama_rawat ?? 1));
+        $tglKeluar = null;
+        if ($jenisRegistrasi === 'rawat_inap') {
+            $tglKeluar = $validated['tgl_keluar'] ?? ($kunjungan->tgl_keluar ?? date('Y-m-d', strtotime("{$tglKunjungan} + " . ($lamaRawat - 1) . ' days')));
+        }
+
+        $jenisPenjamin = $validated['jenis_penjamin'] ?? $kunjungan->jenis_penjamin;
+        $asuransiId = ($jenisPenjamin === 'asuransi') ? ($validated['asuransi_id'] ?? null) : null;
+        $corporateId = ($jenisPenjamin === 'corporate') ? ($validated['corporate_id'] ?? null) : null;
+        $noJaminan = ($jenisPenjamin !== 'umum') ? ($validated['no_jaminan'] ?? null) : null;
+
+        $updateData = [
             'poli_id' => $validated['poli_id'],
             'dokter_id' => $validated['dokter_id'] ?? null,
-            'jenis_registrasi' => $validated['jenis_registrasi'] ?? $kunjungan->jenis_registrasi,
-            'tgl_kunjungan' => $validated['tgl_kunjungan'] ?? $kunjungan->tgl_kunjungan,
-            'lama_rawat' => $validated['lama_rawat'] ?? $kunjungan->lama_rawat,
-            'tgl_keluar' => $validated['tgl_keluar'] ?? $kunjungan->tgl_keluar,
-            'jenis_penjamin' => $validated['jenis_penjamin'] ?? $kunjungan->jenis_penjamin,
-            'asuransi_id' => $validated['asuransi_id'] ?? $kunjungan->asuransi_id,
-            'corporate_id' => $validated['corporate_id'] ?? $kunjungan->corporate_id,
-            'no_jaminan' => $validated['no_jaminan'] ?? $kunjungan->no_jaminan,
-            'keluhan_awal' => $validated['keluhan_awal'] ?? $kunjungan->keluhan_awal,
-        ], fn ($v) => $v !== null));
+            'jenis_registrasi' => $jenisRegistrasi,
+            'tgl_kunjungan' => $tglKunjungan,
+            'lama_rawat' => $lamaRawat,
+            'tgl_keluar' => $tglKeluar,
+            'jenis_penjamin' => $jenisPenjamin,
+            'asuransi_id' => $asuransiId,
+            'corporate_id' => $corporateId,
+            'no_jaminan' => $noJaminan,
+            'keluhan_awal' => $validated['keluhan_awal'] ?? null,
+            'updated_at' => now(),
+        ];
+        if (!empty($validated['pasien_id'])) {
+            $updateData['pasien_id'] = $validated['pasien_id'];
+        }
+
+        DB::table('kunjungan')->where('id', $id)->update($updateData);
+
+        // Optional: Re-sync services, orders, and medications if sent from edit form
+        $hasServiceInputs = $request->has('tindakan') || $request->has('tindakan_list') ||
+            $request->has('konsultasi') || $request->has('konsultasi_list') ||
+            $request->has('lab') || $request->has('rad') || $request->has('diag') ||
+            $request->has('fisio') || $request->has('obat') || $request->has('obat_list');
+
+        if ($hasServiceInputs) {
+            try {
+                $tindakanList = $request->input('tindakan', $request->input('tindakan_list', []));
+                $konsultasiList = $request->input('konsultasi', $request->input('konsultasi_list', []));
+
+                $rmId = DB::table('rekam_medis')->where('kunjungan_id', $id)->value('id');
+                if (!empty($tindakanList) || !empty($konsultasiList)) {
+                    if (!$rmId) {
+                        $rmId = DB::table('rekam_medis')->insertGetId([
+                            'kunjungan_id' => $id,
+                            'dokter_id' => $validated['dokter_id'] ?? null,
+                            'created_at' => now(),
+                        ]);
+                    } else {
+                        DB::table('rekam_medis')->where('id', $rmId)->update([
+                            'dokter_id' => $validated['dokter_id'] ?? null,
+                        ]);
+                    }
+
+                    DB::table('rm_tindakan')->where('rekam_medis_id', $rmId)->delete();
+
+                    foreach ($tindakanList as $t) {
+                        $tid = (int)($t['tindakan_id'] ?? 0);
+                        $qty = max(1, (int)($t['qty'] ?? 1));
+                        $itemTgl = $t['tgl_layanan'] ?? $tglLayanan;
+                        if ($tid) {
+                            $m = DB::table('tindakan')->where('id', $tid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
+                                DB::table('rm_tindakan')->insert([
+                                    'rekam_medis_id' => $rmId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'tindakan_id' => $tid,
+                                    'nama_tindakan' => $m->nama,
+                                    'qty' => $qty,
+                                    'tarif' => $tarif,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+
+                    foreach ($konsultasiList as $k) {
+                        $kid = (int)($k['konsultasi_id'] ?? 0);
+                        $qty = max(1, (int)($k['qty'] ?? 1));
+                        $itemTgl = $k['tgl_layanan'] ?? $tglLayanan;
+                        if ($kid) {
+                            $m = DB::table('konsultasi')->where('id', $kid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
+                                DB::table('rm_tindakan')->insert([
+                                    'rekam_medis_id' => $rmId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'konsultasi_id' => $kid,
+                                    'nama_tindakan' => $m->nama,
+                                    'qty' => $qty,
+                                    'tarif' => $tarif,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+                } elseif ($rmId) {
+                    DB::table('rm_tindakan')->where('rekam_medis_id', $rmId)->delete();
+                }
+
+                // Lab
+                $labList = $request->input('lab', []);
+                $labOrderId = DB::table('lab_order')->where('kunjungan_id', $id)->value('id');
+                if (!empty($labList)) {
+                    if (!$labOrderId) {
+                        $labOrderId = DB::table('lab_order')->insertGetId([
+                            'kunjungan_id' => $id,
+                            'status' => 'permintaan',
+                            'tanggal' => $tglLayanan,
+                        ]);
+                    }
+                    DB::table('lab_order_detail')->where('lab_order_id', $labOrderId)->delete();
+                    foreach ($labList as $l) {
+                        $pid = (int)($l['lab_id'] ?? ($l['pemeriksaan_id'] ?? 0));
+                        $qty = max(1, (int)($l['qty'] ?? 1));
+                        $itemTgl = $l['tgl_layanan'] ?? $tglLayanan;
+                        if ($pid) {
+                            $m = DB::table('lab_pemeriksaan')->where('id', $pid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
+                                DB::table('lab_order_detail')->insert([
+                                    'lab_order_id' => $labOrderId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'pemeriksaan_id' => $pid,
+                                    'hasil' => $l['hasil'] ?? null,
+                                    'nilai_rujukan' => $m->nilai_rujukan ?? null,
+                                    'tarif' => $tarif,
+                                    'qty' => $qty,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+                } elseif ($labOrderId) {
+                    DB::table('lab_order_detail')->where('lab_order_id', $labOrderId)->delete();
+                }
+
+                // Rad
+                $radList = $request->input('rad', []);
+                $radOrderId = DB::table('rad_order')->where('kunjungan_id', $id)->value('id');
+                if (!empty($radList)) {
+                    if (!$radOrderId) {
+                        $radOrderId = DB::table('rad_order')->insertGetId([
+                            'kunjungan_id' => $id,
+                            'status' => 'permintaan',
+                            'tanggal' => $tglLayanan,
+                        ]);
+                    }
+                    DB::table('rad_order_detail')->where('rad_order_id', $radOrderId)->delete();
+                    foreach ($radList as $r) {
+                        $pid = (int)($r['rad_id'] ?? ($r['pemeriksaan_id'] ?? 0));
+                        $qty = max(1, (int)($r['qty'] ?? 1));
+                        $itemTgl = $r['tgl_layanan'] ?? $tglLayanan;
+                        if ($pid) {
+                            $m = DB::table('rad_pemeriksaan')->where('id', $pid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
+                                DB::table('rad_order_detail')->insert([
+                                    'rad_order_id' => $radOrderId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'pemeriksaan_id' => $pid,
+                                    'hasil' => $r['hasil'] ?? null,
+                                    'tarif' => $tarif,
+                                    'qty' => $qty,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+                } elseif ($radOrderId) {
+                    DB::table('rad_order_detail')->where('rad_order_id', $radOrderId)->delete();
+                }
+
+                // Diag
+                $diagList = $request->input('diag', []);
+                $diagOrderId = DB::table('diag_order')->where('kunjungan_id', $id)->value('id');
+                if (!empty($diagList)) {
+                    if (!$diagOrderId) {
+                        $diagOrderId = DB::table('diag_order')->insertGetId([
+                            'kunjungan_id' => $id,
+                            'status' => 'permintaan',
+                            'tanggal' => $tglLayanan,
+                        ]);
+                    }
+                    DB::table('diag_order_detail')->where('diag_order_id', $diagOrderId)->delete();
+                    foreach ($diagList as $d) {
+                        $pid = (int)($d['diag_id'] ?? ($d['pemeriksaan_id'] ?? 0));
+                        $qty = max(1, (int)($d['qty'] ?? 1));
+                        $itemTgl = $d['tgl_layanan'] ?? $tglLayanan;
+                        if ($pid) {
+                            $m = DB::table('diag_pemeriksaan')->where('id', $pid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
+                                DB::table('diag_order_detail')->insert([
+                                    'diag_order_id' => $diagOrderId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'pemeriksaan_id' => $pid,
+                                    'hasil' => $d['hasil'] ?? null,
+                                    'tarif' => $tarif,
+                                    'qty' => $qty,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+                } elseif ($diagOrderId) {
+                    DB::table('diag_order_detail')->where('diag_order_id', $diagOrderId)->delete();
+                }
+
+                // Fisio
+                $fisioList = $request->input('fisio', []);
+                $fisioOrderId = DB::table('fisio_order')->where('kunjungan_id', $id)->value('id');
+                if (!empty($fisioList)) {
+                    if (!$fisioOrderId) {
+                        $fisioOrderId = DB::table('fisio_order')->insertGetId([
+                            'kunjungan_id' => $id,
+                            'status' => 'permintaan',
+                            'tanggal' => $tglLayanan,
+                        ]);
+                    }
+                    DB::table('fisio_order_detail')->where('fisio_order_id', $fisioOrderId)->delete();
+                    foreach ($fisioList as $f) {
+                        $pid = (int)($f['fisio_id'] ?? ($f['pemeriksaan_id'] ?? 0));
+                        $qty = max(1, (int)($f['qty'] ?? 1));
+                        $itemTgl = $f['tgl_layanan'] ?? $tglLayanan;
+                        if ($pid) {
+                            $m = DB::table('fisio_pemeriksaan')->where('id', $pid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->tarif) * 1.40, 2);
+                                DB::table('fisio_order_detail')->insert([
+                                    'fisio_order_id' => $fisioOrderId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'pemeriksaan_id' => $pid,
+                                    'hasil' => $f['hasil'] ?? null,
+                                    'tarif' => $tarif,
+                                    'qty' => $qty,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+                } elseif ($fisioOrderId) {
+                    DB::table('fisio_order_detail')->where('fisio_order_id', $fisioOrderId)->delete();
+                }
+
+                // Resep
+                $obatList = $request->input('obat', $request->input('obat_list', []));
+                $resepId = DB::table('resep')->where('kunjungan_id', $id)->value('id');
+                if (!empty($obatList)) {
+                    if (!$resepId) {
+                        $resepId = DB::table('resep')->insertGetId([
+                            'kunjungan_id' => $id,
+                            'dokter_id' => $validated['dokter_id'] ?? null,
+                            'status' => 'baru',
+                            'tanggal' => $tglLayanan,
+                        ]);
+                    } else {
+                        DB::table('resep')->where('id', $resepId)->update([
+                            'dokter_id' => $validated['dokter_id'] ?? null,
+                        ]);
+                    }
+                    DB::table('resep_detail')->where('resep_id', $resepId)->delete();
+                    foreach ($obatList as $o) {
+                        $oid = (int)($o['obat_id'] ?? 0);
+                        $qty = max(1, (int)($o['qty'] ?? 1));
+                        $itemTgl = $o['tgl_layanan'] ?? $tglLayanan;
+                        if ($oid) {
+                            $m = DB::table('obat')->where('id', $oid)->first();
+                            if ($m) {
+                                $hj = (float)($m->harga_jual ?? 0);
+                                $tarif = $hj > 0 ? $hj : round(((float)$m->harga_beli) * 1.40, 2);
+                                DB::table('resep_detail')->insert([
+                                    'resep_id' => $resepId,
+                                    'tgl_layanan' => $itemTgl,
+                                    'obat_id' => $oid,
+                                    'qty' => $qty,
+                                    'dosis' => $o['dosis'] ?? null,
+                                    'aturan_pakai' => $o['aturan_pakai'] ?? null,
+                                    'harga' => $tarif,
+                                    'subtotal' => $tarif * $qty,
+                                ]);
+                            }
+                        }
+                    }
+                } elseif ($resepId) {
+                    DB::table('resep_detail')->where('resep_id', $resepId)->delete();
+                }
+
+                // Sinkronisasi Billing (hanya jika billing berstatus draft)
+                $billing = DB::table('billing')->where('kunjungan_id', $id)->first();
+                if ($billing && $billing->status === 'draft') {
+                    $svcSubtotal = 0;
+                    $billingDetails = [];
+
+                    if (!empty($rmId)) {
+                        $rmTind = DB::table('rm_tindakan')->where('rekam_medis_id', $rmId)->get();
+                        foreach ($rmTind as $rt) {
+                            $svcSubtotal += (float)$rt->subtotal;
+                            $billingDetails[] = [
+                                'tgl_layanan' => $rt->tgl_layanan,
+                                'kategori' => !empty($rt->konsultasi_id) ? 'konsultasi' : 'tindakan',
+                                'item_code' => !empty($rt->konsultasi_id) ? 'KONS' : 'TIND',
+                                'deskripsi' => $rt->nama_tindakan,
+                                'qty' => (int)$rt->qty,
+                                'tarif' => (float)$rt->tarif,
+                                'subtotal' => (float)$rt->subtotal,
+                            ];
+                        }
+                    }
+
+                    if (!empty($labOrderId)) {
+                        $labDetails = DB::table('lab_order_detail as lod')
+                            ->join('lab_pemeriksaan as lp', 'lp.id', '=', 'lod.pemeriksaan_id')
+                            ->where('lod.lab_order_id', $labOrderId)
+                            ->select('lod.*', 'lp.kode', 'lp.nama')
+                            ->get();
+                        foreach ($labDetails as $ld) {
+                            $svcSubtotal += (float)$ld->subtotal;
+                            $billingDetails[] = [
+                                'tgl_layanan' => $ld->tgl_layanan,
+                                'kategori' => 'laboratorium',
+                                'item_code' => $ld->kode,
+                                'deskripsi' => $ld->nama,
+                                'qty' => (int)$ld->qty,
+                                'tarif' => (float)$ld->tarif,
+                                'subtotal' => (float)$ld->subtotal,
+                            ];
+                        }
+                    }
+
+                    if (!empty($radOrderId)) {
+                        $radDetails = DB::table('rad_order_detail as rod')
+                            ->join('rad_pemeriksaan as rp', 'rp.id', '=', 'rod.pemeriksaan_id')
+                            ->where('rod.rad_order_id', $radOrderId)
+                            ->select('rod.*', 'rp.kode', 'rp.nama')
+                            ->get();
+                        foreach ($radDetails as $rd) {
+                            $svcSubtotal += (float)$rd->subtotal;
+                            $billingDetails[] = [
+                                'tgl_layanan' => $rd->tgl_layanan,
+                                'kategori' => 'radiologi',
+                                'item_code' => $rd->kode,
+                                'deskripsi' => $rd->nama,
+                                'qty' => (int)$rd->qty,
+                                'tarif' => (float)$rd->tarif,
+                                'subtotal' => (float)$rd->subtotal,
+                            ];
+                        }
+                    }
+
+                    if (!empty($diagOrderId)) {
+                        $diagDetails = DB::table('diag_order_detail as dod')
+                            ->join('diag_pemeriksaan as dp', 'dp.id', '=', 'dod.pemeriksaan_id')
+                            ->where('dod.diag_order_id', $diagOrderId)
+                            ->select('dod.*', 'dp.kode', 'dp.nama')
+                            ->get();
+                        foreach ($diagDetails as $dd) {
+                            $svcSubtotal += (float)$dd->subtotal;
+                            $billingDetails[] = [
+                                'tgl_layanan' => $dd->tgl_layanan,
+                                'kategori' => 'diagnostik',
+                                'item_code' => $dd->kode,
+                                'deskripsi' => $dd->nama,
+                                'qty' => (int)$dd->qty,
+                                'tarif' => (float)$dd->tarif,
+                                'subtotal' => (float)$dd->subtotal,
+                            ];
+                        }
+                    }
+
+                    if (!empty($fisioOrderId)) {
+                        $fisioDetails = DB::table('fisio_order_detail as fod')
+                            ->join('fisio_pemeriksaan as fp', 'fp.id', '=', 'fod.pemeriksaan_id')
+                            ->where('fod.fisio_order_id', $fisioOrderId)
+                            ->select('fod.*', 'fp.kode', 'fp.nama')
+                            ->get();
+                        foreach ($fisioDetails as $fd) {
+                            $svcSubtotal += (float)$fd->subtotal;
+                            $billingDetails[] = [
+                                'tgl_layanan' => $fd->tgl_layanan,
+                                'kategori' => 'fisioterapi',
+                                'item_code' => $fd->kode,
+                                'deskripsi' => $fd->nama,
+                                'qty' => (int)$fd->qty,
+                                'tarif' => (float)$fd->tarif,
+                                'subtotal' => (float)$fd->subtotal,
+                            ];
+                        }
+                    }
+
+                    if (!empty($resepId)) {
+                        $resepDetails = DB::table('resep_detail as rsd')
+                            ->join('obat as o', 'o.id', '=', 'rsd.obat_id')
+                            ->where('rsd.resep_id', $resepId)
+                            ->select('rsd.*', 'o.kode', 'o.nama')
+                            ->get();
+                        foreach ($resepDetails as $od) {
+                            $svcSubtotal += (float)$od->subtotal;
+                            $billingDetails[] = [
+                                'tgl_layanan' => $od->tgl_layanan,
+                                'kategori' => 'farmasi',
+                                'item_code' => $od->kode,
+                                'deskripsi' => $od->nama,
+                                'qty' => (int)$od->qty,
+                                'tarif' => (float)$od->harga,
+                                'subtotal' => (float)$od->subtotal,
+                            ];
+                        }
+                    }
+
+                    DB::table('billing_detail')->where('billing_id', $billing->id)->delete();
+                    foreach ($billingDetails as $bd) {
+                        DB::table('billing_detail')->insert(array_merge($bd, ['billing_id' => $billing->id]));
+                    }
+
+                    $totalTagihan = (float)(ceil($svcSubtotal / 500) * 500);
+                    DB::table('billing')->where('id', $billing->id)->update([
+                        'subtotal' => $svcSubtotal,
+                        'total' => $totalTagihan,
+                        'updated_at' => now(),
+                    ]);
+                }
+            } catch (\Throwable $ex) {
+                \Illuminate\Support\Facades\Log::error('Registration update service error: ' . $ex->getMessage() . ' in ' . $ex->getFile() . ':' . $ex->getLine());
+            }
+        }
 
         return response()->json([
             'success' => true,

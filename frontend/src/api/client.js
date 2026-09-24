@@ -1,5 +1,5 @@
 /**
- * API Client untuk SIM Klinik
+ * API Client untuk SIM RS
  *
  * Menggunakan native fetch dengan session cookie otomatis (credentials: 'include').
  * Vite dev server mem-proxy semua request /api ke Laravel backend (port 8000),

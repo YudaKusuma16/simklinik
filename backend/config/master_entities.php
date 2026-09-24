@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Registry entitas Master Data SIM Klinik untuk mesin CRUD generik.
+ * Registry entitas Master Data SIM RS untuk mesin CRUD generik.
  *
  * Tipe field yang didukung:
  * - text      : Input teks standar
